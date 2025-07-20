@@ -1,15 +1,16 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import Stripe from "stripe";
+import Razorpay from "razorpay";
 import { storage } from "./storage";
 import { insertOrderSchema, insertContactSchema, insertNewsletterSchema } from "@shared/schema";
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+  throw new Error('Missing required Razorpay credentials: RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET');
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -37,29 +38,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create payment intent
-  app.post("/api/create-payment-intent", async (req, res) => {
+  // Create Razorpay order
+  app.post("/api/create-order", async (req, res) => {
     try {
-      const { amount } = req.body;
+      const { amount, currency = "INR" } = req.body;
       
       if (!amount || amount <= 0) {
         return res.status(400).json({ message: "Invalid amount" });
       }
 
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Convert to paise (for INR)
-        currency: "inr",
-        metadata: {
-          integration_check: "accept_a_payment",
-        },
-      });
+      const options = {
+        amount: Math.round(amount * 100), // Convert to paise
+        currency: currency,
+        receipt: `receipt_${Date.now()}`,
+      };
+
+      const order = await razorpay.orders.create(options);
       
       res.json({ 
-        clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id 
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        key: process.env.RAZORPAY_KEY_ID
       });
     } catch (error: any) {
-      res.status(500).json({ message: "Error creating payment intent: " + error.message });
+      res.status(500).json({ message: "Error creating Razorpay order: " + error.message });
     }
   });
 
@@ -74,13 +77,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Verify Razorpay payment
+  app.post("/api/verify-payment", async (req, res) => {
+    try {
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+      
+      const crypto = require("crypto");
+      const expectedSignature = crypto
+        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+        .update(razorpay_order_id + "|" + razorpay_payment_id)
+        .digest("hex");
+
+      if (expectedSignature === razorpay_signature) {
+        res.json({ success: true, message: "Payment verified successfully" });
+      } else {
+        res.status(400).json({ success: false, message: "Invalid payment signature" });
+      }
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: "Error verifying payment: " + error.message });
+    }
+  });
+
   // Update order with payment info
   app.patch("/api/orders/:id/payment", async (req, res) => {
     try {
       const orderId = parseInt(req.params.id);
-      const { stripePaymentId, status } = req.body;
+      const { razorpayPaymentId, status } = req.body;
       
-      const order = await storage.updateOrderPayment(orderId, stripePaymentId, status);
+      const order = await storage.updateOrderPayment(orderId, razorpayPaymentId, status);
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
       }

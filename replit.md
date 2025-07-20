@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a full-stack e-commerce application for Cokha energy bars by Rajsic Foods. The application features a React frontend with Express.js backend, PostgreSQL database with Drizzle ORM, and Stripe payment integration. The system allows customers to browse products, place orders, and make payments, while also providing contact and newsletter subscription functionality.
+This is a full-stack e-commerce application for Cokha energy bars by Rajsic Foods. The application features a React frontend with Express.js backend, PostgreSQL database with Drizzle ORM, and Razorpay payment integration. The system allows customers to browse products, place orders, and make payments, while also providing contact and newsletter subscription functionality.
 
 ## User Preferences
 
@@ -53,7 +53,8 @@ Preferred communication style: Simple, everyday language.
 ### Backend Components
 1. **API Routes**
    - `/api/products` - Product listing and individual product retrieval
-   - `/api/create-payment-intent` - Stripe payment intent creation
+   - `/api/create-order` - Razorpay order creation
+   - `/api/verify-payment` - Razorpay payment verification
    - `/api/orders` - Order creation and management
    - `/api/contacts` - Contact form submissions
    - `/api/newsletter` - Newsletter subscription handling
@@ -81,9 +82,9 @@ Preferred communication style: Simple, everyday language.
 1. Customer fills order form with shipping details
 2. Frontend validates form data using Zod schemas
 3. Order created in database with "pending" status
-4. Stripe payment intent generated with order total
-5. Customer completes payment through Stripe Elements
-6. Payment confirmation updates order status
+4. Razorpay order generated with order total
+5. Customer completes payment through Razorpay Checkout
+6. Payment signature verified and order status updated
 7. Success/failure feedback provided to customer
 
 ### Contact and Newsletter
@@ -95,9 +96,9 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 ### Payment Processing
-- **Stripe**: Complete payment processing with client-side Elements
-- **Integration**: Server-side payment intent creation and client-side confirmation
-- **Security**: Environment-based API key management
+- **Razorpay**: Complete payment processing with client-side Checkout
+- **Integration**: Server-side order creation, client-side payment, and server-side verification
+- **Security**: Environment-based API key management with signature verification
 
 ### UI Framework
 - **Radix UI**: Accessible component primitives for complex interactions
@@ -129,6 +130,6 @@ Preferred communication style: Simple, everyday language.
 
 ### Key Environment Variables
 - `DATABASE_URL`: PostgreSQL connection string
-- `STRIPE_SECRET_KEY`: Server-side Stripe API key
-- `VITE_STRIPE_PUBLIC_KEY`: Client-side Stripe publishable key
+- `RAZORPAY_KEY_ID`: Razorpay Key ID for API authentication
+- `RAZORPAY_KEY_SECRET`: Razorpay Key Secret for server-side operations
 - `NODE_ENV`: Environment flag for development/production behavior
