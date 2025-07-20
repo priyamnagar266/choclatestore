@@ -26,7 +26,7 @@ export const orders = pgTable("orders", {
   deliveryCharges: decimal("delivery_charges", { precision: 10, scale: 2 }).notNull(),
   total: decimal("total", { precision: 10, scale: 2 }).notNull(),
   status: text("status").notNull().default("pending"),
-  stripePaymentId: text("stripe_payment_id"),
+  razorpayPaymentId: text("razorpay_payment_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -54,7 +54,7 @@ export const insertOrderSchema = createInsertSchema(orders).omit({
   id: true,
   createdAt: true,
   status: true,
-  stripePaymentId: true,
+  razorpayPaymentId: true,
 });
 
 export const insertContactSchema = createInsertSchema(contacts).omit({
