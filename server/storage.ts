@@ -1,4 +1,4 @@
-import { products, orders, contacts, newsletters, type Product, type InsertProduct, type Order, type InsertOrder, type Contact, type InsertContact, type Newsletter, type InsertNewsletter } from "@shared/schema";
+import { products, orders, contacts, newsletters, type Product, type InsertProduct, type Order, type InsertOrder, type Contact, type InsertContact, type Newsletter, type InsertNewsletter, type User, type InsertUser } from "@shared/schema";
 
 export interface IStorage {
   // Products
@@ -9,12 +9,17 @@ export interface IStorage {
   createOrder(order: InsertOrder): Promise<Order>;
   getOrder(id: number): Promise<Order | undefined>;
   updateOrderPayment(id: number, razorpayPaymentId: string, status: string): Promise<Order | undefined>;
+  getOrdersByUserId?(userId: number): Promise<Order[]>;
   
   // Contacts
   createContact(contact: InsertContact): Promise<Contact>;
   
   // Newsletter
   subscribeNewsletter(newsletter: InsertNewsletter): Promise<Newsletter>;
+
+  // Users
+  createUser(user: InsertUser): Promise<User>;
+  getUserByEmail(email: string): Promise<User | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -22,10 +27,12 @@ export class MemStorage implements IStorage {
   private orders: Map<number, Order>;
   private contacts: Map<number, Contact>;
   private newsletters: Map<number, Newsletter>;
+  private users: Map<number, User> = new Map();
   private currentProductId: number;
   private currentOrderId: number;
   private currentContactId: number;
   private currentNewsletterId: number;
+  private currentUserId: number = 1;
 
   constructor() {
     this.products = new Map();
@@ -136,6 +143,7 @@ export class MemStorage implements IStorage {
     const order: Order = {
       ...insertOrder,
       id,
+      _id: String(id), // Always return _id as string for MongoDB-like compatibility
       status: "pending",
       razorpayPaymentId: null,
       createdAt: new Date(),
@@ -179,6 +187,31 @@ export class MemStorage implements IStorage {
     };
     this.newsletters.set(id, newsletter);
     return newsletter;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const id = this.currentUserId++;
+    const newUser: User = {
+      ...user,
+      id,
+      createdAt: new Date(),
+      role: user.role ?? "user",
+    };
+    this.users.set(id, newUser);
+    return newUser;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    for (const user of Array.from(this.users.values())) {
+      if (user.email === email) {
+        return user;
+      }
+    }
+    return undefined;
+  }
+
+  async getOrdersByUserId(userId: number): Promise<Order[]> {
+    return Array.from(this.orders.values()).filter(order => order.userId === userId);
   }
 }
 

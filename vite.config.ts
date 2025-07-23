@@ -33,5 +33,8 @@ export default defineConfig({
       strict: true,
       deny: ["**/.*"],
     },
+    proxy: {
+      '/api': 'http://localhost:3000', // Change 3000 to your backend port if different
+    },
   },
 });

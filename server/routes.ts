@@ -4,8 +4,10 @@ dotenv.config();
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import Razorpay from "razorpay";
-import { storage } from "./storage";
-import { insertOrderSchema, insertContactSchema, insertNewsletterSchema } from "@shared/schema";
+import { storage } from "./storage.mongodb";
+import { insertOrderSchema, insertContactSchema, insertNewsletterSchema, insertUserSchema } from "@shared/schema";
+import bcrypt from "bcryptjs";
+import { generateJWT, authenticateJWT } from "./jwt";
 
 if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
   throw new Error('Missing required Razorpay credentials: RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET');
@@ -45,9 +47,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/create-order", async (req, res) => {
     try {
       const { amount, currency = "INR" } = req.body;
-      
+
       if (!amount || amount <= 0) {
+        console.error("[Razorpay] Invalid amount:", amount);
         return res.status(400).json({ message: "Invalid amount" });
+      }
+
+      if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+        console.error("[Razorpay] Missing credentials:", process.env.RAZORPAY_KEY_ID, process.env.RAZORPAY_KEY_SECRET);
+        return res.status(500).json({ message: "Missing Razorpay credentials" });
       }
 
       const options = {
@@ -56,24 +64,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         receipt: `receipt_${Date.now()}`,
       };
 
-      const order = await razorpay.orders.create(options);
-      
-      res.json({ 
-        orderId: order.id,
-        amount: order.amount,
-        currency: order.currency,
-        key: process.env.RAZORPAY_KEY_ID
-      });
+      try {
+        const order = await razorpay.orders.create(options);
+        res.json({ 
+          orderId: order.id,
+          amount: order.amount,
+          currency: order.currency,
+          key: process.env.RAZORPAY_KEY_ID
+        });
+      } catch (razorpayError: any) {
+        console.error("[Razorpay] API error:", razorpayError);
+        res.status(500).json({ message: "Error creating Razorpay order: " + razorpayError.message });
+      }
     } catch (error: any) {
+      console.error("[Razorpay] Server error:", error);
       res.status(500).json({ message: "Error creating Razorpay order: " + error.message });
     }
   });
 
-  // Create order
-  app.post("/api/orders", async (req, res) => {
+  // Create order (linked to user)
+  app.post("/api/orders", authenticateJWT, async (req, res) => {
     try {
-      const orderData = insertOrderSchema.parse(req.body);
+      // @ts-ignore
+      const userId = req.user.id;
+      const orderData = insertOrderSchema.parse({ ...req.body, userId });
       const order = await storage.createOrder(orderData);
+      console.log('[DEBUG /api/orders] Created order:', order); // Debug log
       res.json(order);
     } catch (error: any) {
       res.status(400).json({ message: "Error creating order: " + error.message });
@@ -84,19 +100,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/verify-payment", async (req, res) => {
     try {
       const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-      
-      const crypto = require("crypto");
-      const expectedSignature = crypto
-        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      // Debug log all received values
+      console.log("[Razorpay Verification] Received:", {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        secret: process.env.RAZORPAY_KEY_SECRET
+      });
+
+      // Use import for crypto in ESM/TypeScript
+      // Use require for CommonJS, import for ESM
+      let crypto;
+      try {
+        crypto = require('crypto');
+      } catch (e) {
+        crypto = (await import('crypto')).default;
+      }
+      const secret = process.env.RAZORPAY_KEY_SECRET || '';
+      const expectedSignature = crypto.createHmac("sha256", secret)
         .update(razorpay_order_id + "|" + razorpay_payment_id)
         .digest("hex");
+      console.log("[Razorpay Verification] Expected Signature:", expectedSignature);
 
       if (expectedSignature === razorpay_signature) {
+        console.log("[Razorpay Verification] SUCCESS: Payment verified");
         res.json({ success: true, message: "Payment verified successfully" });
       } else {
+        console.log("[Razorpay Verification] FAILURE: Invalid signature", { expectedSignature, razorpay_signature });
         res.status(400).json({ success: false, message: "Invalid payment signature" });
       }
     } catch (error: any) {
+      console.log("[Razorpay Verification] ERROR:", error);
       res.status(500).json({ success: false, message: "Error verifying payment: " + error.message });
     }
   });
@@ -138,6 +172,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       res.status(400).json({ message: "Error subscribing to newsletter: " + error.message });
     }
+  });
+
+  // AUTH: Register
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      const existingUser = await storage.getUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      const newUser = await storage.createUser({ ...userData, password: hashedPassword });
+      const token = generateJWT({ id: newUser.id, email: newUser.email, role: newUser.role });
+      res.json({ id: newUser.id, email: newUser.email, name: newUser.name, token });
+    } catch (error: any) {
+      res.status(400).json({ message: "Error registering user: " + error.message });
+    }
+  });
+
+  // AUTH: Login
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      const valid = await bcrypt.compare(password, user.password);
+      if (!valid) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      const token = generateJWT({ id: user.id, email: user.email, role: user.role });
+      res.json({ id: user.id, email: user.email, name: user.name, role: user.role, token });
+    } catch (error: any) {
+      res.status(400).json({ message: "Error logging in: " + error.message });
+    }
+  });
+
+  // Example protected route
+  app.get("/api/auth/me", authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    res.json({ user: req.user });
+  });
+
+  // Protected user profile route
+  app.get("/api/profile", authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    res.json({ user: req.user, message: "This is a protected profile route." });
+  });
+
+  // Protected route to get user orders
+  app.get("/api/orders/me", authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    const userId = req.user.id;
+    // For demo, return all orders (replace with user-specific logic if needed)
+    const orders = await storage.getOrdersByUserId?.(userId) || [];
+    res.json({ orders });
   });
 
   const httpServer = createServer(app);

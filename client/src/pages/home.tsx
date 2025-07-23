@@ -1,3 +1,4 @@
+import { useAuth } from "@/components/auth-context";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,7 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Play, Star, Phone, Mail, MapPin, Clock, MessageCircle } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Play, Star, Phone, Mail, MapPin, Clock, MessageCircle, X, Minus, Plus, Trash2 } from "lucide-react";
 
 import type { Product } from "@shared/schema";
 import { CartItem, calculateCartTotal, calculateItemCount, formatPrice } from "@/lib/products";
@@ -26,6 +28,12 @@ import { insertOrderSchema, insertContactSchema, insertNewsletterSchema } from "
 
 const orderFormSchema = insertOrderSchema.extend({
   items: z.string().min(1, "Please select at least one product"),
+  customerName: z.string().min(2, "Name must be at least 2 characters").max(50, "Name must not exceed 50 characters"),
+  customerEmail: z.string().email("Please enter a valid email address"),
+  customerPhone: z.string().min(10, "Phone number must be at least 10 digits").max(15, "Phone number must not exceed 15 digits"),
+  address: z.string().min(10, "Address must be at least 10 characters").max(200, "Address must not exceed 200 characters"),
+  city: z.string().min(2, "City must be at least 2 characters").max(50, "City must not exceed 50 characters"),
+  pincode: z.string().min(6, "PIN code must be at least 6 digits").max(6, "PIN code must be 6 digits"),
 });
 
 const contactFormSchema = insertContactSchema;
@@ -34,10 +42,14 @@ const newsletterFormSchema = insertNewsletterSchema;
 export default function Home() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  // Cart state
-  const [cart, setCart] = useState<CartItem[]>([]);
+  // Cart state (persisted in localStorage until payment)
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    const savedCart = localStorage.getItem('cart');
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
   const [showCart, setShowCart] = useState(false);
   
   // Order form state
@@ -87,11 +99,36 @@ export default function Home() {
   const createOrderMutation = useMutation({
     mutationFn: (orderData: any) => apiRequest("POST", "/api/orders", orderData),
     onSuccess: async (response) => {
-      const order = await response.json();
-      sessionStorage.setItem('pendingOrder', JSON.stringify(order));
-      setLocation('/checkout');
+      try {
+        const order = await response.json();
+        if (!order || (!order._id && !order.orderId)) {
+          throw new Error("Invalid order response from server. Please try again.");
+        }
+        // Always use backend order object (with _id) for PATCH after payment
+        // Merge cart and totals into the order object
+        const cartTotal = calculateCartTotal(cart);
+        const orderWithCart = {
+          ...order,
+          items: JSON.stringify(cart),
+          subtotal: cartTotal.toFixed(2),
+          deliveryCharges: "50.00",
+          total: (cartTotal + 50).toFixed(2)
+        };
+        // Save ONLY backend order _id as patchOrderId for later PATCH
+        orderWithCart.patchOrderId = order._id;
+        localStorage.setItem('pendingOrder', JSON.stringify(orderWithCart));
+        console.log('DEBUG pendingOrder:', orderWithCart); // Debug log
+        setLocation('/delivery');
+      } catch (error: any) {
+        toast({
+          title: "Order Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     },
     onError: (error: any) => {
+      console.error('DEBUG createOrderMutation error:', error); // Debug log
       toast({
         title: "Error",
         description: error.message,
@@ -140,33 +177,106 @@ export default function Home() {
   const addToCart = (product: Product) => {
     setCart(prev => {
       const existingItem = prev.find(item => item.id === product.id);
+      let updatedCart;
       if (existingItem) {
-        return prev.map(item =>
+        updatedCart = prev.map(item =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
+      } else {
+        updatedCart = [...prev, {
+          id: product.id,
+          name: product.name,
+          price: parseFloat(product.price),
+          quantity: 1,
+          image: product.image,
+        }];
       }
-      return [...prev, {
-        id: product.id,
-        name: product.name,
-        price: parseFloat(product.price),
-        quantity: 1,
-        image: product.image,
-      }];
+      localStorage.setItem('cart', JSON.stringify(updatedCart));
+      return updatedCart;
     });
-    
     toast({
       title: "Added to cart!",
       description: `${product.name} has been added to your cart.`,
     });
   };
 
+  const removeFromCart = (productId: number) => {
+    setCart(prev => {
+      const updatedCart = prev.filter(item => item.id !== productId);
+      localStorage.setItem('cart', JSON.stringify(updatedCart));
+      return updatedCart;
+    });
+  };
+
+  const updateCartItemQuantity = (productId: number, quantity: number) => {
+    if (quantity === 0) {
+      removeFromCart(productId);
+      return;
+    }
+    setCart(prev => {
+      const updatedCart = prev.map(item =>
+        item.id === productId
+          ? { ...item, quantity: Math.max(1, quantity) }
+          : item
+      );
+      localStorage.setItem('cart', JSON.stringify(updatedCart));
+      return updatedCart;
+    });
+  };
+
+  const syncCartToOrder = () => {
+    // Sync cart items to order quantities
+    const newOrderQuantities: Record<number, number> = {};
+    cart.forEach(item => {
+      newOrderQuantities[item.id] = item.quantity;
+    });
+    setOrderQuantities(newOrderQuantities);
+    
+    // Scroll to order section
+    document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const clearCart = () => {
+    setCart([]);
+    localStorage.removeItem('cart');
+  };
+
   const updateQuantity = (productId: number, quantity: number) => {
+    const newQuantity = Math.max(0, quantity);
+    
+    // Update order quantities
     setOrderQuantities(prev => ({
       ...prev,
-      [productId]: Math.max(0, quantity),
+      [productId]: newQuantity,
     }));
+    
+    // Sync back to cart
+    const product = products.find(p => p.id === productId);
+    if (product && newQuantity > 0) {
+      setCart(prev => {
+        const existingItem = prev.find(item => item.id === productId);
+        if (existingItem) {
+          return prev.map(item =>
+            item.id === productId
+              ? { ...item, quantity: newQuantity }
+              : item
+          );
+        } else {
+          return [...prev, {
+            id: product.id,
+            name: product.name,
+            price: parseFloat(product.price),
+            quantity: newQuantity,
+            image: product.image,
+          }];
+        }
+      });
+    } else if (newQuantity === 0) {
+      // Remove from cart if quantity is 0
+      setCart(prev => prev.filter(item => item.id !== productId));
+    }
   };
 
   const getOrderItems = () => {
@@ -267,7 +377,8 @@ export default function Home() {
                 </Button>
                 <Button 
                   variant="outline"
-                  className="border-2 border-white text-white hover:bg-white hover:text-primary px-8 py-4 text-lg font-semibold"
+                  onClick={() => scrollToSection('products')}
+                  className="border-2 border-white bg-white/10 text-white hover:bg-white hover:text-primary px-8 py-4 text-lg font-semibold transform hover:scale-105 transition-all duration-200"
                 >
                   Learn More
                 </Button>
@@ -275,7 +386,7 @@ export default function Home() {
             </div>
             <div className="relative">
               <img 
-                src="https://pixabay.com/get/g367cef00a7f098242266f2f066f41a4e558395aac0656fea3e1aeabf4a8d3c10d2edc16626d0c5ee0a5979b9329a05c6e2801e93d7761db61d7025ad30c969a0_1280.jpg" 
+                src="https://i.postimg.cc/cLZtLg16/Gemini-Generated-Image-wv9jaswv9jaswv9j.png" 
                 alt="Cokha energy bars with ancient superfoods" 
                 className="rounded-2xl shadow-2xl"
               />
@@ -320,21 +431,17 @@ export default function Home() {
           </div>
           <div className="max-w-4xl mx-auto">
             <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl">
-              <div className="aspect-video bg-gray-900 flex items-center justify-center relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&h=675" 
-                  alt="Energy bar production process" 
-                  className="w-full h-full object-cover opacity-50"
+                <div className="aspect-video bg-gray-900 flex items-center justify-center relative">
+                <video 
+                  src="/src/components/Assets/20250721_111849_0001.mp4" 
+                  controls
+                  // poster="https://images.unsplash.com/photo-1606787366850-de6330128bfc?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&h=1080"
+                  className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Button className="bg-accent hover:bg-orange-500 text-white rounded-full p-6 transform hover:scale-110 transition-all shadow-lg">
-                    <Play className="h-8 w-8 ml-1" />
-                  </Button>
-                </div>
                 <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded">
-                  Watch: From Ancient Wisdom to Modern Nutrition (3:42)
+
                 </div>
-              </div>
+                </div>
             </div>
           </div>
         </div>
@@ -395,183 +502,20 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Order Form Section */}
-      <section id="order" className="py-20 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-primary mb-4">Place Your Order</h2>
-            <p className="text-xl text-gray-600">Choose your favorite energy bars and we'll deliver fresh nutrition to your doorstep</p>
+      {/* About Us Section */}
+      <section id="aboutus" className="py-20 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center gap-12">
+          <div className="flex-1 text-left md:text-justify">
+            <h2 className="text-4xl font-bold text-primary mb-4">About Us</h2>
+            <p className="text-xl text-gray-600 mb-6">Cokha Energy Foods is dedicated to crafting premium energy bars using ancient Indian superfoods and rich cocoa. Our mission is to fuel your mind, elevate your mood, and energize your life naturally. We believe in honest nutrition, authentic flavors, and wellness for everyone.</p>
+            <div className="mt-4 text-lg text-gray-700">
+              <p>Founded by Rajsic Foods Pvt Ltd, our team is passionate about blending tradition with modern science to create snacks that truly make a difference. Every bar is meticulously crafted for specific benefits—focus, energy, mood, and more.</p>
+              <p className="mt-4">Join us on your wellness journey and experience the power of ancient superfoods in every bite!</p>
+            </div>
           </div>
-
-          <Form {...orderForm}>
-            <form onSubmit={orderForm.handleSubmit(handleOrderSubmit)} className="space-y-8">
-              <Card className="bg-neutral">
-                <CardHeader>
-                  <CardTitle className="text-2xl text-primary">Select Products</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {products.map((product) => (
-                      <div key={product.id} className="flex items-center justify-between p-4 bg-white rounded-lg">
-                        <div>
-                          <h4 className="font-semibold text-primary">{product.name}</h4>
-                          <p className="text-gray-600 text-sm">{formatPrice(parseFloat(product.price))} each</p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => updateQuantity(product.id, (orderQuantities[product.id] || 0) - 1)}
-                          >
-                            -
-                          </Button>
-                          <span className="w-12 text-center">{orderQuantities[product.id] || 0}</span>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => updateQuantity(product.id, (orderQuantities[product.id] || 0) + 1)}
-                          >
-                            +
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-neutral">
-                <CardHeader>
-                  <CardTitle className="text-2xl text-primary">Delivery Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <FormField
-                      control={orderForm.control}
-                      name="customerName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Full Name *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter your full name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={orderForm.control}
-                      name="customerPhone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone Number *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="+91 98765 43210" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <FormField
-                    control={orderForm.control}
-                    name="customerEmail"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email Address *</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="your.email@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={orderForm.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Delivery Address *</FormLabel>
-                        <FormControl>
-                          <Textarea placeholder="Enter your complete delivery address" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <FormField
-                      control={orderForm.control}
-                      name="city"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>City *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="City" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={orderForm.control}
-                      name="pincode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>PIN Code *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="110001" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Order Summary */}
-              <Card className="bg-white border">
-                <CardHeader>
-                  <CardTitle className="text-xl text-primary">Order Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Subtotal:</span>
-                      <span>{formatPrice(calculateOrderTotal().subtotal)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Delivery Charges:</span>
-                      <span>{formatPrice(50)}</span>
-                    </div>
-                    <Separator className="my-3" />
-                    <div className="flex justify-between text-xl font-semibold text-primary">
-                      <span>Total Amount:</span>
-                      <span>{formatPrice(calculateOrderTotal().total)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Button
-                type="submit"
-                disabled={createOrderMutation.isPending}
-                className="w-full bg-accent text-white hover:bg-orange-500 py-4 text-lg font-semibold transform hover:scale-105"
-              >
-                {createOrderMutation.isPending ? "Processing..." : "Proceed to Payment"}
-              </Button>
-              
-              <p className="text-gray-500 text-sm text-center">
-                Secure payment powered by Stripe. We accept all major credit cards and UPI.
-              </p>
-            </form>
-          </Form>
+          <div className="flex-1 flex justify-center">
+            <img src="/src/components/Assets/logo.jpg" />
+          </div>
         </div>
       </section>
 
@@ -817,7 +761,7 @@ export default function Home() {
             <div className="lg:col-span-2">
               <div className="text-3xl font-bold text-accent mb-4">Cokha by Rajsic Foods</div>
               <p className="text-gray-300 mb-6 max-w-md">
-                Crafting premium energy bars with ancient Indian superfoods and rich cocoa to fuel your mind, elevate your mood, and energize your life naturally.
+               Crafting premium energy bars with ancient Indian superfoods and rich cocoa to fuel your mind, elevate your mood, and energize your life naturally.
               </p>
             </div>
 
@@ -853,6 +797,108 @@ export default function Home() {
       </footer>
 
       <FloatingButtons onBuyNowClick={scrollToOrder} />
+      
+      {/* Shopping Cart Modal */}
+      <Sheet open={showCart} onOpenChange={setShowCart}>
+        <SheetContent side="right" className="w-full sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle className="text-primary">Shopping Cart ({calculateItemCount(cart)} items)</SheetTitle>
+            <SheetDescription>
+              Review your selected items before proceeding to checkout
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="mt-6 flex-1 overflow-y-auto">
+            {cart.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="text-6xl text-gray-300 mb-4">🛒</div>
+                <h3 className="text-lg font-medium text-gray-600 mb-2">Your cart is empty</h3>
+                <p className="text-gray-500 mb-4">Add some delicious energy bars to get started!</p>
+                <Button onClick={() => setShowCart(false)} className="bg-primary hover:bg-green-800">
+                  Continue Shopping
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-4">
+                  {cart.map((item) => (
+                    <div key={item.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                      <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-md" />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
+                        <p className="text-sm text-gray-600">{formatPrice(item.price)} each</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => removeFromCart(item.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-6 space-y-4">
+                  <Separator />
+                  <div className="flex justify-between items-center text-lg font-semibold">
+                    <span>Total: {formatPrice(calculateCartTotal(cart))}</span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Button
+                      onClick={() => {
+                        if (!user) {
+                          toast({
+                            title: "Login Required",
+                            description: "Please log in to continue with your order.",
+                            variant: "destructive",
+                          });
+                          setShowCart(false);
+                          setLocation("/login");
+                          return;
+                        }
+                        // Prepare order object and save to localStorage before redirecting
+                        // Do not set pendingOrder here; let the backend order creation handle it so _id is always present
+                        setShowCart(false);
+                        setLocation("/delivery");
+                      }}
+                      className="w-full bg-primary hover:bg-green-800"
+                    >
+                      Proceed to Order Form
+                    </Button>
+                    <Button
+                      onClick={clearCart}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Clear Cart
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
