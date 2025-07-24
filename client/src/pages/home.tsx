@@ -188,7 +188,7 @@ export default function Home() {
         updatedCart = [...prev, {
           id: product.id,
           name: product.name,
-          price: parseFloat(product.price),
+          price: product.price,
           quantity: 1,
           image: product.image,
         }];
@@ -267,7 +267,7 @@ export default function Home() {
           return [...prev, {
             id: product.id,
             name: product.name,
-            price: parseFloat(product.price),
+            price: product.price,
             quantity: newQuantity,
             image: product.image,
           }];
@@ -287,7 +287,7 @@ export default function Home() {
         return product ? {
           id: product.id,
           name: product.name,
-          price: parseFloat(product.price),
+          price: product.price,
           quantity,
         } : null;
       })
@@ -877,7 +877,37 @@ export default function Home() {
                           return;
                         }
                         // Prepare order object and save to localStorage before redirecting
-                        // Do not set pendingOrder here; let the backend order creation handle it so _id is always present
+                        // Always save the full cart to pendingOrder.products and recalculate totals
+                        const cartRaw = localStorage.getItem('cart');
+                        const cartItems = cartRaw ? JSON.parse(cartRaw) : cart;
+                        if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+                          toast({
+                            title: "Cart Empty",
+                            description: "Please add products to your cart before proceeding.",
+                            variant: "destructive",
+                          });
+                          setShowCart(false);
+                          setLocation("/");
+                          return;
+                        }
+                        // Calculate totals
+                        const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                        const deliveryCharges = 50;
+                        const total = subtotal + deliveryCharges;
+                        // Merge or create pendingOrder
+                        let pendingOrder = {};
+                        try {
+                          const pendingOrderRaw = localStorage.getItem('pendingOrder');
+                          pendingOrder = pendingOrderRaw ? JSON.parse(pendingOrderRaw) : {};
+                        } catch {}
+                        const newPendingOrder = {
+                          ...pendingOrder,
+                          products: cartItems,
+                          subtotal,
+                          deliveryCharges,
+                          total,
+                        };
+                        localStorage.setItem('pendingOrder', JSON.stringify(newPendingOrder));
                         setShowCart(false);
                         setLocation("/delivery");
                       }}

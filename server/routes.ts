@@ -8,6 +8,8 @@ import { storage } from "./storage.mongodb";
 import { insertOrderSchema, insertContactSchema, insertNewsletterSchema, insertUserSchema } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { generateJWT, authenticateJWT } from "./jwt";
+import crypto from "crypto";
+import cors from "cors";
 
 if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
   throw new Error('Missing required Razorpay credentials: RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET');
@@ -19,6 +21,22 @@ const razorpay = new Razorpay({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Debug endpoint to list all orders in the DB
+  // Debug endpoint to list all orders for a test user (replace with actual userId if needed)
+  app.get("/api/debug/orders", async (req, res) => {
+    try {
+      // Try to fetch all orders for userId = "1" (or change as needed)
+      const testUserId = "1";
+      const allOrders = await storage.getOrdersByUserId?.(testUserId) || [];
+      res.json({ orders: allOrders });
+    } catch (error) {
+      console.error("[DEBUG /api/debug/orders] Error fetching orders:", error);
+      res.status(500).json({ message: "Error fetching orders: " + (error instanceof Error ? error.message : JSON.stringify(error)) });
+    }
+  });
+  // Enable CORS middleware
+  app.use(cors());
+
   // Get all products
   app.get("/api/products", async (req, res) => {
     try {
@@ -46,109 +64,178 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create Razorpay order
   app.post("/api/create-order", async (req, res) => {
     try {
-      const { amount, currency = "INR" } = req.body;
+        const { amount, currency = "INR" } = req.body;
 
-      if (!amount || amount <= 0) {
-        console.error("[Razorpay] Invalid amount:", amount);
-        return res.status(400).json({ message: "Invalid amount" });
-      }
+        if (!amount || amount <= 0) {
+            console.error("[Razorpay] Invalid amount:", amount);
+            return res.status(400).json({ message: "Invalid amount" });
+        }
 
-      if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-        console.error("[Razorpay] Missing credentials:", process.env.RAZORPAY_KEY_ID, process.env.RAZORPAY_KEY_SECRET);
-        return res.status(500).json({ message: "Missing Razorpay credentials" });
-      }
+        const options = {
+            amount: Math.round(amount * 100), // Convert to paise
+            currency: currency,
+            receipt: `receipt_${Date.now()}`,
+        };
 
-      const options = {
-        amount: Math.round(amount * 100), // Convert to paise
-        currency: currency,
-        receipt: `receipt_${Date.now()}`,
-      };
+        try {
+            const order = await razorpay.orders.create(options);
 
-      try {
-        const order = await razorpay.orders.create(options);
-        res.json({ 
-          orderId: order.id,
-          amount: order.amount,
-          currency: order.currency,
-          key: process.env.RAZORPAY_KEY_ID
-        });
-      } catch (razorpayError: any) {
-        console.error("[Razorpay] API error:", razorpayError);
-        res.status(500).json({ message: "Error creating Razorpay order: " + razorpayError.message });
-      }
+            // Debug log for created Razorpay order
+            console.log("[DEBUG /api/create-order] Created Razorpay order:", order);
+
+            // Fix for Razorpay order creation response
+            res.json({ 
+                orderId: order.id, // Ensure Razorpay order.id is stored as a string
+                amount: order.amount,
+                currency: order.currency,
+                key: process.env.RAZORPAY_KEY_ID
+            });
+        } catch (razorpayError: any) {
+            console.error("[Razorpay] API error:", razorpayError);
+            res.status(500).json({ message: "Error creating Razorpay order: " + razorpayError.message });
+        }
     } catch (error: any) {
-      console.error("[Razorpay] Server error:", error);
-      res.status(500).json({ message: "Error creating Razorpay order: " + error.message });
+        console.error("[Razorpay] Server error:", error);
+        res.status(500).json({ message: "Error creating Razorpay order: " + error.message });
     }
   });
 
   // Create order (linked to user)
   app.post("/api/orders", authenticateJWT, async (req, res) => {
     try {
+      // Extract user ID from JWT
       // @ts-ignore
       const userId = req.user.id;
+
+      // Validate and parse order data
       const orderData = insertOrderSchema.parse({ ...req.body, userId });
+
+      // Create order in storage
       const order = await storage.createOrder(orderData);
-      console.log('[DEBUG /api/orders] Created order:', order); // Debug log
+
+      // Debug log for created order
+      console.log("[DEBUG /api/orders] Created order:", order);
+
+      // Check if order creation was successful
+      if (!order || !order.id) {
+        throw new Error("Failed to create order. Please try again.");
+      }
+
+      // Debug log for order ID
+      console.log("[DEBUG /api/orders] Order ID:", order.id);
+
+      // Return created order
       res.json(order);
     } catch (error: any) {
+      console.error("[Create Order] ERROR:", error.message);
       res.status(400).json({ message: "Error creating order: " + error.message });
     }
   });
 
-  // Verify Razorpay payment
+  // Improved error handling and validation for payment verification
   app.post("/api/verify-payment", async (req, res) => {
     try {
-      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-      // Debug log all received values
-      console.log("[Razorpay Verification] Received:", {
-        razorpay_order_id,
-        razorpay_payment_id,
-        razorpay_signature,
-        secret: process.env.RAZORPAY_KEY_SECRET
-      });
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderData } = req.body;
 
-      // Use import for crypto in ESM/TypeScript
-      // Use require for CommonJS, import for ESM
-      let crypto;
-      try {
-        crypto = require('crypto');
-      } catch (e) {
-        crypto = (await import('crypto')).default;
-      }
-      const secret = process.env.RAZORPAY_KEY_SECRET || '';
-      const expectedSignature = crypto.createHmac("sha256", secret)
-        .update(razorpay_order_id + "|" + razorpay_payment_id)
-        .digest("hex");
-      console.log("[Razorpay Verification] Expected Signature:", expectedSignature);
+        // Debug logs for payment verification
+        console.log("[DEBUG /api/verify-payment] Verifying payment for Order ID:", razorpay_order_id);
+        console.log("[DEBUG /api/verify-payment] Payment ID:", razorpay_payment_id);
+        console.log("[DEBUG /api/verify-payment] Signature:", razorpay_signature);
 
-      if (expectedSignature === razorpay_signature) {
-        console.log("[Razorpay Verification] SUCCESS: Payment verified");
-        res.json({ success: true, message: "Payment verified successfully" });
-      } else {
-        console.log("[Razorpay Verification] FAILURE: Invalid signature", { expectedSignature, razorpay_signature });
-        res.status(400).json({ success: false, message: "Invalid payment signature" });
-      }
+        // Validate input
+        if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+            console.error("[ERROR /api/verify-payment] Missing payment verification details.");
+            return res.status(400).json({ message: "Missing payment verification details." });
+        }
+
+        // Verify payment with Razorpay
+        const secret = process.env.RAZORPAY_KEY_SECRET || '';
+        const expectedSignature = crypto.createHmac("sha256", secret)
+            .update(razorpay_order_id + "|" + razorpay_payment_id)
+            .digest("hex");
+
+        if (expectedSignature === razorpay_signature) {
+            // Debug log for successful verification
+            console.log("[DEBUG /api/verify-payment] Payment verified successfully for Order ID:", razorpay_order_id);
+
+            // Log received orderData
+            console.log("[DEBUG /api/verify-payment] Received orderData:", orderData);
+
+            // Create order in DB if orderData is provided
+            let createdOrder = null;
+            if (orderData) {
+                try {
+                    // Validate and parse order data
+                    const parsedOrderData = insertOrderSchema.parse(orderData);
+                    console.log("[DEBUG /api/verify-payment] Parsed orderData:", parsedOrderData);
+                    createdOrder = await storage.createOrder(parsedOrderData);
+                    console.log("[DEBUG /api/verify-payment] Created order:", createdOrder);
+                } catch (orderError) {
+                    console.error("[ERROR /api/verify-payment] Error creating order:", orderError);
+                    // Enhanced error logging for order creation
+                    if (orderError instanceof Error) {
+                        console.error("[ORDER CREATION ERROR STACK]", orderError.stack);
+                    }
+                    return res.status(400).json({ success: false, message: "Payment verified but failed to create order: " + (orderError instanceof Error ? orderError.message : JSON.stringify(orderError)), orderData });
+                }
+            }
+
+            // Respond with both payment and order info
+            res.json({
+                success: true,
+                message: "Payment verified successfully",
+                razorpayOrderId: razorpay_order_id,
+                orderId: createdOrder?._id || createdOrder?.id || null,
+                orderCreationDebug: createdOrder,
+                receivedOrderData: orderData
+            });
+        } else {
+            console.error("[ERROR /api/verify-payment] Invalid payment signature", { expectedSignature, razorpay_signature });
+            res.status(400).json({ success: false, message: "Invalid payment signature" });
+        }
     } catch (error: any) {
-      console.log("[Razorpay Verification] ERROR:", error);
-      res.status(500).json({ success: false, message: "Error verifying payment: " + error.message });
+        console.error("[ERROR /api/verify-payment] Error verifying payment:", error);
+        if (error instanceof Error) {
+            console.error("[PAYMENT VERIFICATION ERROR STACK]", error.stack);
+        }
+        res.status(500).json({ success: false, message: "Error verifying payment: " + (error instanceof Error ? error.message : JSON.stringify(error)) });
     }
   });
 
   // Update order with payment info
   app.patch("/api/orders/:id/payment", async (req, res) => {
     try {
-      const orderId = parseInt(req.params.id);
-      const { razorpayPaymentId, status } = req.body;
-      
-      const order = await storage.updateOrderPayment(orderId, razorpayPaymentId, status);
-      if (!order) {
-        return res.status(404).json({ message: "Order not found" });
-      }
-      
-      res.json(order);
-    } catch (error: any) {
-      res.status(400).json({ message: "Error updating order: " + error.message });
+        const orderId = req.params.id; // Use string directly without parseInt
+        const { razorpayPaymentId, status } = req.body;
+
+        // Validate input
+        if (!razorpayPaymentId || !status) {
+            console.error("[ERROR /api/orders/:id/payment] Missing payment details.");
+            return res.status(400).json({ message: "Missing payment details." });
+        }
+
+        // Debug log for payment update
+        console.log("[DEBUG /api/orders/:id/payment] Updating payment for Order ID:", orderId);
+        console.log("[DEBUG /api/orders/:id/payment] Payment ID:", razorpayPaymentId);
+        console.log("[DEBUG /api/orders/:id/payment] Status:", status);
+
+        // Pass string orderId directly to storage
+        const updatedOrder = await storage.updateOrderPayment(orderId, razorpayPaymentId, status);
+
+        // Check if order update was successful
+        if (!updatedOrder) {
+            console.error("[ERROR /api/orders/:id/payment] Failed to update payment for Order ID:", orderId);
+            return res.status(404).json({ message: "Order not found or failed to update payment details." });
+        }
+
+        // Debug log for updated order
+        console.log("[DEBUG /api/orders/:id/payment] Payment updated successfully for Order ID:", orderId);
+
+        // Return updated order
+        res.json({ success: true, message: "Payment updated successfully." });
+    } catch (error: unknown) {
+        console.error("[ERROR /api/orders/:id/payment] Error updating order payment:", error instanceof Error ? error.message : error);
+        res.status(500).json({ message: "Error updating order payment: " + (error instanceof Error ? error.message : error) });
     }
   });
 
@@ -233,4 +320,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   return httpServer;
+}
+
+// Initialize collections with sample data
+export async function initializeCollections() {
+  try {
+    // Insert sample order
+    await storage.createOrder({
+      userId: "sampleUserId",
+      customerName: "John Doe",
+      customerEmail: "john.doe@example.com",
+      customerPhone: "1234567890",
+      address: "123 Main St",
+      city: "Sample City",
+      pincode: "123456",
+      items: [{ productId: "sampleProductId", quantity: 2 }],
+      subtotal: 200,
+      deliveryCharges: 20,
+      total: 220,
+    });
+
+    // Insert sample contact
+    await storage.createContact({
+      firstName: "Jane",
+      lastName: "Doe",
+      email: "jane.doe@example.com",
+      subject: "Inquiry",
+      message: "I have a question about your products.",
+    });
+
+    // Insert sample newsletter subscription
+    await storage.subscribeNewsletter({
+      email: "subscriber@example.com",
+    });
+
+    console.log("Collections initialized with sample data.");
+  } catch (error) {
+    console.error("Error initializing collections:", error);
+  }
 }

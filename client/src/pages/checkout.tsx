@@ -94,11 +94,21 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
       try {
         // Remove any id/_id from orderData before creating a new order
         const { id, _id, ...orderDataWithoutId } = orderData || {};
-        mongoOrderRes = await apiRequest("POST", "/api/orders", {
+        // Fix: Ensure items array is correctly mapped to productId and quantity
+        const items = Array.isArray(orderDataWithoutId.products)
+          ? orderDataWithoutId.products.map((p: any) => ({
+              productId: p.id?.toString() || p.productId?.toString() || '',
+              quantity: p.quantity
+            }))
+          : [];
+        const orderPayload = {
           ...orderDataWithoutId,
+          items,
           razorpayOrderId: razorpayOrder.orderId,
           total: amount,
-        });
+        };
+        console.log("[DEBUG] Creating order with payload:", orderPayload);
+        mongoOrderRes = await apiRequest("POST", "/api/orders", orderPayload);
         mongoOrder = await mongoOrderRes.json();
         // Ensure the order object has a valid ID before saving
         if (mongoOrder && (mongoOrder._id || mongoOrder.id || mongoOrder.orderId)) {
@@ -138,27 +148,43 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
               title: "Payment Response",
               description: `Payment ID: ${response.razorpay_payment_id}`,
             });
+            // Get pending order from localStorage to send as orderData
+            const pendingOrderRaw = localStorage.getItem('pendingOrder');
+            const pendingOrder = pendingOrderRaw ? JSON.parse(pendingOrderRaw) : {};
+            // Validate products before sending
+            if (!pendingOrder.items || !Array.isArray(pendingOrder.items) || pendingOrder.items.length === 0) {
+              toast({
+                title: "Order Error",
+                description: "Your cart is empty or order data is invalid. Please start again.",
+                variant: "destructive",
+              });
+              setIsProcessing(false);
+              setLocation('/');
+              return;
+            }
+            console.log('[CHECKOUT] pendingOrder before verify-payment:', pendingOrder);
             const verificationResponseRaw = await apiRequest("POST", "/api/verify-payment", {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
+              razorpay_signature: response.razorpay_signature,
+              orderData: pendingOrder
             });
             const verificationResponse = await verificationResponseRaw.json();
 
             if (verificationResponse.success) {
-              // Use the MongoDB order object for PATCH
-              const pendingOrderRaw = localStorage.getItem('pendingOrder');
-              const pendingOrder = pendingOrderRaw ? JSON.parse(pendingOrderRaw) : {};
-              console.log("PATCH orderId:", pendingOrder?.patchOrderId, pendingOrder);
-              const patchOrderId = pendingOrder?.patchOrderId || pendingOrder?._id || pendingOrder?.id || pendingOrder?.orderId;
+              // Use the orderId returned from verificationResponse
+              const patchOrderId = verificationResponse.orderId;
               if (patchOrderId) {
                 // Store order as placed in localStorage for user reference
                 const placedOrder = {
                   ...pendingOrder,
+                  _id: patchOrderId,
                   razorpayPaymentId: response.razorpay_payment_id,
                   status: 'completed',
                   paymentSuccess: true
                 };
+                // Update pendingOrder with new _id/orderId for future reference
+                localStorage.setItem('pendingOrder', JSON.stringify({ ...pendingOrder, _id: patchOrderId }));
                 localStorage.setItem('placedOrder', JSON.stringify(placedOrder));
                 // PATCH the order status in backend
                 const patchRes = await apiRequest("PATCH", `/api/orders/${patchOrderId}/payment`, {
@@ -271,12 +297,12 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
             </div>
           )}
           {/* Products */}
-          {orderData && orderData.items && (
+          {orderData && orderData.products && (
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-2">Products</h3>
               <ul className="list-disc list-inside text-gray-700">
-                {JSON.parse(orderData.items).map((item: any, idx: number) => (
-                  <li key={idx}>{item.name} x {item.quantity} ({item.price} each)</li>
+                {orderData.products.map((item: any, idx: number) => (
+                  <li key={idx}>{item.name} x {item.quantity} (₹{item.price} each)</li>
                 ))}
               </ul>
             </div>
@@ -351,7 +377,6 @@ export default function Checkout() {
     }
   }, []);
 
-  // Payment handler from previous logic
   const handlePayment = async () => {
     console.log("handlePayment called", { orderId, amount, orderData, error });
     setIsProcessing(true);
@@ -437,14 +462,52 @@ export default function Checkout() {
               title: "Payment Response",
               description: `Payment ID: ${response.razorpay_payment_id}`,
             });
+            // Always send orderData to backend for verification and order creation
+            const pendingOrderRaw = localStorage.getItem('pendingOrder');
+            const pendingOrder = pendingOrderRaw ? JSON.parse(pendingOrderRaw) : {};
+            // Get userId from localStorage (if user is logged in)
+            let userId = undefined;
+            try {
+              const userRaw = localStorage.getItem('user');
+              if (userRaw) {
+                const user = JSON.parse(userRaw);
+                userId = user.id || user._id || user.userId;
+              }
+            } catch {}
+            // Transform products to items as required by backend
+            const items = Array.isArray(pendingOrder.products)
+              ? pendingOrder.products.map((p: any) => ({
+                  productId: p.id?.toString() || p.productId?.toString() || '',
+                  quantity: p.quantity
+                }))
+              : [];
+            // Flatten deliveryInfo
+            const delivery = pendingOrder.deliveryInfo || {};
+            const orderDataForBackend = {
+              userId: userId || '',
+              customerName: delivery.customerName || '',
+              customerEmail: delivery.customerEmail || '',
+              customerPhone: delivery.customerPhone || '',
+              address: delivery.address || '',
+              city: delivery.city || '',
+              pincode: delivery.pincode || '',
+              items,
+              subtotal: pendingOrder.subtotal,
+              deliveryCharges: pendingOrder.deliveryCharges,
+              total: pendingOrder.total,
+            };
+            console.log('[CHECKOUT] orderDataForBackend before verify-payment:', orderDataForBackend);
             const verificationResponseRaw = await apiRequest("POST", "/api/verify-payment", {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
+              razorpay_signature: response.razorpay_signature,
+              orderData: orderDataForBackend
             });
             const verificationResponse = await verificationResponseRaw.json();
 
             if (verificationResponse.success) {
+              // Update orderData._id with the returned orderId before checking
+              orderData._id = verificationResponse.orderId;
               if (!orderData._id) {
                 toast({
                   title: "Order Error",

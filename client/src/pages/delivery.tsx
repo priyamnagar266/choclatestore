@@ -62,10 +62,11 @@ export default function DeliveryInfo() {
       setIsProcessing(false);
       return;
     }
-    // Accept _id, orderId, id, or products for valid order
-    if (!pendingOrder._id && !pendingOrder.orderId && !pendingOrder.id && !pendingOrder.products) {
-      setError("Invalid order data. Please start again from the homepage.");
+    // Accept only if products is a non-empty array
+    if (!pendingOrder.products || !Array.isArray(pendingOrder.products) || pendingOrder.products.length === 0) {
+      setError("Your cart is empty or order data is invalid. Please start again from the homepage.");
       setIsProcessing(false);
+      setTimeout(() => setLocation("/"), 2000);
       return;
     }
 
