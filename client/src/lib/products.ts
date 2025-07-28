@@ -20,8 +20,11 @@ export const calculateItemCount = (items: CartItem[]): number => {
   return items.reduce((count, item) => count + item.quantity, 0);
 };
 
-export const formatPrice = (price: number): string => {
-  return `₹${price.toFixed(0)}`;
+// ...existing code...
+export const formatPrice = (price: number | string | undefined | null): string => {
+  const num = typeof price === "number" ? price : Number(price);
+  if (isNaN(num)) return "₹0";
+  return `₹${num.toFixed(0)}`;
 };
 
 export const getBenefitBadgeColor = (benefit: string): string => {
