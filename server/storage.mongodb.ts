@@ -17,6 +17,10 @@ export const storage = {
     return result || undefined;
   },
   async createOrder(order: any): Promise<Order> {
+    // Ensure createdAt is always set (frontend may omit)
+    if (!order.createdAt) {
+      order.createdAt = new Date();
+    }
     const result = await ordersCollection.insertOne(order);
     console.log('[DEBUG createOrder] Inserted order:', order); // Debug log
     console.log('[DEBUG createOrder] Inserted ID:', result.insertedId); // Debug log
@@ -38,7 +42,16 @@ export const storage = {
     return result || undefined;
   },
   async getOrdersByUserId(userId: string): Promise<Order[]> {
-    return await ordersCollection.find({ userId: new ObjectId(userId) } as any).toArray();
+    // Support orders stored with userId as raw string or ObjectId
+    let objectId: ObjectId | null = null;
+    try {
+      objectId = new ObjectId(userId);
+    } catch {}
+    const query: any = objectId ? { $or: [ { userId }, { userId: objectId } ] } : { userId };
+    return await ordersCollection.find(query).sort({ createdAt: -1 }).toArray();
+  },
+  async getOrdersByCustomerEmail(email: string): Promise<Order[]> {
+    return await ordersCollection.find({ customerEmail: email }).sort({ createdAt: -1 }).toArray();
   },
   async createContact(contact: any): Promise<Contact> {
     const result = await contactsCollection.insertOne(contact);

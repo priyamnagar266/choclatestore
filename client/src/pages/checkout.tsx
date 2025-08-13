@@ -101,8 +101,17 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
               quantity: p.quantity
             }))
           : [];
+        let authUserId: string | undefined;
+        try {
+          const authUserRaw = localStorage.getItem('authUser');
+            if (authUserRaw) {
+              const au = JSON.parse(authUserRaw);
+              authUserId = au?.id;
+            }
+        } catch {}
         const orderPayload = {
           ...orderDataWithoutId,
+          userId: authUserId || orderDataWithoutId.userId || '',
           items,
           razorpayOrderId: razorpayOrder.orderId,
           total: amount,
@@ -203,8 +212,8 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
                   localStorage.removeItem('razorpay_order_id');
                   localStorage.removeItem('razorpay_signature');
                   setTimeout(() => {
-                    setLocation('/');
-                  }, 2000);
+                    setLocation('/orders');
+                  }, 1500);
                 } else {
                   toast({
                     title: "Order Placed!",
@@ -465,13 +474,13 @@ export default function Checkout() {
             // Always send orderData to backend for verification and order creation
             const pendingOrderRaw = localStorage.getItem('pendingOrder');
             const pendingOrder = pendingOrderRaw ? JSON.parse(pendingOrderRaw) : {};
-            // Get userId from localStorage (if user is logged in)
-            let userId = undefined;
+            // Derive userId strictly from authUser (single source of truth)
+            let userId: string | undefined;
             try {
-              const userRaw = localStorage.getItem('user');
-              if (userRaw) {
-                const user = JSON.parse(userRaw);
-                userId = user.id || user._id || user.userId;
+              const authUserRaw = localStorage.getItem('authUser');
+              if (authUserRaw) {
+                const au = JSON.parse(authUserRaw);
+                userId = au?.id || au?._id;
               }
             } catch {}
             // Transform products to items as required by backend
@@ -483,6 +492,7 @@ export default function Checkout() {
               : [];
             // Flatten deliveryInfo
             const delivery = pendingOrder.deliveryInfo || {};
+            // userId already derived above; no need to derive again
             const orderDataForBackend = {
               userId: userId || '',
               customerName: delivery.customerName || '',
@@ -525,8 +535,8 @@ export default function Checkout() {
                 description: "Thank you for your purchase! Your order has been confirmed.",
               });
               setTimeout(() => {
-                setLocation('/');
-              }, 2000);
+                setLocation('/orders');
+              }, 1500);
             } else {
               throw new Error("Payment verification failed");
             }

@@ -35,7 +35,7 @@ export default function ProductCard({ product, onAddToCart }: ProductCardProps) 
         
         <div className="flex justify-between items-center">
           <span className="text-2xl font-bold text-secondary">
-            {formatPrice(parseFloat(product.price))}
+            {formatPrice((product as any).price)}
           </span>
           <Button
             onClick={() => onAddToCart(product)}

@@ -12,9 +12,17 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  let authHeaders: Record<string,string> = {};
+  try {
+    const raw = localStorage.getItem('authUser');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.token) authHeaders['Authorization'] = `Bearer ${parsed.token}`;
+    }
+  } catch {}
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers: data ? { "Content-Type": "application/json", ...authHeaders } : { ...authHeaders },
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });

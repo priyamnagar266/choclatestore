@@ -5,6 +5,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import Razorpay from "razorpay";
 import { storage } from "./storage.mongodb";
+import { db } from './db';
 import { insertOrderSchema, insertContactSchema, insertNewsletterSchema, insertUserSchema } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { generateJWT, authenticateJWT } from "./jwt";
@@ -108,7 +109,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
 
       // Validate and parse order data
-      const orderData = insertOrderSchema.parse({ ...req.body, userId });
+  const incoming = { ...req.body };
+  if (!incoming.userId || incoming.userId === '') incoming.userId = userId;
+  const orderData = insertOrderSchema.parse(incoming);
 
       // Create order in storage
       const order = await storage.createOrder(orderData);
@@ -154,7 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .update(razorpay_order_id + "|" + razorpay_payment_id)
             .digest("hex");
 
-        if (expectedSignature === razorpay_signature) {
+  if (expectedSignature === razorpay_signature) {
             // Debug log for successful verification
             console.log("[DEBUG /api/verify-payment] Payment verified successfully for Order ID:", razorpay_order_id);
 
@@ -163,10 +166,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             // Create order in DB if orderData is provided
             let createdOrder = null;
-            if (orderData) {
+      if (orderData) {
                 try {
-                    // Validate and parse order data
-                    const parsedOrderData = insertOrderSchema.parse(orderData);
+          // Enrich missing userId by customerEmail lookup (helps legacy/unauth flows)
+          if ((!orderData.userId || orderData.userId === '') && orderData.customerEmail) {
+            try {
+              const userMatch = await storage.getUserByEmail(orderData.customerEmail);
+              if (userMatch) {
+                // @ts-ignore
+                orderData.userId = (userMatch._id?.toString?.()) || userMatch.id || orderData.userId;
+              }
+            } catch (lookupErr) {
+              console.warn('[verify-payment] user lookup failed', lookupErr);
+            }
+          }
+          // Final attempt: pull userId from Authorization header JWT if provided
+          if (!orderData.userId) {
+            try {
+              const authHeader = req.headers['authorization'];
+              if (authHeader?.startsWith('Bearer ')) {
+                const token = authHeader.split(' ')[1];
+                const jwtModule = await import('./jwt');
+                const decoded: any = await new Promise((resolve, reject) => {
+                  // use same secret via verify inside authenticateJWT indirectly
+                  const jwtLib = require('jsonwebtoken');
+                  const secret = process.env.JWT_SECRET || 'supersecretkey';
+                  jwtLib.verify(token, secret, (err: any, user: any) => err ? reject(err) : resolve(user));
+                });
+                if (decoded?.id) orderData.userId = decoded.id;
+              }
+            } catch (jwtErr) {
+              console.warn('[verify-payment] JWT decode fallback failed', jwtErr);
+            }
+          }
+          // Validate and parse order data after enrichment
+          const parsedOrderData = insertOrderSchema.parse(orderData);
                     console.log("[DEBUG /api/verify-payment] Parsed orderData:", parsedOrderData);
                     createdOrder = await storage.createOrder(parsedOrderData);
                     console.log("[DEBUG /api/verify-payment] Created order:", createdOrder);
@@ -271,8 +305,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const hashedPassword = await bcrypt.hash(userData.password, 10);
       const newUser = await storage.createUser({ ...userData, password: hashedPassword });
-      const token = generateJWT({ id: newUser.id, email: newUser.email, role: newUser.role });
-      res.json({ id: newUser.id, email: newUser.email, name: newUser.name, token });
+  const userId = (newUser as any)._id?.toString?.() || (newUser as any).id;
+  const token = generateJWT({ id: userId, email: newUser.email, role: newUser.role });
+  res.json({ id: userId, email: newUser.email, name: newUser.name, role: newUser.role, token });
     } catch (error: any) {
       res.status(400).json({ message: "Error registering user: " + error.message });
     }
@@ -290,8 +325,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!valid) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
-      const token = generateJWT({ id: user.id, email: user.email, role: user.role });
-      res.json({ id: user.id, email: user.email, name: user.name, role: user.role, token });
+  const userId = (user as any)._id?.toString?.() || (user as any).id;
+  const token = generateJWT({ id: userId, email: user.email, role: user.role });
+  res.json({ id: userId, email: user.email, name: user.name, role: user.role, token });
     } catch (error: any) {
       res.status(400).json({ message: "Error logging in: " + error.message });
     }
@@ -312,10 +348,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Protected route to get user orders
   app.get("/api/orders/me", authenticateJWT, async (req, res) => {
     // @ts-ignore
-    const userId = req.user.id;
-    // For demo, return all orders (replace with user-specific logic if needed)
-    const orders = await storage.getOrdersByUserId?.(userId) || [];
-    res.json({ orders });
+  // @ts-ignore
+  const userId = req.user.id;
+  // @ts-ignore
+  const userEmail = req.user.email;
+    try {
+      let ordersRaw = await storage.getOrdersByUserId?.(userId) || [];
+      // Fallback: some historical orders may have missing/blank userId but matching customerEmail
+      // @ts-ignore optional email fallback
+      if ((!ordersRaw || ordersRaw.length === 0) && userEmail && storage.getOrdersByCustomerEmail) {
+        // @ts-ignore
+        const emailOrders = await storage.getOrdersByCustomerEmail(userEmail);
+        if (emailOrders?.length) ordersRaw = emailOrders;
+      }
+      // Strict filtering: only include orders that belong to this userId OR legacy orders with blank userId but matching customerEmail
+      ordersRaw = ordersRaw.filter((o: any) => {
+        try {
+          if (o.userId) {
+            if (typeof o.userId === 'string' && o.userId === userId) return true;
+            if (o.userId?.toString?.() === userId) return true;
+            return false; // userId present but doesn't match
+          }
+          // Legacy: no userId stored yet, allow if email matches
+          if ((!o.userId || o.userId === '') && o.customerEmail && userEmail && o.customerEmail === userEmail) return true;
+          return false;
+        } catch { return false; }
+      });
+      // Fetch products once to map names/prices
+      let productMap: Record<string, any> = {};
+      try {
+        const allProducts = await storage.getProducts();
+        for (const p of allProducts as any[]) {
+          if (p) {
+            if (p.id !== undefined) productMap[String(p.id)] = p;
+            if (p._id) productMap[String(p._id)] = p;
+          }
+        }
+      } catch (e) {
+        console.warn('[GET /api/orders/me] Failed to load products for enrichment', e);
+      }
+      // Normalize shape: ensure id field exists (string), items array length safe, createdAt serialized
+      const orders = ordersRaw.map((o: any) => ({
+        id: o._id?.toString?.() || o.id || o.orderId,
+        orderId: o._id?.toString?.() || o.id || o.orderId,
+  userId: (typeof o.userId === 'string') ? o.userId : (o.userId?.toString?.()),
+        total: o.total,
+        subtotal: o.subtotal,
+        deliveryCharges: o.deliveryCharges,
+        status: o.status || 'pending',
+        razorpayPaymentId: o.razorpayPaymentId || null,
+        items: Array.isArray(o.items) ? o.items.map((it: any) => {
+          const prod = productMap[String(it.productId)] || productMap[String(parseInt(it.productId))];
+          return {
+            productId: it.productId,
+            quantity: it.quantity,
+            name: prod?.name,
+            price: prod?.price,
+            image: prod?.image,
+          };
+        }) : [],
+        customerName: o.customerName,
+        customerEmail: o.customerEmail,
+        customerPhone: o.customerPhone,
+        createdAt: o.createdAt ? new Date(o.createdAt).toISOString() : null,
+      }));
+      res.json({ orders });
+    } catch (e) {
+      console.error('[GET /api/orders/me] error', e);
+      res.status(500).json({ message: 'Failed to fetch orders' });
+    }
+  });
+
+  // Fetch orders by specific userId (self or admin)
+  app.get('/api/orders/user/:id', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    const authUser = req.user;
+    const targetId = req.params.id;
+    try {
+      if (authUser.id !== targetId && authUser.role !== 'admin') {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+      let ordersRaw = await storage.getOrdersByUserId?.(targetId) || [];
+      // Fetch products for enrichment
+      let productMap: Record<string, any> = {};
+      try {
+        const allProducts = await storage.getProducts();
+        for (const p of allProducts as any[]) {
+          if (p) {
+            if (p.id !== undefined) productMap[String(p.id)] = p;
+            if (p._id) productMap[String(p._id)] = p;
+          }
+        }
+      } catch (e) {
+        console.warn('[GET /api/orders/user/:id] product enrichment failed', e);
+      }
+      const orders = ordersRaw.map((o: any) => ({
+        id: o._id?.toString?.() || o.id || o.orderId,
+        orderId: o._id?.toString?.() || o.id || o.orderId,
+        userId: (typeof o.userId === 'string') ? o.userId : (o.userId?.toString?.()),
+        total: o.total,
+        subtotal: o.subtotal,
+        deliveryCharges: o.deliveryCharges,
+        status: o.status || 'pending',
+        razorpayPaymentId: o.razorpayPaymentId || null,
+        items: Array.isArray(o.items) ? o.items.map((it: any) => {
+          const prod = productMap[String(it.productId)] || productMap[String(parseInt(it.productId))];
+          return {
+            productId: it.productId,
+            quantity: it.quantity,
+            name: prod?.name,
+            price: prod?.price,
+            image: prod?.image,
+          };
+        }) : [],
+        customerName: o.customerName,
+        customerEmail: o.customerEmail,
+        customerPhone: o.customerPhone,
+        createdAt: o.createdAt ? new Date(o.createdAt).toISOString() : null,
+      }));
+      res.json({ orders });
+    } catch (e) {
+      console.error('[GET /api/orders/user/:id] error', e);
+      res.status(500).json({ message: 'Failed to fetch orders' });
+    }
+  });
+
+  // Admin maintenance: backfill userId for legacy orders missing userId using customerEmail
+  app.post('/api/admin/backfill-order-userids', async (req, res) => {
+    try {
+      const raw = await db.collection('orders').find({ $or: [ { userId: { $exists: false } }, { userId: '' } ] }).toArray();
+      let updated = 0;
+      for (const o of raw) {
+        if (o.customerEmail) {
+          const user = await storage.getUserByEmail(o.customerEmail);
+            if (user) {
+              await db.collection('orders').updateOne({ _id: o._id }, { $set: { userId: (user as any)._id?.toString?.() || (user as any).id } });
+              updated++;
+            }
+        }
+      }
+      res.json({ scanned: raw.length, updated });
+    } catch (e) {
+      console.error('[backfill-order-userids] error', e);
+      res.status(500).json({ message: 'Backfill failed' });
+    }
   });
 
   const httpServer = createServer(app);

@@ -47,9 +47,29 @@ export default function Home() {
   
   // Cart state (persisted in localStorage until payment)
   const [cart, setCart] = useState<CartItem[]>(() => {
-    const savedCart = localStorage.getItem('cart');
-    return savedCart ? JSON.parse(savedCart) : [];
+    try {
+      const authRaw = localStorage.getItem('authUser');
+      const auth = authRaw ? JSON.parse(authRaw) : null;
+      const userCartKey = auth?.id ? `cart_${auth.id}` : 'cart';
+      const savedCart = localStorage.getItem(userCartKey) || localStorage.getItem('cart');
+      return savedCart ? JSON.parse(savedCart) : [];
+    } catch { return []; }
   });
+
+  // When user changes, load that user's cart (if exists) else empty
+  useEffect(() => {
+    try {
+      const userCartKey = user?.id ? `cart_${user.id}` : 'cart';
+      const saved = localStorage.getItem(userCartKey);
+      if (saved) {
+        setCart(JSON.parse(saved));
+        localStorage.setItem('cart', saved); // sync active cart mirror
+      } else {
+        setCart([]);
+        localStorage.setItem('cart', '[]');
+      }
+    } catch {}
+  }, [user?.id]);
   const [showCart, setShowCart] = useState(false);
   
   // Order form state
@@ -193,7 +213,12 @@ export default function Home() {
           image: product.image,
         }];
       }
-      localStorage.setItem('cart', JSON.stringify(updatedCart));
+      try {
+        const key = user?.id ? `cart_${user.id}` : 'cart';
+        const serialized = JSON.stringify(updatedCart);
+        localStorage.setItem('cart', serialized); // active session cart
+        localStorage.setItem(key, serialized); // user-specific cart
+      } catch {}
       return updatedCart;
     });
     toast({
@@ -205,7 +230,12 @@ export default function Home() {
   const removeFromCart = (productId: number) => {
     setCart(prev => {
       const updatedCart = prev.filter(item => item.id !== productId);
-      localStorage.setItem('cart', JSON.stringify(updatedCart));
+      try {
+        const key = user?.id ? `cart_${user.id}` : 'cart';
+        const serialized = JSON.stringify(updatedCart);
+        localStorage.setItem('cart', serialized);
+        localStorage.setItem(key, serialized);
+      } catch {}
       return updatedCart;
     });
   };
@@ -221,7 +251,12 @@ export default function Home() {
           ? { ...item, quantity: Math.max(1, quantity) }
           : item
       );
-      localStorage.setItem('cart', JSON.stringify(updatedCart));
+      try {
+        const key = user?.id ? `cart_${user.id}` : 'cart';
+        const serialized = JSON.stringify(updatedCart);
+        localStorage.setItem('cart', serialized);
+        localStorage.setItem(key, serialized);
+      } catch {}
       return updatedCart;
     });
   };
@@ -240,7 +275,10 @@ export default function Home() {
 
   const clearCart = () => {
     setCart([]);
-    localStorage.removeItem('cart');
+    try {
+      localStorage.removeItem('cart');
+      if (user?.id) localStorage.setItem(`cart_${user.id}`, '[]');
+    } catch {}
   };
 
   const updateQuantity = (productId: number, quantity: number) => {
