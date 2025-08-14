@@ -25,3 +25,12 @@ export function authenticateJWT(req: Request, res: Response, next: NextFunction)
 export function generateJWT(payload: object) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
 }
+
+// Middleware to require admin role (chain after authenticateJWT)
+export function ensureAdminRole(req: Request, res: Response, next: NextFunction) {
+  // @ts-ignore
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  next();
+}

@@ -47,30 +47,26 @@ export default function Home() {
   
   // Cart state (persisted in localStorage until payment)
   const [cart, setCart] = useState<CartItem[]>(() => {
-    try {
-      const authRaw = localStorage.getItem('authUser');
-      const auth = authRaw ? JSON.parse(authRaw) : null;
-      const userCartKey = auth?.id ? `cart_${auth.id}` : 'cart';
-      const savedCart = localStorage.getItem(userCartKey) || localStorage.getItem('cart');
-      return savedCart ? JSON.parse(savedCart) : [];
-    } catch { return []; }
+    const key = user ? `cart_${user.id}` : 'cart_guest';
+    const savedCart = localStorage.getItem(key);
+    return savedCart ? JSON.parse(savedCart) : [];
   });
-
-  // When user changes, load that user's cart (if exists) else empty
-  useEffect(() => {
-    try {
-      const userCartKey = user?.id ? `cart_${user.id}` : 'cart';
-      const saved = localStorage.getItem(userCartKey);
-      if (saved) {
-        setCart(JSON.parse(saved));
-        localStorage.setItem('cart', saved); // sync active cart mirror
-      } else {
-        setCart([]);
-        localStorage.setItem('cart', '[]');
-      }
-    } catch {}
-  }, [user?.id]);
   const [showCart, setShowCart] = useState(false);
+
+  // Persist cart when user changes (load their specific cart)
+  useEffect(()=>{
+    const key = user ? `cart_${user.id}` : 'cart_guest';
+    try {
+      const saved = localStorage.getItem(key);
+      setCart(saved ? JSON.parse(saved) : []);
+    } catch { setCart([]); }
+  }, [user]);
+
+  // Persist cart updates to user-specific key
+  useEffect(()=>{
+    const key = user ? `cart_${user.id}` : 'cart_guest';
+    try { localStorage.setItem(key, JSON.stringify(cart)); } catch {}
+  }, [cart, user]);
   
   // Order form state
   const [orderQuantities, setOrderQuantities] = useState<Record<number, number>>({});
@@ -213,12 +209,7 @@ export default function Home() {
           image: product.image,
         }];
       }
-      try {
-        const key = user?.id ? `cart_${user.id}` : 'cart';
-        const serialized = JSON.stringify(updatedCart);
-        localStorage.setItem('cart', serialized); // active session cart
-        localStorage.setItem(key, serialized); // user-specific cart
-      } catch {}
+      localStorage.setItem('cart', JSON.stringify(updatedCart));
       return updatedCart;
     });
     toast({
@@ -230,12 +221,7 @@ export default function Home() {
   const removeFromCart = (productId: number) => {
     setCart(prev => {
       const updatedCart = prev.filter(item => item.id !== productId);
-      try {
-        const key = user?.id ? `cart_${user.id}` : 'cart';
-        const serialized = JSON.stringify(updatedCart);
-        localStorage.setItem('cart', serialized);
-        localStorage.setItem(key, serialized);
-      } catch {}
+      localStorage.setItem('cart', JSON.stringify(updatedCart));
       return updatedCart;
     });
   };
@@ -251,12 +237,7 @@ export default function Home() {
           ? { ...item, quantity: Math.max(1, quantity) }
           : item
       );
-      try {
-        const key = user?.id ? `cart_${user.id}` : 'cart';
-        const serialized = JSON.stringify(updatedCart);
-        localStorage.setItem('cart', serialized);
-        localStorage.setItem(key, serialized);
-      } catch {}
+      localStorage.setItem('cart', JSON.stringify(updatedCart));
       return updatedCart;
     });
   };
@@ -275,10 +256,7 @@ export default function Home() {
 
   const clearCart = () => {
     setCart([]);
-    try {
-      localStorage.removeItem('cart');
-      if (user?.id) localStorage.setItem(`cart_${user.id}`, '[]');
-    } catch {}
+    localStorage.removeItem('cart');
   };
 
   const updateQuantity = (productId: number, quantity: number) => {

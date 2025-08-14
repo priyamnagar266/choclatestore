@@ -11,6 +11,18 @@ import bcrypt from "bcryptjs";
 import { generateJWT, authenticateJWT } from "./jwt";
 import crypto from "crypto";
 import cors from "cors";
+// Multer imported without types (lightweight) - fallback to any for file type
+// @ts-ignore
+import multer, { StorageEngine } from 'multer';
+import path from 'path';
+import fs from 'fs';
+import type { Request } from 'express';
+
+// Extend Request type locally to include file from multer
+interface MulterRequest extends Request {
+  // declare minimal shape for uploaded file
+  file?: { filename: string; originalname?: string; mimetype?: string; path?: string };
+}
 
 if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
   throw new Error('Missing required Razorpay credentials: RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET');
@@ -304,7 +316,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email already registered" });
       }
       const hashedPassword = await bcrypt.hash(userData.password, 10);
-      const newUser = await storage.createUser({ ...userData, password: hashedPassword });
+      // If there are no admins yet, promote this first user to admin automatically
+      let roleToUse = userData.role || 'user';
+      try {
+        const adminCount = await storage.countAdmins?.();
+        if (adminCount === 0) roleToUse = 'admin';
+      } catch {}
+      const newUser = await storage.createUser({ ...userData, role: roleToUse, password: hashedPassword });
   const userId = (newUser as any)._id?.toString?.() || (newUser as any).id;
   const token = generateJWT({ id: userId, email: newUser.email, role: newUser.role });
   res.json({ id: userId, email: newUser.email, name: newUser.name, role: newUser.role, token });
@@ -330,6 +348,274 @@ export async function registerRoutes(app: Express): Promise<Server> {
   res.json({ id: userId, email: user.email, name: user.name, role: user.role, token });
     } catch (error: any) {
       res.status(400).json({ message: "Error logging in: " + error.message });
+    }
+  });
+
+  // ADMIN: Login
+  app.post('/api/admin/login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
+      const user = await storage.getUserByEmail(email);
+      if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+      if (user.role !== 'admin') return res.status(403).json({ message: 'Not an admin user' });
+      const valid = await bcrypt.compare(password, (user as any).password);
+      if (!valid) return res.status(401).json({ message: 'Invalid credentials' });
+      const userId = (user as any)._id?.toString?.() || (user as any).id;
+      const token = generateJWT({ id: userId, email: user.email, role: user.role });
+      res.json({ id: userId, email: user.email, name: user.name, role: user.role, token });
+    } catch (e: any) {
+      res.status(400).json({ message: 'Admin login failed: ' + e.message });
+    }
+  });
+
+  // ADMIN: Overview stats
+  app.get('/api/admin/overview', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const stats = await storage.getOverviewStats?.();
+      res.json(stats || {});
+    } catch (e: any) {
+      console.error('[ADMIN /api/admin/overview] error', e);
+      res.status(500).json({ message: 'Failed to load overview' });
+    }
+  });
+
+  // ADMIN: Metrics (dashboard KPIs + recent orders)
+  app.get('/api/admin/metrics', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const stats = await storage.getOrderStats();
+      const recent = await storage.getRecentOrders(10);
+      const recentOrders = recent.map((o: any) => ({
+        id: o._id?.toString?.() || o.id,
+        customerName: o.customerName,
+        customerEmail: o.customerEmail,
+        total: o.total,
+        status: o.status || 'pending',
+        createdAt: o.createdAt,
+        itemsCount: Array.isArray(o.items) ? o.items.length : 0,
+      }));
+      res.json({ ...stats, recentOrders });
+    } catch (e: any) {
+      console.error('[ADMIN GET /api/admin/metrics] error', e);
+      res.status(500).json({ message: 'Failed to load metrics' });
+    }
+  });
+
+  // File upload setup for product images (stores filenames under /uploads)
+  const uploadDir = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+  const storageEngine: StorageEngine = multer.diskStorage({
+    // use any for file param to avoid missing types
+    destination: (_req: Request, _file: any, cb: (error: Error | null, destination: string) => void) => cb(null, uploadDir),
+    filename: (_req: Request, file: any, cb: (error: Error | null, filename: string) => void) => {
+      const unique = Date.now() + '-' + Math.round(Math.random()*1e9);
+      cb(null, unique + path.extname(file.originalname));
+    }
+  });
+  const upload = multer({ storage: storageEngine });
+
+  // Serve uploaded images statically
+  // NOTE: in production, consider a CDN or object storage
+  app.use('/uploads', (await import('express')).default.static(uploadDir));
+
+  // ADMIN: Products list with pagination & search
+  app.get('/api/admin/products', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const { page = '1', pageSize = '20', search } = req.query as Record<string,string>;
+      const pg = Math.max(1, parseInt(page));
+      const ps = Math.min(100, Math.max(1, parseInt(pageSize)));
+      const data = await storage.listProductsPaginated(pg, ps, search);
+      res.json(data);
+    } catch (e: any) {
+      console.error('[ADMIN GET /api/admin/products] error', e);
+      res.status(500).json({ message: 'Failed to load products' });
+    }
+  });
+
+  // ADMIN: Create product (supports multipart for image upload)
+  app.post('/api/admin/products', authenticateJWT, upload.single('imageFile'), async (req: MulterRequest, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const body = req.body || {};
+      // If JSON sent (application/json) we won't have file. If multipart, file path is stored.
+      const payload: any = {
+        name: body.name,
+        description: body.description,
+        price: parseFloat(body.price),
+  image: body.image || (req.file ? '/uploads/' + req.file.filename : ''),
+        benefits: body.benefits ? (Array.isArray(body.benefits) ? body.benefits : String(body.benefits).split(',').map((b: string) => b.trim()).filter(Boolean)) : [],
+        category: body.category,
+        inStock: parseInt(body.inStock || '0', 10),
+      };
+      if (!payload.name || !payload.description || isNaN(payload.price)) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+      const product = await storage.createProduct(payload);
+      res.json(product);
+    } catch (e: any) {
+      console.error('[ADMIN POST /api/admin/products] error', e);
+      res.status(500).json({ message: 'Failed to create product' });
+    }
+  });
+
+  // ADMIN: Update product
+  app.put('/api/admin/products/:id', authenticateJWT, upload.single('imageFile'), async (req: MulterRequest, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const id = parseInt(req.params.id,10);
+      const body = req.body || {};
+      const update: any = { ...body };
+      if (body.price !== undefined) update.price = parseFloat(body.price);
+      if (body.inStock !== undefined) update.inStock = parseInt(body.inStock,10);
+      if (body.benefits !== undefined) update.benefits = Array.isArray(body.benefits) ? body.benefits : String(body.benefits).split(',').map((b: string)=>b.trim()).filter(Boolean);
+  if (req.file) update.image = '/uploads/' + req.file.filename;
+      const product = await storage.updateProduct(id, update);
+      if (!product) return res.status(404).json({ message: 'Product not found' });
+      res.json(product);
+    } catch (e: any) {
+      console.error('[ADMIN PUT /api/admin/products/:id] error', e);
+      res.status(500).json({ message: 'Failed to update product' });
+    }
+  });
+
+  // ADMIN: Delete product
+  app.delete('/api/admin/products/:id', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const id = parseInt(req.params.id,10);
+      const ok = await storage.deleteProduct(id);
+      if (!ok) return res.status(404).json({ message: 'Product not found' });
+      res.json({ success: true });
+    } catch (e: any) {
+      console.error('[ADMIN DELETE /api/admin/products/:id] error', e);
+      res.status(500).json({ message: 'Failed to delete product' });
+    }
+  });
+
+  // ADMIN: Customers list with stats
+  app.get('/api/admin/customers', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const { page = '1', pageSize = '20', search, startDate, endDate } = req.query as Record<string,string>;
+      const pg = Math.max(1, parseInt(page));
+      const ps = Math.min(100, Math.max(1, parseInt(pageSize)));
+      const data = await storage.listCustomersWithStats(pg, ps, search, startDate, endDate);
+      res.json(data);
+    } catch (e: any) {
+      console.error('[ADMIN GET /api/admin/customers] error', e);
+      res.status(500).json({ message: 'Failed to load customers' });
+    }
+  });
+
+  // ADMIN: Sales reports (monthly, top products, category sales)
+  app.get('/api/admin/reports/sales', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const { startDate, endDate } = req.query as Record<string,string>;
+      const report = await storage.getSalesReport(startDate, endDate);
+      res.json(report);
+    } catch (e: any) {
+      console.error('[ADMIN GET /api/admin/reports/sales] error', e);
+      res.status(500).json({ message: 'Failed to load sales report' });
+    }
+  });
+
+  // ADMIN: Settings (profile + store settings)
+  app.get('/api/admin/settings', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      // @ts-ignore
+      const adminId = req.user.id;
+      const user = await storage.getUserById(adminId);
+      const store = await storage.getStoreSettings();
+      res.json({ profile: { id: adminId, name: user?.name, email: user?.email }, store });
+    } catch (e: any) {
+      console.error('[ADMIN GET /api/admin/settings] error', e);
+      res.status(500).json({ message: 'Failed to load settings' });
+    }
+  });
+
+  app.put('/api/admin/settings', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const { profile, store } = req.body || {};
+      // Update profile (name, email, password)
+      // @ts-ignore
+      const adminId = req.user.id;
+      if (profile) {
+        const update: any = {};
+        if (profile.name) update.name = profile.name;
+        if (profile.email) update.email = profile.email;
+        if (profile.password) {
+          const hashed = await bcrypt.hash(profile.password, 10);
+          update.password = hashed;
+        }
+        if (Object.keys(update).length) {
+          try {
+            const objectId = new (await import('mongodb')).ObjectId(adminId);
+            await (await import('./db')).db.collection('users').updateOne({ _id: objectId } as any, { $set: update });
+          } catch {
+            await (await import('./db')).db.collection('users').updateOne({ id: adminId } as any, { $set: update });
+          }
+        }
+      }
+      if (store) {
+        const normalized: any = {};
+        if (store.currency) normalized.currency = String(store.currency);
+        if (store.taxRate !== undefined) normalized.taxRate = parseFloat(store.taxRate);
+        if (store.shippingCharges !== undefined) normalized.shippingCharges = parseFloat(store.shippingCharges);
+        await storage.updateStoreSettings(normalized);
+      }
+      res.json({ success: true });
+    } catch (e: any) {
+      console.error('[ADMIN PUT /api/admin/settings] error', e);
+      res.status(500).json({ message: 'Failed to update settings' });
+    }
+  });
+
+  // ADMIN: Orders list with filters & pagination
+  app.get('/api/admin/orders', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const { page = '1', pageSize = '20', status, paymentStatus, startDate, endDate } = req.query as Record<string,string>;
+      const pg = Math.max(1, parseInt(page));
+      const ps = Math.min(100, Math.max(1, parseInt(pageSize)));
+      const data = await storage.listOrders({ status, paymentStatus, startDate, endDate }, pg, ps);
+      res.json(data);
+    } catch (e: any) {
+      console.error('[ADMIN /api/admin/orders] error', e);
+      res.status(500).json({ message: 'Failed to load orders' });
+    }
+  });
+
+  // ADMIN: Update order status
+  app.patch('/api/admin/orders/:id/status', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      if (!status) return res.status(400).json({ message: 'Status required' });
+      const ok = await storage.updateOrderStatus(id, status);
+      if (!ok) return res.status(400).json({ message: 'Invalid status or update failed' });
+      res.json({ success: true });
+    } catch (e: any) {
+      console.error('[ADMIN PATCH /api/admin/orders/:id/status] error', e);
+      res.status(500).json({ message: 'Failed to update status' });
     }
   });
 

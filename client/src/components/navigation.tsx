@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, ShoppingCart } from "lucide-react";
 import { useAuth } from "./auth-context";
+import { useAdminAuth } from "./admin-auth";
 import { useLocation } from "wouter";
 
 interface NavigationProps {
@@ -16,6 +17,8 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
   // Mobile navigation sheet
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { adminUser, logoutAdmin } = useAdminAuth();
+  const sessionUser = user || adminUser || null;
   const [, setLocation] = useLocation();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -75,7 +78,7 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
               <ShoppingCart className="mr-2 h-4 w-4" />
               Cart ({cartItemCount})
             </Button>
-            {user ? (
+            {sessionUser ? (
               <div className="relative ml-4" ref={dropdownRef}>
                 <button
                   type="button"
@@ -83,7 +86,7 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
                   onClick={(e) => { e.stopPropagation(); setUserMenuOpen(o => !o); }}
                   onKeyDown={(e) => { if (e.key === 'Escape') { setUserMenuOpen(false); } }}
                 >
-                  Hi, {user.name}
+                  Hi, {sessionUser.name || 'User'}
                   <svg className={`h-4 w-4 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"/></svg>
                 </button>
                 {userMenuOpen && (
@@ -96,7 +99,7 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
                     </button>
                     <button
                       className="w-full px-4 py-2 text-left hover:bg-gray-100 text-red-600"
-                      onClick={() => { logout(); setUserMenuOpen(false); }}
+                      onClick={() => { if (user) logout(); if (adminUser) logoutAdmin(); setUserMenuOpen(false); }}
                     >
                       Logout
                     </button>

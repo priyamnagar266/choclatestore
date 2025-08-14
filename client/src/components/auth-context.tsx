@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 export type AuthUser = {
-  // Mongo _id is a string; using string avoids accidental numeric coercion
-  id: string;
+  id: number;
   name: string;
   email: string;
   role: string;
@@ -22,20 +21,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("authUser");
-    if (stored) setUser(JSON.parse(stored));
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+    // Previously skipped admin users; now always restore so admin accounts stay logged in across refresh.
+    if (parsed && parsed.token) setUser(parsed);
+      } catch {}
+    }
   }, []);
 
   function login(newUser: AuthUser) {
-    setUser(newUser);
-    localStorage.setItem("authUser", JSON.stringify(newUser));
+  // Persist any user (including admin) so refresh keeps session
+  setUser(newUser);
+  localStorage.setItem("authUser", JSON.stringify(newUser));
+    // On user change, migrate anonymous cart to user-specific key if present
     try {
-      // Load any existing user-specific cart and set as active cart
-      const userCartKey = `cart_${newUser.id}`;
-      const existing = localStorage.getItem(userCartKey);
-      if (existing) {
-        localStorage.setItem('cart', existing); // active session cart mirror
-      } else {
-        localStorage.setItem('cart', '[]');
+      const anonCart = localStorage.getItem('cart');
+      if (anonCart) {
+        if (newUser.role !== 'admin') localStorage.setItem(`cart_${newUser.id}`, anonCart);
+        localStorage.removeItem('cart');
       }
     } catch {}
   }
@@ -43,12 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   function logout() {
     setUser(null);
     localStorage.removeItem("authUser");
-    try {
-      // Clear active cart only (keep user-specific stored cart for future login)
-      localStorage.removeItem('cart');
-      // Also clear any pending transient order linked to previous session
-      localStorage.removeItem('pendingOrder');
-    } catch {}
+  // Optionally keep cart per user; do not delete user-specific carts
   }
 
   return (

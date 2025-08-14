@@ -212,7 +212,7 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
                   localStorage.removeItem('razorpay_order_id');
                   localStorage.removeItem('razorpay_signature');
                   setTimeout(() => {
-                    setLocation('/orders');
+                    setLocation('/');
                   }, 1500);
                 } else {
                   toast({
@@ -474,13 +474,13 @@ export default function Checkout() {
             // Always send orderData to backend for verification and order creation
             const pendingOrderRaw = localStorage.getItem('pendingOrder');
             const pendingOrder = pendingOrderRaw ? JSON.parse(pendingOrderRaw) : {};
-            // Derive userId strictly from authUser (single source of truth)
-            let userId: string | undefined;
+            // Get userId from localStorage (if user is logged in)
+            let userId = undefined;
             try {
-              const authUserRaw = localStorage.getItem('authUser');
-              if (authUserRaw) {
-                const au = JSON.parse(authUserRaw);
-                userId = au?.id || au?._id;
+              const userRaw = localStorage.getItem('user');
+              if (userRaw) {
+                const user = JSON.parse(userRaw);
+                userId = user.id || user._id || user.userId;
               }
             } catch {}
             // Transform products to items as required by backend
@@ -492,9 +492,17 @@ export default function Checkout() {
               : [];
             // Flatten deliveryInfo
             const delivery = pendingOrder.deliveryInfo || {};
-            // userId already derived above; no need to derive again
+            // Try authUser first (primary source), then previously derived userId
+            let authUserId2: string | undefined;
+            try {
+              const authUserRaw2 = localStorage.getItem('authUser');
+              if (authUserRaw2) {
+                const au2 = JSON.parse(authUserRaw2);
+                authUserId2 = au2?.id;
+              }
+            } catch {}
             const orderDataForBackend = {
-              userId: userId || '',
+              userId: authUserId2 || userId || '',
               customerName: delivery.customerName || '',
               customerEmail: delivery.customerEmail || '',
               customerPhone: delivery.customerPhone || '',
@@ -535,7 +543,7 @@ export default function Checkout() {
                 description: "Thank you for your purchase! Your order has been confirmed.",
               });
               setTimeout(() => {
-                setLocation('/orders');
+                setLocation('/');
               }, 1500);
             } else {
               throw new Error("Payment verification failed");

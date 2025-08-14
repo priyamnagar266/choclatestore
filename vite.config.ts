@@ -34,7 +34,8 @@ export default defineConfig({
       deny: ["**/.*"],
     },
     proxy: {
-      '/api': 'http://localhost:3000', // Change 3000 to your backend port if different
+      // Proxy API to backend server (server listens on 5000 by default)
+      '/api': 'http://localhost:5000',
     },
   },
 });
