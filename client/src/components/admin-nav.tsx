@@ -40,17 +40,36 @@ export function AdminNav() {
 }
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  const { adminUser } = useAdminAuth();
+  const { user, ready: userReady } = useAuth();
+  const { adminUser, ready: adminReady, setAdminUser } = useAdminAuth() as any;
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    const isAdmin = adminUser || (user && user.role === 'admin');
-    if (!isAdmin) setLocation('/admin/login');
-  }, [user, adminUser, setLocation]);
+    if (!userReady || !adminReady) return; // wait for hydration
+    let effective = adminUser || (user && user.role === 'admin' ? user : null);
+    // Fallback: try to rehydrate directly from localStorage if context empty (race condition safety)
+    if (!effective) {
+      try {
+        const raw = localStorage.getItem('adminSession');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+            if (parsed?.role === 'admin' && parsed?.token) {
+              setAdminUser?.(parsed);
+              effective = parsed;
+            }
+        }
+      } catch {}
+    }
+    if (!effective) {
+      // Defer redirect slightly to allow any late setAdminUser from login page
+      const t = setTimeout(() => setLocation('/admin/login'), 30);
+      return () => clearTimeout(t);
+    }
+  }, [user, adminUser, userReady, adminReady, setLocation, setAdminUser]);
 
+  if (!userReady || !adminReady) return null; // still hydrating
   if (!(adminUser || (user && user.role === 'admin'))) {
-    return null; // prevent flash of protected content
+    return null; // guard until redirect executes
   }
   return (
     <div className='min-h-screen flex flex-col'>

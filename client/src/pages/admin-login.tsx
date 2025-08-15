@@ -22,11 +22,14 @@ export default function AdminLogin() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-      const data = await res.json();
+  const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Login failed');
+  if (!data?.token) throw new Error('Missing token in response');
   if (data.role !== 'admin') throw new Error('Not an admin user');
-  // Store via admin auth context (persists to localStorage)
+  // Persist
   setAdminUser(data);
+  // Ensure localStorage write flushed before navigating to avoid race with AdminLayout rehydrate
+  await new Promise(r => setTimeout(r, 20));
   setLocation('/admin/home');
     } catch (err: any) {
       setError(err.message);

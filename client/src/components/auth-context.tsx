@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 export type AuthUser = {
-  id: number;
+  // Support string or number ids (Mongo _id strings vs numeric ids)
+  id: string | number;
   name: string;
   email: string;
   role: string;
@@ -12,28 +13,34 @@ interface AuthContextType {
   user: AuthUser | null;
   login: (user: AuthUser) => void;
   logout: () => void;
+  ready: boolean; // indicates localStorage hydration complete
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("authUser");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-    // Previously skipped admin users; now always restore so admin accounts stay logged in across refresh.
-    if (parsed && parsed.token) setUser(parsed);
-      } catch {}
-    }
+    try {
+      const stored = localStorage.getItem("authUser");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          // Skip restoring admin into storefront context (admin persists separately)
+          if (parsed && parsed.token && parsed.role !== 'admin') setUser(parsed);
+        } catch {}
+      }
+    } finally { setReady(true); }
   }, []);
 
   function login(newUser: AuthUser) {
-  // Persist any user (including admin) so refresh keeps session
-  setUser(newUser);
-  localStorage.setItem("authUser", JSON.stringify(newUser));
+    // Only persist non-admin users for storefront context
+    if (newUser.role !== 'admin') {
+      setUser(newUser);
+      localStorage.setItem("authUser", JSON.stringify(newUser));
+    }
     // On user change, migrate anonymous cart to user-specific key if present
     try {
       const anonCart = localStorage.getItem('cart');
@@ -51,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, ready }}>
       {children}
     </AuthContext.Provider>
   );

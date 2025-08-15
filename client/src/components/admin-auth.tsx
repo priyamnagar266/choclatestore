@@ -12,12 +12,14 @@ interface AdminAuthCtx {
   adminUser: AdminUser | null;
   setAdminUser: (u: AdminUser | null) => void;
   logoutAdmin: () => void;
+  ready: boolean; // hydration complete
 }
 
 const AdminAuthContext = createContext<AdminAuthCtx | undefined>(undefined);
 
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [adminUser, setAdminUserState] = useState<AdminUser | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     try {
@@ -26,7 +28,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
         const parsed = JSON.parse(raw);
         if (parsed?.role === 'admin') setAdminUserState(parsed);
       }
-    } catch {}
+    } finally { setReady(true); }
   }, []);
 
   function setAdminUser(u: AdminUser | null) {
@@ -41,7 +43,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   function logoutAdmin() { setAdminUser(null); }
 
   return (
-    <AdminAuthContext.Provider value={{ adminUser, setAdminUser, logoutAdmin }}>
+    <AdminAuthContext.Provider value={{ adminUser, setAdminUser, logoutAdmin, ready }}>
       {children}
     </AdminAuthContext.Provider>
   );
