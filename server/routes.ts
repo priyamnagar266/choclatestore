@@ -34,6 +34,10 @@ const razorpay = new Razorpay({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Simple health check for uptime monitors / Render health probes
+  app.get('/api/health', (_req, res) => {
+    res.json({ status: 'ok', uptime: process.uptime(), timestamp: Date.now() });
+  });
   // Debug endpoint to list all orders in the DB
   // Debug endpoint to list all orders for a test user (replace with actual userId if needed)
   app.get("/api/debug/orders", async (req, res) => {

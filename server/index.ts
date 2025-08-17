@@ -60,7 +60,15 @@ app.use((req, res, next) => {
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
-    serveStatic(app);
+    // In production we previously served the built client from the same server.
+    // When deploying the client separately to Netlify we can optionally disable
+    // static serving. Keep it conditional so monolithic deployment still works
+    // if DIST_PUBLIC is present.
+    try {
+      serveStatic(app);
+    } catch (e) {
+      log('static client not found - assuming frontend served separately (Netlify)');
+    }
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT

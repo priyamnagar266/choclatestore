@@ -1,0 +1,29 @@
+## Netlify configuration for deploying the Vite React client
+[build]
+  # Build from repo root so package.json scripts are available
+  command = "npm run build:client"
+  publish = "dist/public"
+
+## Proxy API calls to Render backend (replace YOUR-RENDER-HOST below after first backend deploy)
+## Example: https://cokha-api.onrender.com
+[[redirects]]
+  from = "/api/*"
+  to = "https://YOUR-RENDER-HOST/api/:splat"
+  status = 200
+  force = true
+  headers = { X-From = "netlify-proxy" }
+
+# Redirect all SPA routes to index.html (after API rule so API not swallowed)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Set security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Cache-Control = "public, max-age=0, must-revalidate"
