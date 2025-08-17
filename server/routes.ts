@@ -38,6 +38,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', uptime: process.uptime(), timestamp: Date.now() });
   });
+  // Root route (when frontend is hosted separately). Prevents 'Cannot GET /'
+  app.get('/', (_req, res) => {
+    res.send('Cokha API running. Frontend is deployed separately. Health: /api/health');
+  });
   // Debug endpoint to list all orders in the DB
   // Debug endpoint to list all orders for a test user (replace with actual userId if needed)
   app.get("/api/debug/orders", async (req, res) => {
