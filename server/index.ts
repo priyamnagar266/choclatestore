@@ -4,6 +4,7 @@ dotenv.config();
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { client } from './db';
 import cors from 'cors';
 
 const app = express();
@@ -44,6 +45,20 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Ensure MongoDB connection before registering routes
+  try {
+    await client.db().command({ ping: 1 });
+    log('MongoDB ping ok');
+  } catch (e) {
+    try {
+      await client.connect();
+      await client.db().command({ ping: 1 });
+      log('connected to MongoDB');
+    } catch (err) {
+      console.error('Failed to connect to MongoDB', err);
+    }
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
