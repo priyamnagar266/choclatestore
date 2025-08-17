@@ -4,11 +4,10 @@
   command = "npm run build:client"
   publish = "dist/public"
 
-## Proxy API calls to Render backend (replace YOUR-RENDER-HOST below after first backend deploy)
-## Example: https://cokha-api.onrender.com
+## Proxy API calls to Render backend (updated with deployed host)
 [[redirects]]
   from = "/api/*"
-  to = "https://YOUR-RENDER-HOST/api/:splat"
+  to = "https://choclatestore.onrender.com/api/:splat"
   status = 200
   force = true
   headers = { X-From = "netlify-proxy" }
