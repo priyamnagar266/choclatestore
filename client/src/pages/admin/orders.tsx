@@ -22,9 +22,10 @@ interface OrderRow {
 }
 
 const statusColors: Record<string,string> = {
-  pending: 'secondary',
-  processing: 'outline',
-  completed: 'default',
+  placed: 'secondary',
+  shipped: 'outline',
+  out_for_delivery: 'outline',
+  delivered: 'default',
   cancelled: 'destructive'
 };
 
@@ -85,9 +86,10 @@ export default function AdminOrders() {
                 <SelectTrigger><SelectValue placeholder='All status' /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value='all'>All</SelectItem>
-                  <SelectItem value='pending'>Pending</SelectItem>
-                  <SelectItem value='processing'>Processing</SelectItem>
-                  <SelectItem value='completed'>Completed</SelectItem>
+                  <SelectItem value='placed'>Placed</SelectItem>
+                  <SelectItem value='shipped'>Shipped</SelectItem>
+                  <SelectItem value='out_for_delivery'>Out for Delivery</SelectItem>
+                  <SelectItem value='delivered'>Delivered</SelectItem>
                   <SelectItem value='cancelled'>Cancelled</SelectItem>
                 </SelectContent>
               </Select>
@@ -143,9 +145,10 @@ export default function AdminOrders() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value='pending'>Pending</SelectItem>
-                        <SelectItem value='processing'>Processing</SelectItem>
-                        <SelectItem value='completed'>Completed</SelectItem>
+                        <SelectItem value='placed'>Placed</SelectItem>
+                        <SelectItem value='shipped'>Shipped</SelectItem>
+                        <SelectItem value='out_for_delivery'>Out for Delivery</SelectItem>
+                        <SelectItem value='delivered'>Delivered</SelectItem>
                         <SelectItem value='cancelled'>Cancelled</SelectItem>
                       </SelectContent>
                     </Select>
@@ -156,12 +159,15 @@ export default function AdminOrders() {
                   <TableCell>{o.total}</TableCell>
                   <TableCell>
                     <div className='flex gap-2'>
-                      {['pending','processing'].includes(o.status) && (
-                        <Button size='sm' variant='outline' onClick={() => updateStatus.mutate({ id: o.id, status: o.status === 'pending' ? 'processing' : 'completed' })}>
-                          {o.status === 'pending' ? '-> Processing' : '-> Completed'}
+                      {['placed','shipped','out_for_delivery'].includes(o.status) && (
+                        <Button size='sm' variant='outline' onClick={() => {
+                          const nextMap: Record<string,string> = { placed: 'shipped', shipped: 'out_for_delivery', out_for_delivery: 'delivered' };
+                          updateStatus.mutate({ id: o.id, status: nextMap[o.status] });
+                        }}>
+                          {o.status === 'placed' ? '-> Shipped' : o.status === 'shipped' ? '-> Out for Delivery' : '-> Delivered'}
                         </Button>
                       )}
-                      {o.status !== 'cancelled' && o.status !== 'completed' && (
+                      {o.status !== 'cancelled' && o.status !== 'delivered' && (
                         <Button size='sm' variant='destructive' onClick={() => updateStatus.mutate({ id: o.id, status: 'cancelled' })}>Cancel</Button>
                       )}
                     </div>

@@ -81,7 +81,7 @@ export default function AdminDashboard() {
             <StatCard label='Total Orders' value={metrics.totalOrders} />
             <StatCard label='Revenue' value={'₹' + metrics.totalRevenue.toFixed(2)} />
             <StatCard label="Today's Orders" value={metrics.todayOrders} />
-            <StatCard label='Pending' value={metrics.statusCounts?.pending || 0} />
+            <StatCard label='Placed' value={metrics.statusCounts?.placed || 0} />
           </div>
           <div>
             <h2 className='text-lg font-semibold mt-4 mb-2'>Recent Orders</h2>

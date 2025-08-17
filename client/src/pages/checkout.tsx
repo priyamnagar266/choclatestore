@@ -189,7 +189,7 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
                   ...pendingOrder,
                   _id: patchOrderId,
                   razorpayPaymentId: response.razorpay_payment_id,
-                  status: 'completed',
+                  status: 'placed',
                   paymentSuccess: true
                 };
                 // Update pendingOrder with new _id/orderId for future reference
@@ -198,7 +198,7 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
                 // PATCH the order status in backend
                 const patchRes = await apiRequest("PATCH", `/api/orders/${patchOrderId}/payment`, {
                   razorpayPaymentId: response.razorpay_payment_id,
-                  status: 'completed'
+                  status: 'placed'
                 });
                 if (patchRes.ok) {
                   toast({
@@ -536,7 +536,7 @@ export default function Checkout() {
               }
               await apiRequest("PATCH", `/api/orders/${orderData._id}/payment`, {
                 razorpayPaymentId: response.razorpay_payment_id,
-                status: 'completed'
+                status: 'placed'
               });
               toast({
                 title: "Payment Successful!",

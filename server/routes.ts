@@ -394,7 +394,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerName: o.customerName,
         customerEmail: o.customerEmail,
         total: o.total,
-        status: o.status || 'pending',
+  status: o.status || 'placed',
         createdAt: o.createdAt,
         itemsCount: Array.isArray(o.items) ? o.items.length : 0,
       }));
@@ -681,7 +681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         total: o.total,
         subtotal: o.subtotal,
         deliveryCharges: o.deliveryCharges,
-        status: o.status || 'pending',
+  status: o.status || 'placed',
         razorpayPaymentId: o.razorpayPaymentId || null,
         items: Array.isArray(o.items) ? o.items.map((it: any) => {
           const prod = productMap[String(it.productId)] || productMap[String(parseInt(it.productId))];
@@ -735,7 +735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         total: o.total,
         subtotal: o.subtotal,
         deliveryCharges: o.deliveryCharges,
-        status: o.status || 'pending',
+  status: o.status || 'placed',
         razorpayPaymentId: o.razorpayPaymentId || null,
         items: Array.isArray(o.items) ? o.items.map((it: any) => {
           const prod = productMap[String(it.productId)] || productMap[String(parseInt(it.productId))];

@@ -103,7 +103,7 @@ export default function AdminHome() {
 
         <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
           <KpiCard icon={DollarSign} label='Revenue' value={`₹${metrics?.totalRevenue?.toLocaleString()||0}`} sub={`Today ${metrics?.todayOrders||0} orders`} />
-          <KpiCard icon={ShoppingCart} label='Orders' value={metrics?.totalOrders||overview?.totalOrders||0} sub={`Pending ${metrics?.pendingOrders||overview?.pendingOrders||0}`} />
+          <KpiCard icon={ShoppingCart} label='Orders' value={metrics?.totalOrders||overview?.totalOrders||0} sub={`Placed ${metrics?.pendingOrders||overview?.pendingOrders||0}`} />
           <KpiCard icon={Package} label='Products' value={metrics?.totalProducts||0} sub={`Low stock ${metrics?.lowStockProducts||0}`} />
           <KpiCard icon={Users} label='Customers' value={overview?.totalCustomers||metrics?.totalUsers||0} sub='Unique buyers' />
         </div>
@@ -182,7 +182,7 @@ export default function AdminHome() {
                     </div>
                     <div className='flex items-center gap-4'>
                       <span className='font-semibold'>₹{o.total}</span>
-                      <Badge variant={o.status==='pending'? 'secondary' : 'outline'}>{o.status}</Badge>
+                      <Badge variant={o.status==='placed'? 'secondary' : 'outline'}>{o.status.replace(/_/g,' ')}</Badge>
                     </div>
                   </div>
                 ))}

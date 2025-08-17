@@ -53,7 +53,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{metrics?.totalOrders || 0}</div>
-            <p className="text-xs text-muted-foreground">Pending: {metrics?.pendingOrders || 0}</p>
+            <p className="text-xs text-muted-foreground">Placed: {metrics?.pendingOrders || 0}</p>
           </CardContent>
         </Card>
         <Card>
@@ -104,7 +104,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="font-semibold">₹{o.total}</span>
-                  <Badge variant={o.status === 'pending' ? 'secondary' : 'default'}>{o.status}</Badge>
+                  <Badge variant={o.status === 'placed' ? 'secondary' : 'default'}>{o.status.replace(/_/g,' ')}</Badge>
                 </div>
               </div>
             ))}
@@ -121,9 +121,9 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><TrendingUp className="h-4 w-4" />Pending Orders</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><TrendingUp className="h-4 w-4" />Placed Orders</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">{metrics?.pendingOrders || 0} awaiting processing</p>
+            <p className="text-sm text-muted-foreground">{metrics?.pendingOrders || 0} newly placed</p>
           </CardContent>
         </Card>
       </div>

@@ -72,7 +72,8 @@ export const OrderModel = mongoose.model<Order>("Order", new mongoose.Schema({
   subtotal: { type: Number, required: true },
   deliveryCharges: { type: Number, required: true },
   total: { type: Number, required: true },
-  status: { type: String, required: true, default: "pending" },
+  // Order status lifecycle: placed -> shipped -> out_for_delivery -> delivered (or cancelled)
+  status: { type: String, required: true, default: "placed" },
   razorpayPaymentId: { type: String },
   createdAt: { type: Date, default: Date.now },
 }));

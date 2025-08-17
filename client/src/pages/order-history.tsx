@@ -47,7 +47,7 @@ export default function OrderHistory() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all'|'pending'|'completed'|'cancelled'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all'|'placed'|'shipped'|'out_for_delivery'|'delivered'|'cancelled'>('all');
 
   useEffect(() => {
     if (!authUser) return;
@@ -93,7 +93,7 @@ export default function OrderHistory() {
             <Input placeholder='Search order or item' value={search} onChange={e=>setSearch(e.target.value)} className='pl-8 w-56' />
           </div>
           <div className='flex gap-2 text-xs'>
-            {(['all','pending','completed','cancelled'] as const).map(s => (
+            {(['all','placed','shipped','out_for_delivery','delivered','cancelled'] as const).map(s => (
               <button key={s} onClick={()=>setStatusFilter(s)} className={`px-3 py-1 rounded-full border text-[11px] font-medium transition ${statusFilter===s? 'bg-black text-white border-black':'hover:bg-neutral-100'}`}>{s}</button>
             ))}
           </div>
@@ -184,10 +184,12 @@ export default function OrderHistory() {
 
 function StatusPill({ status }:{ status:string }) {
   const map: Record<string,{label:string; className:string; icon:React.ReactNode}> = {
-    pending: { label:'pending', className:'bg-amber-100 text-amber-700 border-amber-200', icon:<Clock3 className='h-3 w-3'/>},
-    completed: { label:'completed', className:'bg-emerald-100 text-emerald-700 border-emerald-200', icon:<CheckCircle2 className='h-3 w-3'/>},
+    placed: { label:'placed', className:'bg-amber-100 text-amber-700 border-amber-200', icon:<Clock3 className='h-3 w-3'/>},
+    shipped: { label:'shipped', className:'bg-blue-100 text-blue-700 border-blue-200', icon:<Truck className='h-3 w-3'/>},
+    out_for_delivery: { label:'out for delivery', className:'bg-indigo-100 text-indigo-700 border-indigo-200', icon:<Truck className='h-3 w-3'/>},
+    delivered: { label:'delivered', className:'bg-emerald-100 text-emerald-700 border-emerald-200', icon:<CheckCircle2 className='h-3 w-3'/>},
     cancelled: { label:'cancelled', className:'bg-red-100 text-red-600 border-red-200', icon:<XCircle className='h-3 w-3'/>},
   };
-  const cfg = map[status] || { label: status, className:'bg-neutral-100 text-neutral-700 border-neutral-200', icon:<Package className='h-3 w-3'/>};
+  const cfg = map[status] || { label: status.replace(/_/g,' '), className:'bg-neutral-100 text-neutral-700 border-neutral-200', icon:<Package className='h-3 w-3'/>};
   return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-medium ${cfg.className}`}>{cfg.icon}{cfg.label}</span>;
 }

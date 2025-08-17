@@ -115,8 +115,8 @@ export const storage = {
   const totalUsers = await usersCollection.countDocuments();
   const lowStockThreshold = 5;
   const lowStockProducts = await productsCollection.countDocuments({ inStock: { $lte: lowStockThreshold } } as any);
-  const pendingOrders = statusCounts['pending'] || 0;
-  return { totalOrders, totalRevenue, todayOrders, statusCounts, totalProducts, totalUsers, lowStockProducts, pendingOrders };
+    const placedOrders = statusCounts['placed'] || 0;
+  return { totalOrders, totalRevenue, todayOrders, statusCounts, totalProducts, totalUsers, lowStockProducts, pendingOrders: placedOrders };
   },
   async createContact(contact: any): Promise<Contact> {
     const result = await contactsCollection.insertOne(contact);
@@ -169,7 +169,7 @@ export const storage = {
     ]).toArray();
     const totalSales = salesAgg[0]?.totalSales || 0;
     // Pending orders
-    const pendingOrders = await ordersCollection.countDocuments({ status: 'pending' } as any);
+  const pendingOrders = await ordersCollection.countDocuments({ status: 'placed' } as any);
     // Total customers (distinct customerEmail)
     const distinctCustomers = await ordersCollection.distinct('customerEmail');
     const totalCustomers = distinctCustomers.filter(c => !!c).length;
@@ -226,7 +226,7 @@ export const storage = {
       customerEmail: (o as any).customerEmail,
       customerPhone: (o as any).customerPhone,
       total: (o as any).total,
-      status: (o as any).status || 'pending',
+  status: (o as any).status || 'placed',
       paymentStatus: (o as any).razorpayPaymentId ? 'paid' : 'unpaid',
       razorpayPaymentId: (o as any).razorpayPaymentId || null,
       createdAt: (o as any).createdAt,
@@ -235,7 +235,7 @@ export const storage = {
     return { orders, total, page, pageSize };
   },
   async updateOrderStatus(orderId: string, status: string): Promise<boolean> {
-    const allowed = ['pending','processing','completed','cancelled'];
+  const allowed = ['placed','shipped','out_for_delivery','delivered','cancelled'];
     if (!allowed.includes(status)) return false;
     try {
       const objectId = new ObjectId(orderId);
