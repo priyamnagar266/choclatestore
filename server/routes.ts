@@ -35,8 +35,17 @@ const razorpay = new Razorpay({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Simple health check for uptime monitors / Render health probes
-  app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', uptime: process.uptime(), timestamp: Date.now() });
+  app.get('/api/health', async (_req, res) => {
+    let dbStatus: any = { connected: false };
+    try {
+      // Attempt a ping; if fails we'll report error
+      await db.command({ ping: 1 });
+      const productCount = await db.collection('products').countDocuments();
+      dbStatus = { connected: true, productCount };
+    } catch (e: any) {
+      dbStatus = { connected: false, error: e?.message || String(e) };
+    }
+    res.json({ status: 'ok', uptime: process.uptime(), timestamp: Date.now(), db: dbStatus });
   });
   // Root route (when frontend is hosted separately). Prevents 'Cannot GET /'
   app.get('/', (_req, res) => {
