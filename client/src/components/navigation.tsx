@@ -52,63 +52,74 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16 justify-between">
           <div className="hidden md:flex items-center">
-            <div className="text-2xl font-bold">
-              <span className="text-amber-800">Cokha</span> <span className="text-green-600 text-lg">by Rajasic Foods</span>
+            <div className="text-center leading-tight">
+              <span className="block text-3xl font-bold tracking-wide text-primary">COKHA</span>
+              <span className="block text-xs text-green-700">by Rajasic Foods</span>
             </div>
           </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => scrollToSection(item.id)}
-                className="text-gray-700 hover:text-primary transition-colors"
-              >
-                {item.label}
-              </button>
-            ))}
-            <Button
-              onClick={onCartClick}
-              className="bg-primary text-white hover:bg-green-800"
-            >
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Cart ({cartItemCount})
-            </Button>
-            {user ? (
-              <div className="relative ml-4" ref={dropdownRef}>
+          {/* Desktop Navigation: center links, actions right */}
+          <div className="hidden md:flex items-center flex-1">
+            <div className="flex-1 flex justify-center space-x-12">
+              {navItems.map((item) => (
                 <button
-                  type="button"
-                  className="text-green-700 font-semibold cursor-pointer select-none flex items-center gap-1 hover:text-green-800 focus:outline-none"
-                  onClick={(e) => { e.stopPropagation(); setUserMenuOpen(o => !o); }}
-                  onKeyDown={(e) => { if (e.key === 'Escape') { setUserMenuOpen(false); } }}
+                  key={item.id}
+                  onClick={() => scrollToSection(item.id)}
+                  className="text-gray-700 hover:text-primary transition-colors font-medium tracking-wide"
                 >
-                  Hi, {user.name}
-                  <svg className={`h-4 w-4 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"/></svg>
+                  {item.label}
                 </button>
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-40 bg-neutral border rounded shadow-lg z-50 py-1 text-sm">
-                    <button
-                      className="w-full px-4 py-2 text-left hover:bg-gray-100"
-                      onClick={() => { setLocation('/orders'); setUserMenuOpen(false); }}
-                    >
-                      Order History
-                    </button>
-                    <button
-                      className="w-full px-4 py-2 text-left hover:bg-gray-100 text-red-600"
-                      onClick={() => { logout(); setUserMenuOpen(false); }}
-                    >
-                      Logout
-                    </button>
-                  </div>
+              ))}
+            </div>
+            <div className="flex items-center space-x-6">
+              <Button
+                onClick={onCartClick}
+                variant="ghost"
+                className="relative h-10 w-10 p-0 hover:bg-neutral/60"
+                aria-label="Open cart"
+              >
+                <ShoppingCart className="h-6 w-6 text-gray-800" />
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] leading-none rounded-full min-w-[1.1rem] h-5 px-1 flex items-center justify-center font-semibold shadow">
+                    {cartItemCount}
+                  </span>
                 )}
-              </div>
-            ) : (
-              <>
-                <a href="/login" className="ml-4 text-primary hover:underline">Login</a>
-                <a href="/signup" className="ml-2 text-primary hover:underline">Sign Up</a>
-              </>
-            )}
+              </Button>
+              {user ? (
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    type="button"
+                    className="text-green-700 font-semibold cursor-pointer select-none flex items-center gap-1 hover:text-green-800 focus:outline-none"
+                    onClick={(e) => { e.stopPropagation(); setUserMenuOpen(o => !o); }}
+                    onKeyDown={(e) => { if (e.key === 'Escape') { setUserMenuOpen(false); } }}
+                  >
+                    Hi, {user.name}
+                    <svg className={`h-4 w-4 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"/></svg>
+                  </button>
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-40 bg-neutral border rounded shadow-lg z-50 py-1 text-sm">
+                      <button
+                        className="w-full px-4 py-2 text-left hover:bg-gray-100"
+                        onClick={() => { setLocation('/orders'); setUserMenuOpen(false); }}
+                      >
+                        Order History
+                      </button>
+                      <button
+                        className="w-full px-4 py-2 text-left hover:bg-gray-100 text-red-600"
+                        onClick={() => { logout(); setUserMenuOpen(false); }}
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center space-x-4">
+                  <a href="/login" className="text-primary hover:underline">Login</a>
+                  <a href="/signup" className="text-primary hover:underline">Sign Up</a>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Mobile Navigation: hamburger left, brand centered, cart right */}

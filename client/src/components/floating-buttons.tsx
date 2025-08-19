@@ -35,7 +35,7 @@ export default function FloatingButtons({ onBuyNowClick }: FloatingButtonsProps)
           key: 'buy',
           'aria-label': 'Buy Now',
           onClick: onBuyNowClick,
-          className: 'bg-accent text-white hover:bg-orange-500 transform hover:scale-110 transition-all font-semibold px-6 py-3 rounded-full shadow-lg'
+          className: 'bg-[#ff7a00] text-white font-semibold px-6 py-3 rounded-full shadow-lg transform hover:scale-110 transition-transform focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#ff7a00] focus:outline-none'
         },
         [
           React.createElement(ShoppingCart, { key: 'icon', className: 'mr-2 h-4 w-4' }),
