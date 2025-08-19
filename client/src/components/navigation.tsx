@@ -51,7 +51,7 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
   <nav className="bg-neutral shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16 justify-between">
-          <div className="flex items-center">
+          <div className="hidden md:flex items-center">
             <div className="text-2xl font-bold">
               <span className="text-amber-800">Cokha</span> <span className="text-green-600 text-lg">by Rajasic Foods</span>
             </div>
@@ -111,22 +111,17 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
             )}
           </div>
 
-          {/* Mobile Navigation */}
+          {/* Mobile Navigation: hamburger left, brand centered, cart right */}
           <div className="md:hidden flex items-center justify-between w-full">
-            <div className="flex items-center ml-auto gap-2">
-              <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onCartClick(); }} className="mr-1">
-                <ShoppingCart className="h-6 w-6" />
-                {cartItemCount > 0 && (
-                  <span className="ml-1 text-xs font-bold">{cartItemCount}</span>
-                )}
-              </Button>
+            {/* Hamburger (menu) left */}
+            <div className="flex items-center">
               <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="sm" aria-label="Open navigation menu">
                     <Menu className="h-6 w-6" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                <SheetContent side="left" className="w-[300px] sm:w-[350px]">
                   <div className="flex flex-col space-y-4 mt-8">
                     {navItems.map((item) => (
                       <button
@@ -174,6 +169,24 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
                   </div>
                 </SheetContent>
               </Sheet>
+            </div>
+            {/* Center Brand */}
+            <div className="flex-1 flex justify-center">
+              <div className="text-center leading-tight">
+                <span className="block text-2xl font-bold tracking-wide text-primary">COKHA</span>
+                <span className="block text-[10px] text-green-700">by Rajasic Foods</span>
+              </div>
+            </div>
+            {/* Cart right */}
+            <div className="flex items-center">
+              <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); onCartClick(); }} className="relative">
+                <ShoppingCart className="h-6 w-6" />
+                {cartItemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] rounded-full px-1.5 py-0.5 font-semibold">
+                    {cartItemCount}
+                  </span>
+                )}
+              </Button>
             </div>
           </div>
         </div>
