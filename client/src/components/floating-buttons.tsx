@@ -8,7 +8,7 @@ interface FloatingButtonsProps {
 
 export default function FloatingButtons({ onBuyNowClick }: FloatingButtonsProps) {
   const handleWhatsAppClick = () => {
-    const phoneNumber = "919876543210";
+  const phoneNumber = "917801901855"; // Updated contact & WhatsApp number
     const message = "Hi! I'm interested in Cokha energy bars. Could you please help me with more information?";
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');

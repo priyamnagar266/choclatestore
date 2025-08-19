@@ -3,11 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta name="description" content="Rajasic Foods energy bars crafted with ancient Indian superfoods for brain and mood support." />
+    <!-- Preconnect to speed up external font / image hosts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+    <link rel="dns-prefetch" href="//images.unsplash.com" />
+    <link rel="dns-prefetch" href="//i.postimg.cc" />
+    <!-- Load fonts early (swap to avoid blocking render) -->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Critical inline style to prevent FOUC for body background / font -->
+    <style>
+      body{font-family:'DM Sans',system-ui,Arial,sans-serif;background:#ffffff;color:#111;} 
+    </style>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-    <!-- This is a replit script which adds a banner on the top of the page when opened in development mode outside the replit environment -->
-    <script type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js"></script>
+  <script type="module" src="/src/main.tsx"></script>
+  <!-- Move non-critical dev banner to defer so it doesn't block main thread -->
+  <script defer src="https://replit.com/public/js/replit-dev-banner.js"></script>
   </body>
 </html>

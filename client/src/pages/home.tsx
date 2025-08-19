@@ -1,7 +1,7 @@
 import { useAuth } from "@/components/auth-context";
 // Import media assets so they are processed by Vite during build (fixes deployment path issues)
 import productVideo from "@/components/Assets/20250721_111849_0001.mp4";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -22,7 +22,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Play, Star, Phone, Mail, MapPin, Clock, MessageCircle, X, Minus, Plus, Trash2 } from "lucide-react";
+import { Play, Star, Phone, Mail, MapPin, Clock, MessageCircle, Instagram, X, Minus, Plus, Trash2 } from "lucide-react";
 
 import type { Product } from "@shared/schema";
 import { CartItem, calculateCartTotal, calculateItemCount, formatPrice } from "@/lib/products";
@@ -352,12 +352,7 @@ export default function Home() {
     document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Derive a lightweight initial product subset for faster first paint
-  const initialProducts = useMemo(() => products.slice(0, 4), [products]);
-  const remainingProducts = useMemo(() => products.slice(4), [products]);
-
-  // We'll show skeletons while loading instead of a blocking full-page spinner
-  const showSkeletons = productsLoading && products.length === 0;
+  // Products now render all at once; show a small inline loading state only if still fetching
 
   return (
   <div className="min-h-screen bg-white">
@@ -422,20 +417,20 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-            {showSkeletons && Array.from({length:4}).map((_,i)=> (
-              <div key={i} className="animate-pulse rounded-xl bg-white p-4 space-y-4 shadow">
-                <div className="h-32 bg-gray-200 rounded-md" />
-                <div className="h-4 bg-gray-200 rounded w-3/4" />
-                <div className="h-4 bg-gray-100 rounded w-1/2" />
-                <div className="h-8 bg-gray-300 rounded" />
+            {productsLoading && products.length === 0 && (
+              <div className="col-span-full flex items-center justify-center py-10">
+                <div className="flex items-center gap-3 text-primary">
+                  <div className="w-6 h-6 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm font-medium">Loading products...</span>
+                </div>
               </div>
-            ))}
-            {!showSkeletons && initialProducts.map(product => (
-              <ProductCard key={product.id} product={product} onAddToCart={addToCart} />
-            ))}
-            {/* Lazy render remaining after first paint */}
-            {!showSkeletons && remainingProducts.map(product => (
-              <ProductCard key={product.id} product={product} onAddToCart={addToCart} />
+            )}
+            {!productsLoading && products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onAddToCart={addToCart}
+              />
             ))}
           </div>
         </div>
@@ -547,9 +542,9 @@ export default function Home() {
             <p className="text-xl text-gray-600">Have questions about our products or need personalized nutrition advice?</p>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
             {/* Contact Information Card */}
-            <Card className="bg-white">
+            <Card className="bg-white h-full flex flex-col">
               <CardHeader className="pb-4">
                 <CardTitle className="text-2xl text-primary">Contact Information</CardTitle>
               </CardHeader>
@@ -569,7 +564,7 @@ export default function Home() {
                   <div className="bg-primary text-white p-3 rounded-md"><Phone className="h-5 w-5" /></div>
                   <div>
                     <h4 className="font-semibold text-primary">Phone</h4>
-                    <p className="text-gray-600 text-sm leading-relaxed">+91 98765 43210<br />+91 87654 32109</p>
+                    <p className="text-gray-600 text-sm leading-relaxed">+91 78019 01855</p>
                   </div>
                 </div>
                 <div className="flex items-start space-x-4">
@@ -595,17 +590,32 @@ export default function Home() {
                     </div>
                   </div>
                   <Button
-                    onClick={() => window.open('https://wa.me/919876543210', '_blank')}
+                    onClick={() => window.open('https://wa.me/917801901855', '_blank')}
                     className="w-full bg-green-600 text-white hover:bg-green-700 h-9 text-sm"
                   >
                     <MessageCircle className="mr-2 h-4 w-4" /> Chat with Us on WhatsApp
+                  </Button>
+                </div>
+                <div className="p-4 bg-gradient-to-r from-pink-500 via-purple-500 to-orange-400 rounded-lg shadow-sm text-white">
+                  <div className="flex items-center mb-3">
+                    <Instagram className="h-6 w-6 mr-3" />
+                    <div>
+                      <h4 className="font-semibold">Instagram</h4>
+                      <p className="text-white/90 text-xs">Follow & DM us for updates</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => window.open('https://www.instagram.com/foodsrajasic/?hl=en', '_blank')}
+                    className="w-full bg-white/15 hover:bg-white/25 text-white backdrop-blur h-9 text-sm border border-white/20"
+                  >
+                    <Instagram className="mr-2 h-4 w-4" /> Visit @foodsrajasic
                   </Button>
                 </div>
               </CardContent>
             </Card>
 
             {/* Contact Form Card */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 flex flex-col">
               {/* Mobile collapsible header */}
               <button
                 type="button"
@@ -622,7 +632,7 @@ export default function Home() {
                 id="contact-form-mobile"
                 className={`${mobileFormOpen ? 'block' : 'hidden'} md:block`}
               >
-                <Card className="bg-white rounded-t-none md:rounded-md border-t-0 md:border-t">
+                <Card className="bg-white rounded-t-none md:rounded-md border-t-0 md:border-t h-full flex flex-col">
                   <CardHeader>
                     <CardTitle className="text-2xl text-primary md:text-left text-center">Send us a Message</CardTitle>
                   </CardHeader>
