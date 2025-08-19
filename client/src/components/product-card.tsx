@@ -11,35 +11,35 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
   return (
-    <Card className="h-full hover:shadow-xl transition-shadow transform hover:scale-105 bg-neutral">
-      <CardContent className="p-6">
+  <Card className="h-full hover:shadow-xl transition-shadow hover:scale-[1.02] bg-white">
+      <CardContent className="p-4 sm:p-5">
         <img
           src={product.image}
           alt={product.name}
-          className="w-full h-48 object-cover rounded-lg mb-4"
+          className="w-full h-28 xs:h-32 sm:h-40 md:h-48 object-cover rounded-md mb-3 sm:mb-4"
         />
-        <h3 className="text-xl font-semibold text-primary mb-2">{product.name}</h3>
-        <p className="text-gray-600 mb-4 text-sm leading-relaxed">{product.description}</p>
+        <h3 className="text-sm xs:text-base sm:text-lg font-semibold text-primary mb-1 sm:mb-2 line-clamp-2">{product.name}</h3>
+        <p className="text-gray-600 mb-3 sm:mb-4 text-[11px] xs:text-xs sm:text-sm leading-snug line-clamp-3">{product.description}</p>
         
-        <div className="flex flex-wrap gap-2 mb-4">
+  <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
           {product.benefits.map((benefit) => (
             <Badge
               key={benefit}
               variant="secondary"
-              className={`${getBenefitBadgeColor(benefit)} text-xs px-3 py-1`}
+              className={`${getBenefitBadgeColor(benefit)} text-[10px] xs:text-[11px] sm:text-xs px-2.5 py-0.5`}
             >
               {benefit}
             </Badge>
           ))}
         </div>
         
-        <div className="flex justify-between items-center">
-          <span className="text-2xl font-bold text-secondary">
+        <div className="flex justify-between items-center gap-2">
+          <span className="text-[10px] xs:text-xs sm:text-sm font-semibold text-secondary">
             {formatPrice((product as any).price)}
           </span>
           <Button
             onClick={() => onAddToCart(product)}
-            className="bg-primary text-white hover:bg-green-800 transition-colors"
+            className="bg-primary text-white hover:bg-green-800 transition-colors h-8 px-2 sm:px-3 text-xs sm:text-sm"
             disabled={product.inStock === 0}
           >
             {product.inStock === 0 ? "Out of Stock" : "Add to Cart"}

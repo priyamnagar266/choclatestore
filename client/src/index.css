@@ -2,52 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Cream + Deep Forest Green brand palette */
 :root {
-  --background: hsl(0, 0%, 100%);
-  --foreground: hsl(20, 14.3%, 4.1%);
-  --muted: hsl(60, 4.8%, 95.9%);
-  --muted-foreground: hsl(25, 5.3%, 44.7%);
-  --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(20, 14.3%, 4.1%);
-  --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(20, 14.3%, 4.1%);
-  --border: hsl(20, 5.9%, 90%);
-  --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(97, 61%, 20%);
-  --primary-foreground: hsl(0, 0%, 98%);
-  --secondary: hsl(25, 76%, 31%);
-  --secondary-foreground: hsl(0, 0%, 98%);
-  --accent: hsl(38, 85%, 67%);
-  --accent-foreground: hsl(0, 0%, 98%);
-  --destructive: hsl(0, 84.2%, 60.2%);
-  --destructive-foreground: hsl(60, 9.1%, 97.8%);
-  --ring: hsl(20, 14.3%, 4.1%);
+  /* Surfaces */
+  --background: #FBF9F4; /* overall page off‑cream */
+  --foreground: #1C211E; /* near black text */
+  --card: #FFFFFF; /* pure white cards for contrast */
+  --card-foreground: #1C211E;
+  --popover: #FFFFFF;
+  --popover-foreground: #1C211E;
+  --muted: #F1EDE5;
+  --muted-foreground: #61665F;
+  --neutral: #F4F1EA; /* utility neutral */
+  /* Brand */
+  --primary: #1E382F; /* deep forest green */
+  --primary-foreground: #F5F1E8; /* cream text */
+  --secondary: #2F4F43; /* supporting darker green */
+  --secondary-foreground: #F5F1E8;
+  --accent: #D9CFAF; /* warm soft gold/cream highlight */
+  --accent-foreground: #1E382F;
+  --destructive: #B94A3E;
+  --destructive-foreground: #FFF8F6;
+  --border: #E3DED3;
+  --input: #E3DED3;
+  --ring: #1E382F;
   --radius: 0.5rem;
-  --neutral: hsl(220, 14%, 96%);
 }
 
-.dark {
-  --background: hsl(240, 10%, 3.9%);
-  --foreground: hsl(0, 0%, 98%);
-  --muted: hsl(240, 3.7%, 15.9%);
-  --muted-foreground: hsl(240, 5%, 64.9%);
-  --popover: hsl(240, 10%, 3.9%);
-  --popover-foreground: hsl(0, 0%, 98%);
-  --card: hsl(240, 10%, 3.9%);
-  --card-foreground: hsl(0, 0%, 98%);
-  --border: hsl(240, 3.7%, 15.9%);
-  --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(97, 61%, 20%);
-  --primary-foreground: hsl(0, 0%, 98%);
-  --secondary: hsl(25, 76%, 31%);
-  --secondary-foreground: hsl(0, 0%, 98%);
-  --accent: hsl(38, 85%, 67%);
-  --accent-foreground: hsl(0, 0%, 98%);
-  --destructive: hsl(0, 62.8%, 30.6%);
-  --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(240, 4.9%, 83.9%);
-  --radius: 0.5rem;
-  --neutral: hsl(240, 3.7%, 15.9%);
+.dark { /* simplified dark mode harmonized */
+  --background: #121814;
+  --foreground: #F5F1E8;
+  --muted: #1F2722;
+  --muted-foreground: #A8B2AB;
+  --popover: #1F2722;
+  --popover-foreground: #F5F1E8;
+  --card: #18201B;
+  --card-foreground: #F5F1E8;
+  --border: #27332C;
+  --input: #27332C;
+  --primary: #2C4C40;
+  --primary-foreground: #F5F1E8;
+  --secondary: #3A574B;
+  --secondary-foreground: #F5F1E8;
+  --accent: #C5B894;
+  --accent-foreground: #18201B;
+  --destructive: #8F392F;
+  --destructive-foreground: #FFF8F6;
+  --ring: #365847;
+  --neutral: #1F2722;
 }
 
 @layer base {
@@ -55,15 +57,16 @@
     @apply border-border;
   }
 
-  body {
-    @apply font-sans antialiased bg-background text-foreground;
-  }
+  body { @apply font-sans antialiased bg-background text-foreground; }
+  h1,h2,h3,h4,h5,h6 { @apply font-heading tracking-wide; }
 }
 
 @layer utilities {
   .bg-neutral {
     background-color: var(--neutral);
   }
+  .font-heading { font-family: 'Agrandir Grand', 'DM Sans', sans-serif; }
+  .font-sans { font-family: 'DM Sans', system-ui, sans-serif; }
   
   .text-neutral {
     color: var(--neutral);

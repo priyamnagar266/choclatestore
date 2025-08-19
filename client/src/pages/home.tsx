@@ -1,4 +1,6 @@
 import { useAuth } from "@/components/auth-context";
+// Import media assets so they are processed by Vite during build (fixes deployment path issues)
+import productVideo from "@/components/Assets/20250721_111849_0001.mp4";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -25,6 +27,7 @@ import { Play, Star, Phone, Mail, MapPin, Clock, MessageCircle, X, Minus, Plus, 
 import type { Product } from "@shared/schema";
 import { CartItem, calculateCartTotal, calculateItemCount, formatPrice } from "@/lib/products";
 import { insertOrderSchema, insertContactSchema, insertNewsletterSchema } from "@shared/schema";
+import { url } from "inspector";
 
 const orderFormSchema = insertOrderSchema.extend({
   items: z.string().min(1, "Please select at least one product"),
@@ -356,7 +359,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral">
+  <div className="min-h-screen bg-white">
       <Navigation 
         cartItemCount={calculateItemCount(cart)} 
         onCartClick={() => setShowCart(true)} 
@@ -385,18 +388,11 @@ export default function Home() {
                 Fuel your mind and elevate your mood with nature's most powerful ingredients. Each bar is carefully crafted to deliver sustained energy and mental clarity.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
+                <Button
                   onClick={scrollToProducts}
                   className="bg-accent text-white hover:bg-orange-500 px-8 py-4 text-lg font-semibold transform hover:scale-105"
                 >
                   Shop Now
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => scrollToSection('products')}
-                  className="border-2 border-white bg-white/10 text-white hover:bg-white hover:text-primary px-8 py-4 text-lg font-semibold transform hover:scale-105 transition-all duration-200"
-                >
-                  Learn More
                 </Button>
               </div>
             </div>
@@ -415,16 +411,13 @@ export default function Home() {
       </section>
 
       {/* Products Section */}
-      <section id="products" className="py-20 bg-white">
+  <section id="products" className="py-20 bg-neutral">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-primary mb-4">Our Energy Bar Collection</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Each bar is meticulously crafted with premium ancient superfoods and rich cocoa to deliver specific benefits for your mind and body.
-            </p>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-primary">Products</h2>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {products.map((product) => (
               <ProductCard
                 key={product.id}
@@ -449,9 +442,8 @@ export default function Home() {
             <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl">
                 <div className="aspect-video bg-gray-900 flex items-center justify-center relative">
                 <video 
-                  src="/src/components/Assets/20250721_111849_0001.mp4" 
+                  src={productVideo}
                   controls
-                  // poster="https://images.unsplash.com/photo-1606787366850-de6330128bfc?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&h=1080"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded">
@@ -464,7 +456,7 @@ export default function Home() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-neutral">
+  <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-primary mb-4">What Our Customers Say</h2>
@@ -492,7 +484,7 @@ export default function Home() {
                 image: "https://pixabay.com/get/g6ac1b2dc634d78fd086a1d560a2b786b2441b579508ab0397f72b084aea108ac9264806201cefff853fed04660570991431fec36507b47f58a24252a00670a48_1280.jpg"
               }
             ].map((testimonial, index) => (
-              <Card key={index} className="bg-white p-8">
+              <Card key={index} className="bg-neutral p-8">
                 <CardContent className="p-0">
                   <div className="flex items-center mb-4">
                     {[...Array(5)].map((_, i) => (
@@ -519,146 +511,86 @@ export default function Home() {
       </section>
 
       {/* About Us Section */}
-      <section id="aboutus" className="py-20 bg-white">
+  <section id="aboutus" className="py-20 bg-neutral">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center gap-12">
           <div className="flex-1 text-left md:text-justify">
             <h2 className="text-4xl font-bold text-primary mb-4">About Us</h2>
             <p className="text-xl text-gray-600 mb-6">Cokha Energy Foods is dedicated to crafting premium energy bars using ancient Indian superfoods and rich cocoa. Our mission is to fuel your mind, elevate your mood, and energize your life naturally. We believe in honest nutrition, authentic flavors, and wellness for everyone.</p>
-            <div className="mt-4 text-lg text-gray-700">
-              <p>Founded by Rajsic Foods Pvt Ltd, our team is passionate about blending tradition with modern science to create snacks that truly make a difference. Every bar is meticulously crafted for specific benefits—focus, energy, mood, and more.</p>
-              <p className="mt-4">Join us on your wellness journey and experience the power of ancient superfoods in every bite!</p>
-            </div>
+            {/* Removed additional descriptive lines per request */}
           </div>
           <div className="flex-1 flex justify-center">
-            <img src="/src/components/Assets/logo.jpg" />
+            <img src="https://i.postimg.cc/nLv7Jfq6/image.png" />
           </div>
         </div>
       </section>
 
-      {/* Newsletter Section */}
-      <section className="py-16 bg-gradient-to-r from-primary to-green-800 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold mb-4">Stay Updated on Wellness</h2>
-            <p className="text-xl opacity-90">Get exclusive offers, nutrition tips, and be the first to know about new superfood energy bars</p>
-          </div>
-          <Form {...newsletterForm}>
-            <form onSubmit={newsletterForm.handleSubmit((data) => subscribeNewsletterMutation.mutate(data))} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-              <FormField
-                control={newsletterForm.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem className="flex-1">
-                    <FormControl>
-                      <Input 
-                        type="email" 
-                        placeholder="Enter your email address" 
-                        className="text-gray-800"
-                        {...field} 
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <Button
-                type="submit"
-                disabled={subscribeNewsletterMutation.isPending}
-                className="bg-accent text-white hover:bg-orange-500 font-semibold"
-              >
-                {subscribeNewsletterMutation.isPending ? "Subscribing..." : "Subscribe"}
-              </Button>
-            </form>
-          </Form>
-          <p className="text-sm opacity-75 mt-4">No spam, unsubscribe anytime. Your wellness journey starts with staying informed.</p>
-        </div>
-      </section>
 
       {/* Contact Section */}
-      <section id="contact" className="py-20 bg-neutral">
+  <section id="contact" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-primary mb-4">Get in Touch</h2>
             <p className="text-xl text-gray-600">Have questions about our products or need personalized nutrition advice?</p>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-12">
-            {/* Contact Information */}
-            <div className="lg:col-span-1">
-              <Card className="bg-white">
-                <CardHeader>
-                  <CardTitle className="text-2xl text-primary">Contact Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-primary text-white p-3 rounded-lg">
-                      <MapPin className="h-5 w-5" />
-                    </div>
+          <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* Contact Information Card */}
+            <Card className="bg-white">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-2xl text-primary">Contact Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-start space-x-4">
+                  <div className="bg-primary text-white p-3 rounded-md"><MapPin className="h-5 w-5" /></div>
+                  <div>
+                    <h4 className="font-semibold text-primary">Address</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">
+                      Rajasic Foods Pvt Ltd<br />
+                      123 Wellness Street, Organic Plaza<br />
+                      Mumbai, Maharashtra 400001
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-4">
+                  <div className="bg-primary text-white p-3 rounded-md"><Phone className="h-5 w-5" /></div>
+                  <div>
+                    <h4 className="font-semibold text-primary">Phone</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">+91 98765 43210<br />+91 87654 32109</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-4">
+                  <div className="bg-primary text-white p-3 rounded-md"><Mail className="h-5 w-5" /></div>
+                  <div>
+                    <h4 className="font-semibold text-primary">Email</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">info@rajasicfoods.com<br />orders@rajasicfoods.com</p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-4">
+                  <div className="bg-primary text-white p-3 rounded-md"><Clock className="h-5 w-5" /></div>
+                  <div>
+                    <h4 className="font-semibold text-primary">Business Hours</h4>
+                    <p className="text-gray-600 text-sm leading-relaxed">Mon - Sat: 9:00 AM - 8:00 PM<br />Sun: 10:00 AM - 6:00 PM</p>
+                  </div>
+                </div>
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="flex items-center mb-3">
+                    <MessageCircle className="text-green-600 h-6 w-6 mr-3" />
                     <div>
-                      <h4 className="font-semibold text-gray-800">Address</h4>
-                      <p className="text-gray-600">
-                        Rajsic Foods Pvt Ltd<br />
-                        123 Wellness Street, Organic Plaza<br />
-                        Mumbai, Maharashtra 400001
-                      </p>
+                      <h4 className="font-semibold text-green-800">WhatsApp Support</h4>
+                      <p className="text-green-700 text-xs">Get instant answers to your questions</p>
                     </div>
                   </div>
+                  <Button
+                    onClick={() => window.open('https://wa.me/919876543210', '_blank')}
+                    className="w-full bg-green-600 text-white hover:bg-green-700 h-9 text-sm"
+                  >
+                    <MessageCircle className="mr-2 h-4 w-4" /> Chat with Us on WhatsApp
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-primary text-white p-3 rounded-lg">
-                      <Phone className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-800">Phone</h4>
-                      <p className="text-gray-600">+91 98765 43210</p>
-                      <p className="text-gray-600">+91 87654 32109</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-primary text-white p-3 rounded-lg">
-                      <Mail className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-800">Email</h4>
-                      <p className="text-gray-600">info@rajsicfoods.com</p>
-                      <p className="text-gray-600">orders@rajsicfoods.com</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-4">
-                    <div className="bg-primary text-white p-3 rounded-lg">
-                      <Clock className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-800">Business Hours</h4>
-                      <p className="text-gray-600">
-                        Monday - Saturday: 9:00 AM - 8:00 PM<br />
-                        Sunday: 10:00 AM - 6:00 PM
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
-                    <div className="flex items-center mb-3">
-                      <MessageCircle className="text-green-500 h-6 w-6 mr-3" />
-                      <div>
-                        <h4 className="font-semibold text-green-800">WhatsApp Support</h4>
-                        <p className="text-green-600 text-sm">Get instant answers to your questions</p>
-                      </div>
-                    </div>
-                    <Button
-                      onClick={() => window.open('https://wa.me/919876543210', '_blank')}
-                      className="w-full bg-green-500 text-white hover:bg-green-600"
-                    >
-                      <MessageCircle className="mr-2 h-4 w-4" />
-                      Chat with Us on WhatsApp
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Contact Form */}
+            {/* Contact Form Card */}
             <div className="lg:col-span-2">
               <Card className="bg-white">
                 <CardHeader>
@@ -771,44 +703,9 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-4 gap-8">
-            <div className="lg:col-span-2">
-              <div className="text-3xl font-bold text-accent mb-4">Cokha by Rajsic Foods</div>
-              <p className="text-gray-300 mb-6 max-w-md">
-               Crafting premium energy bars with ancient Indian superfoods and rich cocoa to fuel your mind, elevate your mood, and energize your life naturally.
-              </p>
-            </div>
-
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2">
-                <li><button onClick={() => scrollToSection('home')} className="text-gray-300 hover:text-accent transition-colors">Home</button></li>
-                <li><button onClick={() => scrollToSection('products')} className="text-gray-300 hover:text-accent transition-colors">Products</button></li>
-                <li><button onClick={scrollToOrder} className="text-gray-300 hover:text-accent transition-colors">Order Online</button></li>
-                <li><button onClick={() => scrollToSection('contact')} className="text-gray-300 hover:text-accent transition-colors">Contact</button></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Support</h4>
-              <ul className="space-y-2">
-                <li><span className="text-gray-300">FAQ</span></li>
-                <li><span className="text-gray-300">Shipping Info</span></li>
-                <li><span className="text-gray-300">Return Policy</span></li>
-                <li><span className="text-gray-300">Nutrition Guide</span></li>
-                <li><span className="text-gray-300">Privacy Policy</span></li>
-              </ul>
-            </div>
-          </div>
-
-          <Separator className="border-gray-700 my-8" />
-          
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400">&copy; 2024 Rajsic Foods Pvt Ltd. All rights reserved.</p>
-            <p className="text-gray-400">Made with ❤️ for your wellness journey</p>
-          </div>
+      <footer className="bg-gray-900 text-white py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <p className="text-gray-400 text-sm">&copy; {new Date().getFullYear()} Rajasic Foods Pvt Ltd. All rights reserved.</p>
         </div>
       </footer>
 

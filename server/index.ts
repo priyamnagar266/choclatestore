@@ -72,7 +72,7 @@ app.use((req, res, next) => {
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
+  if (app.get("env") === "development" && !process.env.NO_VITE) {
     await setupVite(app, server);
   } else {
     // In production we previously served the built client from the same server.

@@ -48,12 +48,12 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
   ];
 
   return (
-    <nav className="bg-white shadow-md sticky top-0 z-50">
+  <nav className="bg-neutral shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16 justify-between">
           <div className="flex items-center">
             <div className="text-2xl font-bold">
-              <span className="text-amber-800">Cokha</span> <span className="text-green-600 text-lg">by Rajsic Foods</span>
+              <span className="text-amber-800">Cokha</span> <span className="text-green-600 text-lg">by Rajasic Foods</span>
             </div>
           </div>
 
@@ -87,7 +87,7 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
                   <svg className={`h-4 w-4 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"/></svg>
                 </button>
                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow-lg z-50 py-1 text-sm">
+                  <div className="absolute right-0 mt-2 w-40 bg-neutral border rounded shadow-lg z-50 py-1 text-sm">
                     <button
                       className="w-full px-4 py-2 text-left hover:bg-gray-100"
                       onClick={() => { setLocation('/orders'); setUserMenuOpen(false); }}
