@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, ShoppingCart } from "lucide-react";
+import { Menu, ShoppingCart, User as UserIcon } from "lucide-react";
 import { useAuth } from "./auth-context";
 import { useLocation } from "wouter";
 
@@ -133,49 +133,60 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-[300px] sm:w-[350px]">
-                  <div className="flex flex-col space-y-4 mt-8">
-                    {navItems.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => { scrollToSection(item.id); setMobileNavOpen(false); }}
-                        className="text-left text-lg text-gray-700 hover:text-primary transition-colors py-2"
-                      >
-                        {item.label}
-                      </button>
-                    ))}
+                  <div className="flex flex-col mt-6">
+                    {user && (
+                      <div className="flex items-center gap-3 mb-6 px-1">
+                        <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                          <UserIcon className="h-5 w-5" />
+                        </div>
+                        <div className="leading-tight">
+                          <div className="font-semibold text-primary">{user.name}</div>
+                          <div className="text-xs text-gray-500">Welcome back</div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex flex-col space-y-2">
+                      {navItems.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => { scrollToSection(item.id); setMobileNavOpen(false); }}
+                          className="text-left text-lg text-gray-700 hover:text-primary transition-colors py-1"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                      {user && (
+                        <button
+                          onClick={() => { setLocation('/orders'); setMobileNavOpen(false); }}
+                          className="text-left text-lg text-gray-700 hover:text-primary transition-colors py-1"
+                        >
+                          Order History
+                        </button>
+                      )}
+                    </div>
                     <Button
                       onClick={() => {
                         onCartClick();
                         setMobileNavOpen(false);
                       }}
-                      className="bg-primary text-white hover:bg-green-800 mt-4"
+                      className="bg-primary text-white hover:bg-green-800 mt-6"
                     >
                       <ShoppingCart className="mr-2 h-4 w-4" />
                       Cart ({cartItemCount})
                     </Button>
                     {user ? (
-                      <>
-                        <span className="mt-4 text-green-700 font-semibold select-none">Hi, {user.name}</span>
-                        <Button
-                          variant="ghost"
-                          className="mt-2 justify-start"
-                          onClick={() => { setLocation('/orders'); setMobileNavOpen(false); }}
-                        >
-                          Order History
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="mt-2"
-                          onClick={() => { logout(); setMobileNavOpen(false); }}
-                        >
-                          Logout
-                        </Button>
-                      </>
+                      <Button
+                        variant="outline"
+                        className="mt-6"
+                        onClick={() => { logout(); setMobileNavOpen(false); }}
+                      >
+                        Logout
+                      </Button>
                     ) : (
-                      <>
-                        <a href="/login" className="mt-4 text-primary hover:underline" onClick={() => setMobileNavOpen(false)}>Login</a>
-                        <a href="/signup" className="mt-2 text-primary hover:underline" onClick={() => setMobileNavOpen(false)}>Sign Up</a>
-                      </>
+                      <div className="flex flex-col mt-6 space-y-2">
+                        <a href="/login" className="text-primary hover:underline" onClick={() => setMobileNavOpen(false)}>Login</a>
+                        <a href="/signup" className="text-primary hover:underline" onClick={() => setMobileNavOpen(false)}>Sign Up</a>
+                      </div>
                     )}
                   </div>
                 </SheetContent>
