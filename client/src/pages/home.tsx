@@ -1,7 +1,7 @@
 import { useAuth } from "@/components/auth-context";
 // Import media assets so they are processed by Vite during build (fixes deployment path issues)
 import productVideo from "@/components/Assets/20250721_111849_0001.mp4";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -55,6 +55,8 @@ export default function Home() {
     return savedCart ? JSON.parse(savedCart) : [];
   });
   const [showCart, setShowCart] = useState(false);
+  // Mobile contact form collapse state
+  const [mobileFormOpen, setMobileFormOpen] = useState(false);
 
   // Persist cart when user changes (load their specific cart)
   useEffect(()=>{
@@ -350,13 +352,12 @@ export default function Home() {
     document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  if (productsLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
+  // Derive a lightweight initial product subset for faster first paint
+  const initialProducts = useMemo(() => products.slice(0, 4), [products]);
+  const remainingProducts = useMemo(() => products.slice(4), [products]);
+
+  // We'll show skeletons while loading instead of a blocking full-page spinner
+  const showSkeletons = productsLoading && products.length === 0;
 
   return (
   <div className="min-h-screen bg-white">
@@ -400,7 +401,10 @@ export default function Home() {
               <img 
                 src="https://i.postimg.cc/cLZtLg16/Gemini-Generated-Image-wv9jaswv9jaswv9j.png" 
                 alt="Cokha energy bars with ancient superfoods" 
-                className="rounded-2xl shadow-2xl"
+                className="rounded-2xl shadow-2xl" 
+                loading="lazy"
+                decoding="async"
+                fetchPriority="high"
               />
               <div className="absolute -top-4 -right-4 bg-accent text-white px-6 py-3 rounded-full font-bold">
                 100% Natural
@@ -418,12 +422,20 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={addToCart}
-              />
+            {showSkeletons && Array.from({length:4}).map((_,i)=> (
+              <div key={i} className="animate-pulse rounded-xl bg-white p-4 space-y-4 shadow">
+                <div className="h-32 bg-gray-200 rounded-md" />
+                <div className="h-4 bg-gray-200 rounded w-3/4" />
+                <div className="h-4 bg-gray-100 rounded w-1/2" />
+                <div className="h-8 bg-gray-300 rounded" />
+              </div>
+            ))}
+            {!showSkeletons && initialProducts.map(product => (
+              <ProductCard key={product.id} product={product} onAddToCart={addToCart} />
+            ))}
+            {/* Lazy render remaining after first paint */}
+            {!showSkeletons && remainingProducts.map(product => (
+              <ProductCard key={product.id} product={product} onAddToCart={addToCart} />
             ))}
           </div>
         </div>
@@ -444,6 +456,8 @@ export default function Home() {
                 <video 
                   src={productVideo}
                   controls
+                  preload="metadata"
+                  poster="https://i.postimg.cc/cLZtLg16/Gemini-Generated-Image-wv9jaswv9jaswv9j.png"
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded">
@@ -592,22 +606,65 @@ export default function Home() {
 
             {/* Contact Form Card */}
             <div className="lg:col-span-2">
-              <Card className="bg-white">
-                <CardHeader>
-                  <CardTitle className="text-2xl text-primary">Send us a Message</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Form {...contactForm}>
-                    <form onSubmit={contactForm.handleSubmit((data) => createContactMutation.mutate(data))} className="space-y-6">
-                      <div className="grid md:grid-cols-2 gap-6">
+              {/* Mobile collapsible header */}
+              <button
+                type="button"
+                onClick={() => setMobileFormOpen(o => !o)}
+                className="md:hidden w-full bg-primary text-primary-foreground tracking-[0.35em] text-xs py-4 rounded-t-md flex items-center justify-center gap-2 shadow-sm"
+                aria-expanded={mobileFormOpen}
+                aria-controls="contact-form-mobile"
+              >
+                SEND US A MESSAGE
+                <span className={`transition-transform duration-300 ${mobileFormOpen ? 'rotate-180' : ''}`}>▾</span>
+              </button>
+              {/* Form card (always visible on md+, conditional on mobile) */}
+              <div
+                id="contact-form-mobile"
+                className={`${mobileFormOpen ? 'block' : 'hidden'} md:block`}
+              >
+                <Card className="bg-white rounded-t-none md:rounded-md border-t-0 md:border-t">
+                  <CardHeader>
+                    <CardTitle className="text-2xl text-primary md:text-left text-center">Send us a Message</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Form {...contactForm}>
+                      <form onSubmit={contactForm.handleSubmit((data) => createContactMutation.mutate(data))} className="space-y-6">
+                        <div className="grid md:grid-cols-2 gap-6">
+                          <FormField
+                            control={contactForm.control}
+                            name="firstName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>First Name *</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={contactForm.control}
+                            name="lastName"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Last Name *</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                         <FormField
                           control={contactForm.control}
-                          name="firstName"
+                          name="email"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>First Name *</FormLabel>
+                              <FormLabel>Email Address *</FormLabel>
                               <FormControl>
-                                <Input {...field} />
+                                <Input type="email" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -615,88 +672,58 @@ export default function Home() {
                         />
                         <FormField
                           control={contactForm.control}
-                          name="lastName"
+                          name="subject"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Last Name *</FormLabel>
+                              <FormLabel>Subject *</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a subject" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="product-inquiry">Product Inquiry</SelectItem>
+                                  <SelectItem value="order-support">Order Support</SelectItem>
+                                  <SelectItem value="nutritional-advice">Nutritional Advice</SelectItem>
+                                  <SelectItem value="wholesale">Wholesale/Bulk Orders</SelectItem>
+                                  <SelectItem value="partnership">Partnership Opportunities</SelectItem>
+                                  <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={contactForm.control}
+                          name="message"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Message *</FormLabel>
                               <FormControl>
-                                <Input {...field} />
+                                <Textarea
+                                  placeholder="Tell us how we can help you..."
+                                  className="min-h-[120px]"
+                                  {...field}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                      </div>
-                      
-                      <FormField
-                        control={contactForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email Address *</FormLabel>
-                            <FormControl>
-                              <Input type="email" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={contactForm.control}
-                        name="subject"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Subject *</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a subject" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="product-inquiry">Product Inquiry</SelectItem>
-                                <SelectItem value="order-support">Order Support</SelectItem>
-                                <SelectItem value="nutritional-advice">Nutritional Advice</SelectItem>
-                                <SelectItem value="wholesale">Wholesale/Bulk Orders</SelectItem>
-                                <SelectItem value="partnership">Partnership Opportunities</SelectItem>
-                                <SelectItem value="other">Other</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={contactForm.control}
-                        name="message"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Message *</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Tell us how we can help you..." 
-                                className="min-h-[120px]"
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <Button
-                        type="submit"
-                        disabled={createContactMutation.isPending}
-                        className="w-full bg-primary text-white hover:bg-green-800"
-                      >
-                        {createContactMutation.isPending ? "Sending..." : "Send Message"}
-                      </Button>
-                    </form>
-                  </Form>
-                </CardContent>
-              </Card>
+                        <Button
+                          type="submit"
+                          disabled={createContactMutation.isPending}
+                          className="w-full bg-primary text-white hover:bg-green-800"
+                        >
+                          {createContactMutation.isPending ? 'Sending...' : 'Send Message'}
+                        </Button>
+                      </form>
+                    </Form>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
         </div>
