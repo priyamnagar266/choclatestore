@@ -2,6 +2,7 @@ import { useAuth } from "@/components/auth-context";
 // Import media assets so they are processed by Vite during build (fixes deployment path issues)
 import productVideo from "@/components/Assets/20250721_111849_0001.mp4";
 import { useState, useEffect, useRef } from "react";
+import { useReveal } from "@/hooks/useReveal";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -43,16 +44,20 @@ const contactFormSchema = insertContactSchema;
 const newsletterFormSchema = insertNewsletterSchema;
 
 export default function Home() {
+  // Trigger reveal animations
+  useReveal();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
   // Cart state (persisted in localStorage until payment)
+  const resolveCartKey = (u = user) => u ? `cart_${u.id}` : 'cart_guest';
   const [cart, setCart] = useState<CartItem[]>(() => {
-    const key = user ? `cart_${user.id}` : 'cart_guest';
-    const savedCart = localStorage.getItem(key);
-    return savedCart ? JSON.parse(savedCart) : [];
+    try {
+      const savedCart = localStorage.getItem(resolveCartKey());
+      return savedCart ? JSON.parse(savedCart) : [];
+    } catch { return []; }
   });
   const [showCart, setShowCart] = useState(false);
   // Mobile contact form collapse state
@@ -60,18 +65,32 @@ export default function Home() {
 
   // Persist cart when user changes (load their specific cart)
   useEffect(()=>{
-    const key = user ? `cart_${user.id}` : 'cart_guest';
     try {
-      const saved = localStorage.getItem(key);
+      const saved = localStorage.getItem(resolveCartKey());
       setCart(saved ? JSON.parse(saved) : []);
     } catch { setCart([]); }
   }, [user]);
 
   // Persist cart updates to user-specific key
   useEffect(()=>{
-    const key = user ? `cart_${user.id}` : 'cart_guest';
-    try { localStorage.setItem(key, JSON.stringify(cart)); } catch {}
+    try { localStorage.setItem(resolveCartKey(), JSON.stringify(cart)); } catch {}
   }, [cart, user]);
+
+  // React to cart removal from other tabs / payment page redirect
+  useEffect(() => {
+    const handler = (e: StorageEvent) => {
+      if (e.key && e.key.startsWith('cart_') || e.key === 'cart_guest') {
+        if (e.newValue === null) {
+          // Cart cleared
+            setCart([]);
+        } else if (e.key === resolveCartKey()) {
+          try { setCart(e.newValue ? JSON.parse(e.newValue) : []); } catch { setCart([]); }
+        }
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, [user]);
   
   // Order form state
   const [orderQuantities, setOrderQuantities] = useState<Record<number, number>>({});
@@ -245,7 +264,7 @@ export default function Home() {
           image: product.image,
         }];
       }
-      localStorage.setItem('cart', JSON.stringify(updatedCart));
+      try { localStorage.setItem(resolveCartKey(), JSON.stringify(updatedCart)); } catch {}
       return updatedCart;
     });
     toast({
@@ -257,7 +276,7 @@ export default function Home() {
   const removeFromCart = (productId: number) => {
     setCart(prev => {
       const updatedCart = prev.filter(item => item.id !== productId);
-      localStorage.setItem('cart', JSON.stringify(updatedCart));
+      try { localStorage.setItem(resolveCartKey(), JSON.stringify(updatedCart)); } catch {}
       return updatedCart;
     });
   };
@@ -273,7 +292,7 @@ export default function Home() {
           ? { ...item, quantity: Math.max(1, quantity) }
           : item
       );
-      localStorage.setItem('cart', JSON.stringify(updatedCart));
+      try { localStorage.setItem(resolveCartKey(), JSON.stringify(updatedCart)); } catch {}
       return updatedCart;
     });
   };
@@ -292,7 +311,7 @@ export default function Home() {
 
   const clearCart = () => {
     setCart([]);
-    localStorage.removeItem('cart');
+    try { localStorage.removeItem(resolveCartKey()); } catch {}
   };
 
   const updateQuantity = (productId: number, quantity: number) => {
@@ -393,7 +412,7 @@ export default function Home() {
       />
       
       {/* Hero Section */}
-      <section id="home" className="relative bg-gradient-to-br from-primary to-green-800 text-white">
+  <section id="home" className="relative bg-gradient-to-br from-primary to-green-800 text-white anim-fade-in" data-anim>
         <div className="absolute inset-0 opacity-20">
           <img 
             src="https://images.unsplash.com/photo-1606787366850-de6330128bfc?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&h=1080" 
@@ -441,7 +460,7 @@ export default function Home() {
       </section>
 
       {/* Products Section */}
-  <section id="products" className="py-20 bg-neutral">
+  <section id="products" className="py-20 bg-neutral anim-fade-up" data-anim>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-primary">Products</h2>
@@ -475,7 +494,7 @@ export default function Home() {
       </section>
 
       {/* Video Section */}
-      <section className="py-20 bg-primary text-white">
+  <section className="py-20 bg-primary text-white anim-fade-up" data-anim>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold mb-4">See How We Craft Excellence</h2>
@@ -503,7 +522,7 @@ export default function Home() {
       </section>
 
       {/* Testimonials Section */}
-  <section className="py-20 bg-white">
+  <section className="py-20 bg-white anim-fade-up" data-anim>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-primary mb-4">What Our Customers Say</h2>
@@ -558,7 +577,7 @@ export default function Home() {
       </section>
 
       {/* About Us Section */}
-  <section id="aboutus" className="py-20 bg-neutral">
+  <section id="aboutus" className="py-20 bg-neutral anim-fade-up" data-anim>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center gap-12">
           <div className="flex-1 text-left md:text-justify">
             <h2 className="text-4xl font-bold text-primary mb-4">About Us</h2>
@@ -573,7 +592,7 @@ export default function Home() {
 
 
       {/* Contact Section */}
-  <section id="contact" className="py-20 bg-white">
+  <section id="contact" className="py-20 bg-white anim-fade-up" data-anim>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-primary mb-4">Get in Touch</h2>
@@ -866,7 +885,7 @@ export default function Home() {
                         }
                         // Prepare order object and save to localStorage before redirecting
                         // Always save the full cart to pendingOrder.products and recalculate totals
-                        const cartRaw = localStorage.getItem('cart');
+                        const cartRaw = localStorage.getItem(resolveCartKey());
                         const cartItems = cartRaw ? JSON.parse(cartRaw) : cart;
                         if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
                           toast({

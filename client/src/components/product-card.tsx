@@ -11,7 +11,7 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, onAddToCart }: ProductCardProps) {
   return (
-  <Card className="h-full hover:shadow-xl transition-shadow hover:scale-[1.02] bg-white">
+    <Card data-anim className="h-full hover:shadow-xl transition-shadow hover:scale-[1.02] bg-white anim-zoom-in">
       <CardContent className="p-4 sm:p-5">
         <img
           src={product.image}

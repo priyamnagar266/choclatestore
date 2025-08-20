@@ -69,10 +69,19 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
           currency: "INR"
         });
         razorpayOrder = await razorpayOrderRes.json();
-      } catch (err) {
+      } catch (err: any) {
+        let serverMsg = 'Could not create Razorpay order. Please try again later.';
+        try {
+          // Attempt to re-fetch raw response to parse message (apiRequest already threw, so do manual fetch)
+          const raw = await fetch('/api/create-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount, currency: 'INR' }) });
+          if (!raw.ok) {
+            const text = await raw.text();
+            serverMsg = text.slice(0,200);
+          }
+        } catch {}
         toast({
           title: "Server Error",
-          description: "Could not create Razorpay order. Please try again later.",
+          description: serverMsg,
           variant: "destructive",
         });
         setIsProcessing(false);
@@ -159,19 +168,31 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
             });
             // Get pending order from localStorage to send as orderData
             const pendingOrderRaw = localStorage.getItem('pendingOrder');
-            const pendingOrder = pendingOrderRaw ? JSON.parse(pendingOrderRaw) : {};
-            // Validate products before sending
-            if (!pendingOrder.items || !Array.isArray(pendingOrder.items) || pendingOrder.items.length === 0) {
-              toast({
-                title: "Order Error",
-                description: "Your cart is empty or order data is invalid. Please start again.",
-                variant: "destructive",
-              });
-              setIsProcessing(false);
-              setLocation('/');
-              return;
+            const pendingOrder: any = pendingOrderRaw ? JSON.parse(pendingOrderRaw) : {};
+            // Normalize items: older flow stored as JSON string in 'items', newer flow stores array in 'products'
+            let normalizedItems: any[] = [];
+            if (Array.isArray(pendingOrder.items)) {
+              normalizedItems = pendingOrder.items;
+            } else if (typeof pendingOrder.items === 'string') {
+              try { const parsed = JSON.parse(pendingOrder.items); if (Array.isArray(parsed)) normalizedItems = parsed; } catch {}
             }
-            console.log('[CHECKOUT] pendingOrder before verify-payment:', pendingOrder);
+            if (normalizedItems.length === 0 && Array.isArray(pendingOrder.products)) {
+              // Map cart style objects to order item shape { productId, quantity }
+              normalizedItems = pendingOrder.products.map((p: any) => ({
+                productId: String(p.productId || p.id),
+                quantity: Number(p.quantity) || 1,
+              }));
+            }
+            // Attach back so backend always receives an items array
+            if (normalizedItems.length > 0) pendingOrder.items = normalizedItems;
+            else {
+              // No items found – still attempt verification so we can clear cart keys; warn user
+              toast({
+                title: "Order Data Warning",
+                description: "Couldn't fully reconstruct cart, attempting to finalize payment.",
+              });
+            }
+            console.log('[CHECKOUT] pendingOrder before verify-payment (normalized):', pendingOrder);
             const verificationResponseRaw = await apiRequest("POST", "/api/verify-payment", {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
@@ -208,6 +229,14 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
                   // Clear sensitive data
                   localStorage.removeItem('pendingOrder');
                   localStorage.removeItem('cart');
+                  try { // also clear user-scoped cart key & guest key
+                    const authUserRaw = localStorage.getItem('authUser');
+                    if (authUserRaw) {
+                      const u = JSON.parse(authUserRaw);
+                      if (u?.id) localStorage.removeItem(`cart_${u.id}`);
+                    }
+                    localStorage.removeItem('cart_guest');
+                  } catch {}
                   localStorage.removeItem('razorpayPaymentId');
                   localStorage.removeItem('razorpay_order_id');
                   localStorage.removeItem('razorpay_signature');
@@ -220,6 +249,16 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
                     description: "Payment succeeded, but order update failed. Please contact support.",
                     variant: "destructive",
                   });
+                  // Still clear cart because payment succeeded
+                  localStorage.removeItem('cart');
+                  try {
+                    const authUserRaw = localStorage.getItem('authUser');
+                    if (authUserRaw) {
+                      const u = JSON.parse(authUserRaw);
+                      if (u?.id) localStorage.removeItem(`cart_${u.id}`);
+                    }
+                    localStorage.removeItem('cart_guest');
+                  } catch {}
                 }
               } else {
                 toast({
@@ -234,9 +273,16 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
           } catch (error) {
             toast({
               title: "Payment Verification Failed",
-              description: "There was an issue verifying your payment. Please contact support.",
+              description: "There was an issue verifying your payment. We'll still clear your cart. Contact support with your payment ID.",
               variant: "destructive",
             });
+            try {
+              localStorage.removeItem('pendingOrder');
+              localStorage.removeItem('cart');
+              const authUserRaw = localStorage.getItem('authUser');
+              if (authUserRaw) { const u = JSON.parse(authUserRaw); if (u?.id) localStorage.removeItem(`cart_${u.id}`); }
+              localStorage.removeItem('cart_guest');
+            } catch {}
           }
         },
         prefill: {

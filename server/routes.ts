@@ -24,14 +24,21 @@ interface MulterRequest extends Request {
   file?: { filename: string; originalname?: string; mimetype?: string; path?: string };
 }
 
+// Razorpay init made resilient: don't crash server if keys missing in production
+let razorpay: Razorpay | null = null;
 if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-  throw new Error('Missing required Razorpay credentials: RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET');
+  console.warn('[Razorpay] Credentials missing (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET). /api/create-order will return 500 until configured.');
+} else {
+  try {
+    razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+    console.log('[Razorpay] Initialized. Key prefix:', (process.env.RAZORPAY_KEY_ID || '').slice(0,4));
+  } catch (e) {
+    console.error('[Razorpay] Initialization failed:', e);
+  }
 }
-
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Simple health check for uptime monitors / Render health probes
@@ -94,6 +101,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create Razorpay order
   app.post("/api/create-order", async (req, res) => {
     try {
+        if (!razorpay) {
+          return res.status(500).json({ message: "Payment gateway not configured. Please try again later.", code: 'RAZORPAY_NOT_CONFIGURED' });
+        }
         const { amount, currency = "INR" } = req.body;
 
         if (!amount || amount <= 0) {

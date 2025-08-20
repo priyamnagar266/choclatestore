@@ -75,4 +75,12 @@
   .border-neutral {
     border-color: var(--neutral);
   }
+
+  /* Simple fade / slide in animations */
+  .anim-fade-up { opacity: 0; transform: translateY(24px); transition: opacity .6s ease, transform .6s ease; }
+  .anim-fade-in { opacity: 0; transition: opacity .6s ease; }
+  .anim-zoom-in { opacity:0; transform: scale(.95); transition: opacity .5s ease, transform .6s cubic-bezier(.4,.0,.2,1); }
+  .anim-visible { opacity:1; transform: none; }
+  /* Stagger container (children will pick up delay via custom property) */
+  .anim-stagger > * { --_d: 0; transition-delay: calc(var(--_d) * 80ms); }
 }
