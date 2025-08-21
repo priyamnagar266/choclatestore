@@ -77,8 +77,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all products
   app.get("/api/products", async (req, res) => {
     try {
-      const products = await storage.getProducts();
-      res.json(products);
+      // Simple in-memory cache (invalidated on mutations)
+      const globalAny: any = global as any;
+      if (!globalAny.__productCache) {
+        globalAny.__productCache = { data: null as any, ts: 0, etag: '' };
+      }
+      const cache = globalAny.__productCache;
+      const now = Date.now();
+      const maxAgeMs = 60_000; // 1 minute freshness (adjust as needed)
+      let fromCache = cache.data && (now - cache.ts < maxAgeMs);
+      if (!fromCache) {
+        const fresh = await storage.getProducts();
+        const etag = 'W/"' + fresh.length + '-' + Buffer.from(String(fresh.reduce((a: number,p: any)=> a + (p.updatedAt? new Date(p.updatedAt).getTime():0),0))).toString('base64').slice(0,12) + '"';
+        cache.data = fresh; cache.ts = now; cache.etag = etag;
+      }
+      if (req.headers['if-none-match'] && cache.etag && req.headers['if-none-match'] === cache.etag) {
+        return res.status(304).end();
+      }
+      if (cache.etag) res.setHeader('ETag', cache.etag);
+      res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
+      res.json(cache.data);
     } catch (error: any) {
       res.status(500).json({ message: "Error fetching products: " + error.message });
     }
@@ -484,7 +502,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!payload.name || !payload.description || isNaN(payload.price)) {
         return res.status(400).json({ message: 'Missing required fields' });
       }
-      const product = await storage.createProduct(payload);
+  const product = await storage.createProduct(payload);
+  // Invalidate cache
+  const globalAny: any = global as any; if (globalAny.__productCache) globalAny.__productCache.ts = 0;
       res.json(product);
     } catch (e: any) {
       console.error('[ADMIN POST /api/admin/products] error', e);
@@ -504,8 +524,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (body.inStock !== undefined) update.inStock = parseInt(body.inStock,10);
       if (body.benefits !== undefined) update.benefits = Array.isArray(body.benefits) ? body.benefits : String(body.benefits).split(',').map((b: string)=>b.trim()).filter(Boolean);
   if (req.file) update.image = '/uploads/' + req.file.filename;
-      const product = await storage.updateProduct(id, update);
+  const product = await storage.updateProduct(id, update);
       if (!product) return res.status(404).json({ message: 'Product not found' });
+  const globalAny: any = global as any; if (globalAny.__productCache) globalAny.__productCache.ts = 0;
       res.json(product);
     } catch (e: any) {
       console.error('[ADMIN PUT /api/admin/products/:id] error', e);
@@ -519,8 +540,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
     try {
       const id = parseInt(req.params.id,10);
-      const ok = await storage.deleteProduct(id);
+  const ok = await storage.deleteProduct(id);
       if (!ok) return res.status(404).json({ message: 'Product not found' });
+  const globalAny: any = global as any; if (globalAny.__productCache) globalAny.__productCache.ts = 0;
       res.json({ success: true });
     } catch (e: any) {
       console.error('[ADMIN DELETE /api/admin/products/:id] error', e);

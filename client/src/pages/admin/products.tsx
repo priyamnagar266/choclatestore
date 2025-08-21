@@ -23,6 +23,7 @@ interface Product {
   benefits: string[];
   category: string;
   inStock: number;
+  energyKcal?: number; proteinG?: number; carbohydratesG?: number; totalSugarG?: number; addedSugarG?: number; totalFatG?: number; saturatedFatG?: number; transFatG?: number;
 }
 
 interface ProductFormData {
@@ -34,6 +35,7 @@ interface ProductFormData {
   category: string;
   inStock: number;
   imageFile?: File | null;
+  energyKcal?: number; proteinG?: number; carbohydratesG?: number; totalSugarG?: number; addedSugarG?: number; totalFatG?: number; saturatedFatG?: number; transFatG?: number;
 }
 
 interface ProductsResponse { products: Product[]; total: number; page: number; pageSize: number; }
@@ -54,6 +56,14 @@ export default function AdminProducts() {
     category: "",
     inStock: 0,
     imageFile: null,
+  energyKcal: undefined,
+  proteinG: undefined,
+  carbohydratesG: undefined,
+  totalSugarG: undefined,
+  addedSugarG: undefined,
+  totalFatG: undefined,
+  saturatedFatG: undefined,
+  transFatG: undefined,
   });
   const [page, setPage] = useState(1);
   const pageSize = 20;
@@ -86,6 +96,12 @@ export default function AdminProducts() {
     fd.append('benefits', payload.benefits.join(','));
     if (payload.image && !payload.imageFile) fd.append('image', payload.image);
     if (payload.imageFile) fd.append('imageFile', payload.imageFile);
+    // Append nutrition only if provided
+    const nutriKeys: (keyof ProductFormData)[] = ['energyKcal','proteinG','carbohydratesG','totalSugarG','addedSugarG','totalFatG','saturatedFatG','transFatG'];
+    for (const k of nutriKeys) {
+      const v = payload[k];
+      if (v !== undefined && v !== null && !Number.isNaN(v)) fd.append(String(k), String(v));
+    }
     return fd;
   };
 
@@ -135,7 +151,7 @@ export default function AdminProducts() {
   });
 
   const resetForm = () => {
-    setFormData({ name: '', description: '', price: 0, image: '', benefits: [], category: '', inStock: 0, imageFile: null });
+  setFormData({ name: '', description: '', price: 0, image: '', benefits: [], category: '', inStock: 0, imageFile: null });
     setEditingProduct(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -151,7 +167,7 @@ export default function AdminProducts() {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
-  setFormData({ name: product.name, description: product.description, price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, image: product.image, benefits: product.benefits, category: product.category, inStock: product.inStock, imageFile: null });
+  setFormData({ name: product.name, description: product.description, price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, image: product.image, benefits: product.benefits, category: product.category, inStock: product.inStock, imageFile: null, energyKcal: product.energyKcal, proteinG: product.proteinG, carbohydratesG: product.carbohydratesG, totalSugarG: product.totalSugarG, addedSugarG: product.addedSugarG, totalFatG: product.totalFatG, saturatedFatG: product.saturatedFatG, transFatG: product.transFatG });
     setIsDialogOpen(true);
   };
 
@@ -201,6 +217,40 @@ export default function AdminProducts() {
                   <Label htmlFor="imageFile">Image</Label>
                   <Input id="imageFile" ref={fileInputRef} type="file" accept="image/*" onChange={e=>setFormData({...formData,imageFile:e.target.files?.[0]||null})} />
                   {formData.image && !formData.imageFile && <p className='text-xs mt-1 truncate'>{formData.image}</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-4">
+                <div>
+                  <Label htmlFor="energyKcal">Energy (kcal)</Label>
+                  <Input id="energyKcal" type="number" value={formData.energyKcal ?? ''} onChange={(e)=>setFormData({...formData,energyKcal:e.target.value?parseFloat(e.target.value):undefined})} />
+                </div>
+                <div>
+                  <Label htmlFor="proteinG">Protein (g)</Label>
+                  <Input id="proteinG" type="number" value={formData.proteinG ?? ''} onChange={(e)=>setFormData({...formData,proteinG:e.target.value?parseFloat(e.target.value):undefined})} />
+                </div>
+                <div>
+                  <Label htmlFor="carbohydratesG">Carbs (g)</Label>
+                  <Input id="carbohydratesG" type="number" value={formData.carbohydratesG ?? ''} onChange={(e)=>setFormData({...formData,carbohydratesG:e.target.value?parseFloat(e.target.value):undefined})} />
+                </div>
+                <div>
+                  <Label htmlFor="totalSugarG">Sugar (g)</Label>
+                  <Input id="totalSugarG" type="number" value={formData.totalSugarG ?? ''} onChange={(e)=>setFormData({...formData,totalSugarG:e.target.value?parseFloat(e.target.value):undefined})} />
+                </div>
+                <div>
+                  <Label htmlFor="addedSugarG">Added Sugar (g)</Label>
+                  <Input id="addedSugarG" type="number" value={formData.addedSugarG ?? ''} onChange={(e)=>setFormData({...formData,addedSugarG:e.target.value?parseFloat(e.target.value):undefined})} />
+                </div>
+                <div>
+                  <Label htmlFor="totalFatG">Total Fat (g)</Label>
+                  <Input id="totalFatG" type="number" value={formData.totalFatG ?? ''} onChange={(e)=>setFormData({...formData,totalFatG:e.target.value?parseFloat(e.target.value):undefined})} />
+                </div>
+                <div>
+                  <Label htmlFor="saturatedFatG">Sat. Fat (g)</Label>
+                  <Input id="saturatedFatG" type="number" value={formData.saturatedFatG ?? ''} onChange={(e)=>setFormData({...formData,saturatedFatG:e.target.value?parseFloat(e.target.value):undefined})} />
+                </div>
+                <div>
+                  <Label htmlFor="transFatG">Trans Fat (g)</Label>
+                  <Input id="transFatG" type="number" value={formData.transFatG ?? ''} onChange={(e)=>setFormData({...formData,transFatG:e.target.value?parseFloat(e.target.value):undefined})} />
                 </div>
               </div>
               <div>
