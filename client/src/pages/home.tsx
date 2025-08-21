@@ -95,41 +95,12 @@ export default function Home() {
   // Order form state
   const [orderQuantities, setOrderQuantities] = useState<Record<number, number>>({});
 
-  // Instant products cache (localStorage) so products show immediately on repeat visits
-  const PRODUCTS_CACHE_KEY = 'productsCacheV1';
-  const cachedProducts: Product[] | undefined = (() => {
-    try {
-      const raw = localStorage.getItem(PRODUCTS_CACHE_KEY);
-      if (!raw) return undefined;
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : undefined;
-    } catch { return undefined; }
-  })();
-
-  // Track if initial data came from cache (for subtle loading state decisions)
-  const initialFromCacheRef = useRef<boolean>(!!cachedProducts && cachedProducts.length > 0);
-
-  const { data: products = [], isLoading: productsLoading, isFetching: productsFetching } = useQuery<Product[]>({
+  // Direct products fetch (no localStorage caching; always server data)
+  const { data: products = [] } = useQuery<Product[]>({
     queryKey: ["/api/products"],
-    // Provide cached data immediately if present
-    initialData: cachedProducts,
-    // If we have cache, we still want a background refresh but no blocking state
-    refetchOnMount: cachedProducts ? true : 'always',
+    refetchOnMount: 'always',
     refetchOnWindowFocus: false,
   });
-
-  // Persist latest products to cache (skip writing the very first render if it was already from cache and nothing changed)
-  useEffect(() => {
-    if (products && products.length > 0) {
-      try {
-        const serialized = JSON.stringify(products);
-        // Only write if different to avoid unnecessary localStorage churn
-        if (localStorage.getItem(PRODUCTS_CACHE_KEY) !== serialized) {
-          localStorage.setItem(PRODUCTS_CACHE_KEY, serialized);
-        }
-      } catch {}
-    }
-  }, [products]);
 
   // Forms
   const orderForm = useForm({
@@ -467,15 +438,6 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-            {/* Show products immediately (from cache or fresh). Only show loader if absolutely nothing to render. */}
-            {products.length === 0 && productsLoading && (
-              <div className="col-span-full flex items-center justify-center py-10">
-                <div className="flex items-center gap-3 text-primary">
-                  <div className="w-6 h-6 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span className="text-sm font-medium">Loading products...</span>
-                </div>
-              </div>
-            )}
             {products.map((product) => (
               <ProductCard
                 key={product.id}
@@ -483,11 +445,8 @@ export default function Home() {
                 onAddToCart={addToCart}
               />
             ))}
-            {/* Subtle background refreshing indicator (optional) */}
-            {initialFromCacheRef.current && productsFetching && (
-              <div className="col-span-full flex justify-center mt-4">
-                <span className="text-xs text-gray-500 animate-pulse">Refreshing products...</span>
-              </div>
+            {products.length === 0 && (
+              <div className="col-span-full text-center text-sm text-muted-foreground py-8">No products available.</div>
             )}
           </div>
         </div>

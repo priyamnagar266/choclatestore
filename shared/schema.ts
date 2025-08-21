@@ -9,6 +9,15 @@ export interface Product extends Document {
   benefits: string[];
   category: string;
   inStock: number;
+  // Optional nutritional information per serving
+  energyKcal?: number;
+  proteinG?: number;
+  carbohydratesG?: number;
+  totalSugarG?: number;
+  addedSugarG?: number;
+  totalFatG?: number;
+  saturatedFatG?: number;
+  transFatG?: number;
 }
 
 export interface Order extends Document {
