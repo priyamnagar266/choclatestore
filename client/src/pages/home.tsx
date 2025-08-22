@@ -428,8 +428,21 @@ export default function Home() {
                 decoding="async"
                 fetchPriority="high"
               />
-              <div className="absolute -top-4 -right-4 bg-accent text-white px-6 py-3 rounded-full font-bold">
-                100% Natural
+              <div className="absolute -top-4 -right-4 flex flex-col items-end" style={{ gap: '0.75rem' }}>
+                <div
+                  className="px-7 py-3 rounded-full font-bold text-lg shadow"
+                  style={{ background: '#ff9800', color: '#fff', fontWeight: 700, minWidth: '180px', textAlign: 'center' }}
+                >
+                  <span style={{ color: '#fff', textShadow: '0 1px 2px #0002' }}>100% Natural</span>
+                </div>
+                <div
+                  className="px-6 py-2 rounded-full font-semibold text-base shadow"
+                  style={{ background: '#ff9800', color: '#fff', minWidth: '180px', textAlign: 'center' }}
+                >Handcrafted</div>
+                <div
+                  className="px-6 py-2 rounded-full font-semibold text-base shadow"
+                  style={{ background: '#ff9800', color: '#fff', minWidth: '180px', textAlign: 'center' }}
+                >No Preservatives</div>
               </div>
             </div>
           </div>
@@ -512,7 +525,7 @@ export default function Home() {
                 text: "The Mood Uplift bar has become my daily stress-buster. I can feel the difference in my mood and energy levels. These are not just snacks, they're wellness in a bar!",
                 name: "Anita Desai",
                 role: "Marketing Executive",
-                image: "https://pixabay.com/get/g6ac1b2dc634d78fd086a1d560a2b786b2441b579508ab0397f72b084aea108ac9264806201cefff853fed04660570991431fec36507b47f58a24252a00670a48_1280.jpg"
+                image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"
               }
             ].map((testimonial, index) => (
               <Card key={index} className="bg-neutral p-8">
