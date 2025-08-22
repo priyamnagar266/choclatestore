@@ -1,7 +1,7 @@
 ## Netlify configuration for deploying the Vite React client
 [build]
-  # Build from repo root so package.json scripts are available
-  command = "npm run build:client"
+  # Generate static products.json then build client
+  command = "npm run generate:products && npm run build:client"
   publish = "dist/public"
 
 ## Proxy API calls to Render backend (updated with deployed host)
@@ -11,6 +11,21 @@
   status = 200
   force = true
   headers = { X-From = "netlify-proxy" }
+
+[[headers]]
+  for = "/products.json"
+  [headers.values]
+    Cache-Control = "public, max-age=60, stale-while-revalidate=600"
+
+[[headers]]
+  for = "/products-manifest.json"
+  [headers.values]
+    Cache-Control = "public, max-age=30"
+
+[[headers]]
+  for = "/products.*.json"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
 
 # Redirect all SPA routes to index.html (after API rule so API not swallowed)
 [[redirects]]

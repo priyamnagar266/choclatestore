@@ -1,5 +1,5 @@
 /// <reference types="node" />
-// Vercel-optimized MongoDB connection utility
+// MongoDB connection utility (was previously optimized for Vercel)
 import { MongoClient } from 'mongodb';
 
 const uri = process.env.MONGODB_URI as string;
@@ -8,7 +8,7 @@ let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
 if (!process.env.MONGODB_URI) {
-  throw new Error('Please add your Mongo URI to .env or Vercel environment variables');
+  throw new Error('Please add your MONGODB_URI to .env environment variables');
 }
 
 // Use globalThis for compatibility in all JS environments

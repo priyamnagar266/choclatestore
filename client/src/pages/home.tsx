@@ -98,13 +98,30 @@ export default function Home() {
 
   // Direct products fetch (no localStorage caching; always server data)
   const { data: products = [] } = useQuery<Product[]>({
-    queryKey: ["/api/products"],
+    queryKey: ['static-products'],
     queryFn: async () => {
-      const res = await apiFetch("/api/products");
-      if (!res.ok) throw new Error("Failed to fetch products");
+      // Attempt manifest-based hashed file for better cache busting
+      try {
+        const manifestRes = await fetch('/products-manifest.json', { cache: 'no-cache' });
+        if (manifestRes.ok) {
+          const manifest = await manifestRes.json();
+          if (manifest?.current) {
+            const hashed = await fetch('/' + manifest.current, { cache: 'no-cache' });
+            if (hashed.ok) return await hashed.json();
+          }
+        }
+      } catch {}
+      // Fallback legacy static file
+      try {
+        const r = await fetch('/products.json', { cache: 'no-cache' });
+        if (r.ok) return await r.json();
+      } catch {}
+      // Final fallback: API
+      const res = await apiFetch('/api/products');
+      if (!res.ok) throw new Error('Failed to fetch products');
       return res.json();
     },
-    refetchOnMount: 'always',
+    staleTime: 60_000,
     refetchOnWindowFocus: false,
   });
 

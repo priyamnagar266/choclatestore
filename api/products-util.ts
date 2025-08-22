@@ -1,4 +1,4 @@
-// Utility for product DB access in Vercel serverless
+// Utility for product DB access (server environment)
 import clientPromise from './_db';
 import type { Product } from '../shared/schema';
 

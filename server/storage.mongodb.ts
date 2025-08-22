@@ -22,7 +22,8 @@ export const storage = {
     const existingIds = await productsCollection.find({}, { projection: { id: 1 } as any }).toArray();
     const maxId = existingIds.length ? Math.max(...existingIds.map((p: any) => p.id || 0)) : 0;
     const nextId = maxId + 1;
-    const doc = { id: nextId, benefits: [], inStock: 0, ...data };
+  const doc = { id: nextId, benefits: [], inStock: 0, ...data };
+  console.log('[storage.createProduct] inserting', doc);
     await productsCollection.insertOne(doc as any);
     return doc as any;
   },

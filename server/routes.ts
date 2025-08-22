@@ -17,6 +17,7 @@ import multer, { StorageEngine } from 'multer';
 import path from 'path';
 import fs from 'fs';
 import type { Request } from 'express';
+import { z } from 'zod';
 
 // Extend Request type locally to include file from multer
 interface MulterRequest extends Request {
@@ -41,6 +42,57 @@ if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Helper: trigger Netlify build hook with retry/backoff (fire-and-forget)
+  async function triggerNetlifyBuild(reason: string) {
+    const hook = process.env.NETLIFY_BUILD_HOOK_URL;
+    if (!hook) return;
+    const maxAttempts = 3;
+    let delay = 500; // ms
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const res = await fetch(hook, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason, attempt, ts: Date.now() })
+        });
+        if (!res.ok) throw new Error('Status ' + res.status);
+        console.log(`[BuildHook] success reason=${reason} attempt=${attempt}`);
+        return;
+      } catch (e) {
+        console.error(`[BuildHook] attempt ${attempt} failed`, e);
+        if (attempt < maxAttempts) {
+          await new Promise(r => setTimeout(r, delay));
+          delay *= 2;
+        }
+      }
+    }
+    console.error('[BuildHook] all attempts failed for reason=' + reason);
+  }
+
+  // Zod schemas for product create/update validation (server-side enforcement)
+  const productCreateSchema = z.object({
+    name: z.string().min(1),
+    description: z.string().min(1),
+    price: z.coerce.number().nonnegative(),
+    image: z.string().optional().default(''),
+    benefits: z.preprocess(val => {
+      if (Array.isArray(val)) return val;
+      if (typeof val === 'string') return val.split(',').map(s => s.trim()).filter(Boolean);
+      return [];
+    }, z.array(z.string()).default([])),
+    category: z.string().min(1),
+    inStock: z.coerce.number().int().nonnegative().default(0),
+    energyKcal: z.coerce.number().nonnegative().optional(),
+    proteinG: z.coerce.number().nonnegative().optional(),
+    carbohydratesG: z.coerce.number().nonnegative().optional(),
+    totalSugarG: z.coerce.number().nonnegative().optional(),
+    addedSugarG: z.coerce.number().nonnegative().optional(),
+    totalFatG: z.coerce.number().nonnegative().optional(),
+    saturatedFatG: z.coerce.number().nonnegative().optional(),
+    transFatG: z.coerce.number().nonnegative().optional(),
+  });
+  const productUpdateSchema = productCreateSchema.partial().refine(obj => Object.keys(obj).length > 0, { message: 'No fields supplied for update' });
+
   // Simple health check for uptime monitors / Render health probes
   app.get('/api/health', async (_req, res) => {
     let dbStatus: any = { connected: false };
@@ -80,7 +132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Simple in-memory cache (invalidated on mutations)
       const globalAny: any = global as any;
       if (!globalAny.__productCache) {
-        globalAny.__productCache = { data: null as any, ts: 0, etag: '' };
+        globalAny.__productCache = { data: null as any, ts: 0, etag: '', manifestHash: '' };
       }
       const cache = globalAny.__productCache;
       const now = Date.now();
@@ -88,14 +140,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let fromCache = cache.data && (now - cache.ts < maxAgeMs);
       if (!fromCache) {
         const fresh = await storage.getProducts();
-        const etag = 'W/"' + fresh.length + '-' + Buffer.from(String(fresh.reduce((a: number,p: any)=> a + (p.updatedAt? new Date(p.updatedAt).getTime():0),0))).toString('base64').slice(0,12) + '"';
-        cache.data = fresh; cache.ts = now; cache.etag = etag;
+        // Build a stable hash using updatedAt + ids + length
+        const hashBase = fresh.map((p: any) => `${p.id}:${p.updatedAt || ''}:${p.price}`).join('|');
+        const etagRaw = crypto.createHash('sha1').update(hashBase).digest('base64').slice(0, 16);
+        const etag = 'W/"' + etagRaw + '"';
+        cache.data = fresh; cache.ts = now; cache.etag = etag; cache.manifestHash = etagRaw;
       }
       if (req.headers['if-none-match'] && cache.etag && req.headers['if-none-match'] === cache.etag) {
         return res.status(304).end();
       }
       if (cache.etag) res.setHeader('ETag', cache.etag);
       res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=120');
+      if (cache.manifestHash) res.setHeader('X-Products-Hash', cache.manifestHash);
       res.json(cache.data);
     } catch (error: any) {
       res.status(500).json({ message: "Error fetching products: " + error.message });
@@ -115,6 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error fetching product: " + error.message });
     }
   });
+  // (Removed legacy duplicate minimal admin product routes; unified later with full-featured routes.)
 
   // Create Razorpay order
   app.post("/api/create-order", async (req, res) => {
@@ -483,6 +540,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ADMIN: Diagnose products missing critical fields
+  app.get('/api/admin/products-incomplete', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const raw = await (await import('./db')).db.collection('products').find({ $or: [ { name: { $exists: false } }, { description: { $exists: false } }, { price: { $exists: false } }, { category: { $exists: false } } ] }).toArray();
+      res.json({ count: raw.length, products: raw });
+    } catch (e: any) {
+      res.status(500).json({ message: 'Failed to scan products', error: e.message });
+    }
+  });
+
+  // ADMIN: Repair a product by setting provided fields if they were missing
+  app.patch('/api/admin/products/:id/repair', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const id = parseInt(req.params.id, 10);
+      const allowed = ['name','description','price','category','image','benefits','inStock'];
+      const update: any = {};
+      for (const k of allowed) if (req.body[k] !== undefined) update[k] = req.body[k];
+      if (Object.keys(update).length === 0) return res.status(400).json({ message: 'No repair fields provided' });
+      update.updatedAt = new Date();
+      await (await import('./db')).db.collection('products').updateOne({ id } as any, { $set: update });
+      const fresh = await storage.getProduct(id);
+      // Invalidate cache & trigger rebuild
+      const globalAny: any = global as any; if (globalAny.__productCache) globalAny.__productCache.ts = 0;
+      triggerNetlifyBuild('product-repair');
+      res.json({ repaired: true, product: fresh });
+    } catch (e: any) {
+      res.status(500).json({ message: 'Repair failed', error: e.message });
+    }
+  });
+
   // ADMIN: Create product (supports multipart for image upload)
   app.post('/api/admin/products', authenticateJWT, upload.single('imageFile'), async (req: MulterRequest, res) => {
     // @ts-ignore
@@ -490,22 +581,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const body = req.body || {};
       // If JSON sent (application/json) we won't have file. If multipart, file path is stored.
-      const payload: any = {
-        name: body.name,
-        description: body.description,
-        price: parseFloat(body.price),
-  image: body.image || (req.file ? '/uploads/' + req.file.filename : ''),
-        benefits: body.benefits ? (Array.isArray(body.benefits) ? body.benefits : String(body.benefits).split(',').map((b: string) => b.trim()).filter(Boolean)) : [],
-        category: body.category,
-        inStock: parseInt(body.inStock || '0', 10),
-      };
-      if (!payload.name || !payload.description || isNaN(payload.price)) {
-        return res.status(400).json({ message: 'Missing required fields' });
-      }
-  const product = await storage.createProduct(payload);
+  const base = { ...body };
+  console.log('[ADMIN CREATE] raw multipart fields', base);
+      if (req.file) base.image = '/uploads/' + req.file.filename;
+      try {
+        const parsed = productCreateSchema.parse(base);
+        const payload: any = { ...parsed, createdAt: new Date(), updatedAt: new Date() };
+        const product = await storage.createProduct(payload);
   // Invalidate cache
   const globalAny: any = global as any; if (globalAny.__productCache) globalAny.__productCache.ts = 0;
-      res.json(product);
+        // Trigger Netlify rebuild (static products.json refresh) with retry
+        triggerNetlifyBuild('product-create');
+        res.status(201).json(product);
+      } catch (ve: any) {
+        return res.status(400).json({ message: 'Invalid product payload', issues: ve?.errors || ve?.issues || ve?.message });
+      }
     } catch (e: any) {
       console.error('[ADMIN POST /api/admin/products] error', e);
       res.status(500).json({ message: 'Failed to create product' });
@@ -519,15 +609,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id,10);
       const body = req.body || {};
-      const update: any = { ...body };
-      if (body.price !== undefined) update.price = parseFloat(body.price);
-      if (body.inStock !== undefined) update.inStock = parseInt(body.inStock,10);
-      if (body.benefits !== undefined) update.benefits = Array.isArray(body.benefits) ? body.benefits : String(body.benefits).split(',').map((b: string)=>b.trim()).filter(Boolean);
-  if (req.file) update.image = '/uploads/' + req.file.filename;
-  const product = await storage.updateProduct(id, update);
-      if (!product) return res.status(404).json({ message: 'Product not found' });
-  const globalAny: any = global as any; if (globalAny.__productCache) globalAny.__productCache.ts = 0;
-      res.json(product);
+      const updateRaw: any = { ...body };
+      if (req.file) updateRaw.image = '/uploads/' + req.file.filename;
+      try {
+        const parsedUpdate = productUpdateSchema.parse(updateRaw);
+        const update: any = { ...parsedUpdate, updatedAt: new Date() };
+        const ok = await storage.updateProduct(id, update);
+        if (!ok) return res.status(404).json({ message: 'Product not found' });
+        // Fresh DB read to ensure we return canonical doc
+        const fresh = await storage.getProduct(id);
+        const globalAny: any = global as any; if (globalAny.__productCache) globalAny.__productCache.ts = 0;
+        triggerNetlifyBuild('product-update');
+        res.json(fresh);
+      } catch (ve: any) {
+        return res.status(400).json({ message: 'Invalid update payload', issues: ve?.errors || ve?.issues || ve?.message });
+      }
     } catch (e: any) {
       console.error('[ADMIN PUT /api/admin/products/:id] error', e);
       res.status(500).json({ message: 'Failed to update product' });
@@ -543,11 +639,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const ok = await storage.deleteProduct(id);
       if (!ok) return res.status(404).json({ message: 'Product not found' });
   const globalAny: any = global as any; if (globalAny.__productCache) globalAny.__productCache.ts = 0;
+      triggerNetlifyBuild('product-delete');
       res.json({ success: true });
     } catch (e: any) {
       console.error('[ADMIN DELETE /api/admin/products/:id] error', e);
       res.status(500).json({ message: 'Failed to delete product' });
     }
+  });
+
+  // Manual rebuild trigger (admin only)
+  app.post('/api/admin/trigger-rebuild', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+  try { triggerNetlifyBuild('manual-trigger'); res.json({ triggered: true }); }
+    catch (e) { res.status(500).json({ message: 'Failed to trigger rebuild' }); }
   });
 
   // ADMIN: Customers list with stats
