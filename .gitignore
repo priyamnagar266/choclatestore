@@ -5,6 +5,9 @@ server/public
 vite.config.ts.*
 *.tar.gz
 
+# Ignore Express server for Vercel deployment
+server/
+
 # Local environment file (do not commit real secrets)
 .env
 .vercel
