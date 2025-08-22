@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { apiFetch } from "@/lib/api-client";
+import { toast } from "@/hooks/use-toast";
 import { AdminLayout } from '@/components/admin-nav';
 import { useAuth } from "@/components/auth-context";
 import { useAdminAuth } from '@/components/admin-auth';
@@ -13,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Edit, Trash2, Search, ImagePlus } from "lucide-react";
+import { formatPrice } from "@/lib/products";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
 interface Product {
@@ -35,7 +37,6 @@ interface ProductFormData {
   benefits: string[];
   category: string;
   inStock: number;
-  imageFile?: File | null;
   energyKcal?: number; proteinG?: number; carbohydratesG?: number; totalSugarG?: number; addedSugarG?: number; totalFatG?: number; saturatedFatG?: number; transFatG?: number;
 }
 
@@ -56,15 +57,14 @@ export default function AdminProducts() {
     benefits: [],
     category: "",
     inStock: 0,
-    imageFile: null,
-  energyKcal: undefined,
-  proteinG: undefined,
-  carbohydratesG: undefined,
-  totalSugarG: undefined,
-  addedSugarG: undefined,
-  totalFatG: undefined,
-  saturatedFatG: undefined,
-  transFatG: undefined,
+    energyKcal: undefined,
+    proteinG: undefined,
+    carbohydratesG: undefined,
+    totalSugarG: undefined,
+    addedSugarG: undefined,
+    totalFatG: undefined,
+    saturatedFatG: undefined,
+    transFatG: undefined,
   });
   const [page, setPage] = useState(1);
   const pageSize = 20;
@@ -95,8 +95,7 @@ export default function AdminProducts() {
     fd.append('category', payload.category);
     fd.append('inStock', String(payload.inStock));
     fd.append('benefits', payload.benefits.join(','));
-    if (payload.image && !payload.imageFile) fd.append('image', payload.image);
-    if (payload.imageFile) fd.append('imageFile', payload.imageFile);
+  if (payload.image) fd.append('image', payload.image);
     // Append nutrition only if provided
     const nutriKeys: (keyof ProductFormData)[] = ['energyKcal','proteinG','carbohydratesG','totalSugarG','addedSugarG','totalFatG','saturatedFatG','transFatG'];
     for (const k of nutriKeys) {
@@ -151,10 +150,14 @@ export default function AdminProducts() {
         queryClient.setQueryData(['admin-products', page, searchTerm], context.previousData);
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+    onSettled: async () => {
+      // Wait for the query to be refetched and data to be up-to-date before closing modal and showing toast
+      await queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      // Optionally, you can await the next query to finish loading
+      await queryClient.refetchQueries({ queryKey: ['admin-products', page, searchTerm] });
       setIsDialogOpen(false);
       resetForm();
+      toast({ title: 'Product updated successfully', description: 'The product changes are now live on the site.' });
     },
   });
 
@@ -172,7 +175,7 @@ export default function AdminProducts() {
   });
 
   const resetForm = () => {
-  setFormData({ name: '', description: '', price: 0, image: '', benefits: [], category: '', inStock: 0, imageFile: null });
+  setFormData({ name: '', description: '', price: 0, image: '', benefits: [], category: '', inStock: 0 });
     setEditingProduct(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -188,7 +191,7 @@ export default function AdminProducts() {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
-  setFormData({ name: product.name, description: product.description, price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, image: product.image, benefits: product.benefits, category: product.category, inStock: product.inStock, imageFile: null, energyKcal: product.energyKcal, proteinG: product.proteinG, carbohydratesG: product.carbohydratesG, totalSugarG: product.totalSugarG, addedSugarG: product.addedSugarG, totalFatG: product.totalFatG, saturatedFatG: product.saturatedFatG, transFatG: product.transFatG });
+  setFormData({ name: product.name, description: product.description, price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, image: product.image, benefits: product.benefits, category: product.category, inStock: product.inStock, energyKcal: product.energyKcal, proteinG: product.proteinG, carbohydratesG: product.carbohydratesG, totalSugarG: product.totalSugarG, addedSugarG: product.addedSugarG, totalFatG: product.totalFatG, saturatedFatG: product.saturatedFatG, transFatG: product.transFatG });
     setIsDialogOpen(true);
   };
 
@@ -235,49 +238,12 @@ export default function AdminProducts() {
                   <Input id="inStock" type="number" value={formData.inStock} onChange={(e)=>setFormData({...formData,inStock:parseInt(e.target.value)||0})} required />
                 </div>
                 <div>
-                  <Label>Image</Label>
+                  <Label>Image URL</Label>
                   <div className="flex flex-col gap-2">
-                    <div className="flex gap-2">
-                      <Button type="button" variant={formData.imageFile ? 'default' : 'outline'} size="sm" onClick={() => {
-                        setFormData(f => ({ ...f, imageFile: null, image: '' }));
-                      }}>URL</Button>
-                      <Button
-                        type="button"
-                        variant={formData.imageFile ? 'outline' : 'default'}
-                        size="sm"
-                        onClick={() => {
-                          if (fileInputRef.current) fileInputRef.current.click();
-                        }}
-                      >Upload</Button>
-                      <Input
-                        id="imageFile"
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={e => {
-                          const file = e.target.files?.[0] || null;
-                          setFormData(f => ({ ...f, imageFile: file, image: '' }));
-                        }}
-                      />
-                    </div>
-                    {!formData.imageFile && (
-                      <Input id="imageUrl" placeholder="Paste image URL" value={formData.image} onChange={e=>setFormData({...formData,image:e.target.value})} />
-                    )}
-                    {formData.imageFile && (
-                      <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-                        <ImagePlus className='h-4 w-4' /> {formData.imageFile.name}
-                      </div>
-                    )}
+                    <Input id="imageUrl" placeholder="Paste image URL" value={formData.image} onChange={e=>setFormData({...formData,image:e.target.value})} />
                     {/* Preview */}
                     <div className="mt-2">
-                      {formData.imageFile ? (
-                        <img
-                          src={formData.imageFile ? URL.createObjectURL(formData.imageFile) : ''}
-                          alt="Preview"
-                          className="w-24 h-24 object-cover rounded border"
-                        />
-                      ) : formData.image ? (
+                      {formData.image ? (
                         <img
                           src={formData.image}
                           alt="Preview"
@@ -326,11 +292,7 @@ export default function AdminProducts() {
                 <Label htmlFor="benefits">Benefits (comma separated)</Label>
                 <Input id="benefits" value={formData.benefits.join(', ')} onChange={(e)=>setFormData({...formData,benefits:e.target.value.split(',').map(b=>b.trim()).filter(Boolean)})} />
               </div>
-              {formData.imageFile && (
-                <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-                  <ImagePlus className='h-4 w-4' /> {formData.imageFile.name}
-                </div>
-              )}
+              {/* No file upload preview */}
               <div className='flex justify-end gap-2'>
                 <Button type='button' variant='outline' onClick={()=>setIsDialogOpen(false)}>Cancel</Button>
                 <Button type='submit' disabled={createProductMutation.isPending || updateProductMutation.isPending}>{editingProduct ? 'Update' : 'Create'}</Button>
@@ -387,7 +349,7 @@ export default function AdminProducts() {
                     <TableCell><img src={product.image} alt={product.name} className='w-12 h-12 object-cover rounded' /></TableCell>
                     <TableCell>{product.name}</TableCell>
                     <TableCell><Badge variant='outline'>{product.category}</Badge></TableCell>
-                    <TableCell>₹{(typeof product.price === 'number' ? product.price : parseFloat(product.price || '0') || 0).toFixed(2)}</TableCell>
+                    <TableCell>{formatPrice(product.price)}</TableCell>
                     <TableCell>{product.inStock}</TableCell>
                     <TableCell>
                       <div className='flex gap-2'>

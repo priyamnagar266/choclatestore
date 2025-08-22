@@ -13,6 +13,7 @@ interface ProductModalProps {
 // A self-contained modal for displaying product details
 export function ProductModal({ product, trigger, onAddToCart }: ProductModalProps) {
   const [open, setOpen] = useState(false);
+
   const hasNutrition = [
     product.energyKcal,
     product.proteinG,
@@ -22,7 +23,7 @@ export function ProductModal({ product, trigger, onAddToCart }: ProductModalProp
     product.totalFatG,
     product.saturatedFatG,
     product.transFatG,
-  ].some(v => typeof v === 'number');
+  ].some(v => v !== undefined && v !== null && (typeof v !== 'string' || v !== '') && !isNaN(Number(v)));
 
   // Handle browser history for modal
   useEffect(() => {
@@ -81,14 +82,14 @@ export function ProductModal({ product, trigger, onAddToCart }: ProductModalProp
                   <div className="overflow-x-auto border rounded-md">
                     <table className="w-full text-xs md:text-sm">
                       <tbody>
-                        {product.energyKcal !== undefined && <TableRow label="Energy (Kcal)" value={product.energyKcal} />}
-                        {product.proteinG !== undefined && <TableRow label="Protein (g)" value={product.proteinG} />}
-                        {product.carbohydratesG !== undefined && <TableRow label="Carbohydrates (g)" value={product.carbohydratesG} />}
-                        {product.totalSugarG !== undefined && <TableRow label="Total Sugar (g)" value={product.totalSugarG} />}
-                        {product.addedSugarG !== undefined && <TableRow label="Added Sugar (g)" value={product.addedSugarG} />}
-                        {product.totalFatG !== undefined && <TableRow label="Total Fat (g)" value={product.totalFatG} />}
-                        {product.saturatedFatG !== undefined && <TableRow label="Saturated Fat (g)" value={product.saturatedFatG} />}
-                        {product.transFatG !== undefined && <TableRow label="Trans Fat (g)" value={product.transFatG} />}
+                        {product.energyKcal !== undefined && (typeof product.energyKcal !== 'string' || product.energyKcal !== '') && !isNaN(Number(product.energyKcal)) && <TableRow label="Energy (Kcal)" value={Number(product.energyKcal)} />}
+                        {product.proteinG !== undefined && (typeof product.proteinG !== 'string' || product.proteinG !== '') && !isNaN(Number(product.proteinG)) && <TableRow label="Protein (g)" value={Number(product.proteinG)} />}
+                        {product.carbohydratesG !== undefined && (typeof product.carbohydratesG !== 'string' || product.carbohydratesG !== '') && !isNaN(Number(product.carbohydratesG)) && <TableRow label="Carbohydrates (g)" value={Number(product.carbohydratesG)} />}
+                        {product.totalSugarG !== undefined && (typeof product.totalSugarG !== 'string' || product.totalSugarG !== '') && !isNaN(Number(product.totalSugarG)) && <TableRow label="Total Sugar (g)" value={Number(product.totalSugarG)} />}
+                        {product.addedSugarG !== undefined && (typeof product.addedSugarG !== 'string' || product.addedSugarG !== '') && !isNaN(Number(product.addedSugarG)) && <TableRow label="Added Sugar (g)" value={Number(product.addedSugarG)} />}
+                        {product.totalFatG !== undefined && (typeof product.totalFatG !== 'string' || product.totalFatG !== '') && !isNaN(Number(product.totalFatG)) && <TableRow label="Total Fat (g)" value={Number(product.totalFatG)} />}
+                        {product.saturatedFatG !== undefined && (typeof product.saturatedFatG !== 'string' || product.saturatedFatG !== '') && !isNaN(Number(product.saturatedFatG)) && <TableRow label="Saturated Fat (g)" value={Number(product.saturatedFatG)} />}
+                        {product.transFatG !== undefined && (typeof product.transFatG !== 'string' || product.transFatG !== '') && !isNaN(Number(product.transFatG)) && <TableRow label="Trans Fat (g)" value={Number(product.transFatG)} />}
                       </tbody>
                     </table>
                   </div>

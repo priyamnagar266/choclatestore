@@ -23,8 +23,8 @@ export const calculateItemCount = (items: CartItem[]): number => {
 // ...existing code...
 export const formatPrice = (price: number | string | undefined | null): string => {
   const num = typeof price === "number" ? price : Number(price);
-  if (isNaN(num)) return "₹0";
-  return `₹${num.toFixed(0)}`;
+  if (isNaN(num)) return "₹0.00";
+  return `₹${num.toFixed(2)}`;
 };
 
 export const getBenefitBadgeColor = (benefit: string): string => {
