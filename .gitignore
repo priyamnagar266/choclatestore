@@ -7,3 +7,4 @@ vite.config.ts.*
 
 # Local environment file (do not commit real secrets)
 .env
+.vercel
