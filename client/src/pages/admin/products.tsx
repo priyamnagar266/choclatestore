@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { apiFetch } from "@/lib/api-client";
 import { AdminLayout } from '@/components/admin-nav';
 import { useAuth } from "@/components/auth-context";
 import { useAdminAuth } from '@/components/admin-auth';
@@ -77,8 +78,8 @@ export default function AdminProducts() {
     queryFn: async () => {
       const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
       if (searchTerm) params.append('search', searchTerm);
-  const response = await fetch(`/api/admin/products?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
-      return response.json();
+  const response = await apiFetch(`/api/admin/products?${params.toString()}`, { headers: { Authorization: `Bearer ${token}` } });
+  return response.json();
     },
   enabled: !!token
   });
@@ -107,7 +108,7 @@ export default function AdminProducts() {
 
   const createProductMutation = useMutation({
     mutationFn: async (data: ProductFormData) => {
-      const response = await fetch('/api/admin/products', {
+      const response = await apiFetch('/api/admin/products', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: buildFormDataPayload(data)
@@ -123,23 +124,43 @@ export default function AdminProducts() {
 
   const updateProductMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: ProductFormData }) => {
-      const response = await fetch(`/api/admin/products/${id}`, {
+      const response = await apiFetch(`/api/admin/products/${id}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
         body: buildFormDataPayload(data)
       });
       return response.json();
     },
-    onSuccess: () => {
+    // Optimistic update for instant UI feedback
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['admin-products'] });
+      const previousData = queryClient.getQueryData(['admin-products', page, searchTerm]);
+      queryClient.setQueryData(['admin-products', page, searchTerm], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          products: old.products.map((p: any) =>
+            p.id === id ? { ...p, ...data } : p
+          ),
+        };
+      });
+      return { previousData };
+    },
+    onError: (err, variables, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(['admin-products', page, searchTerm], context.previousData);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       setIsDialogOpen(false);
       resetForm();
-    }
+    },
   });
 
   const deleteProductMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await fetch(`/api/admin/products/${id}`, {
+      const response = await apiFetch(`/api/admin/products/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -185,11 +206,11 @@ export default function AdminProducts() {
               Add Product
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4 pb-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Name</Label>
@@ -214,9 +235,57 @@ export default function AdminProducts() {
                   <Input id="inStock" type="number" value={formData.inStock} onChange={(e)=>setFormData({...formData,inStock:parseInt(e.target.value)||0})} required />
                 </div>
                 <div>
-                  <Label htmlFor="imageFile">Image</Label>
-                  <Input id="imageFile" ref={fileInputRef} type="file" accept="image/*" onChange={e=>setFormData({...formData,imageFile:e.target.files?.[0]||null})} />
-                  {formData.image && !formData.imageFile && <p className='text-xs mt-1 truncate'>{formData.image}</p>}
+                  <Label>Image</Label>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <Button type="button" variant={formData.imageFile ? 'default' : 'outline'} size="sm" onClick={() => {
+                        setFormData(f => ({ ...f, imageFile: null, image: '' }));
+                      }}>URL</Button>
+                      <Button
+                        type="button"
+                        variant={formData.imageFile ? 'outline' : 'default'}
+                        size="sm"
+                        onClick={() => {
+                          if (fileInputRef.current) fileInputRef.current.click();
+                        }}
+                      >Upload</Button>
+                      <Input
+                        id="imageFile"
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={e => {
+                          const file = e.target.files?.[0] || null;
+                          setFormData(f => ({ ...f, imageFile: file, image: '' }));
+                        }}
+                      />
+                    </div>
+                    {!formData.imageFile && (
+                      <Input id="imageUrl" placeholder="Paste image URL" value={formData.image} onChange={e=>setFormData({...formData,image:e.target.value})} />
+                    )}
+                    {formData.imageFile && (
+                      <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                        <ImagePlus className='h-4 w-4' /> {formData.imageFile.name}
+                      </div>
+                    )}
+                    {/* Preview */}
+                    <div className="mt-2">
+                      {formData.imageFile ? (
+                        <img
+                          src={formData.imageFile ? URL.createObjectURL(formData.imageFile) : ''}
+                          alt="Preview"
+                          className="w-24 h-24 object-cover rounded border"
+                        />
+                      ) : formData.image ? (
+                        <img
+                          src={formData.image}
+                          alt="Preview"
+                          className="w-24 h-24 object-cover rounded border"
+                        />
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-4">

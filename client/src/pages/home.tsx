@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useReveal } from "@/hooks/useReveal";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiFetch } from "@/lib/api-client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -98,6 +99,11 @@ export default function Home() {
   // Direct products fetch (no localStorage caching; always server data)
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ["/api/products"],
+    queryFn: async () => {
+      const res = await apiFetch("/api/products");
+      if (!res.ok) throw new Error("Failed to fetch products");
+      return res.json();
+    },
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
   });
