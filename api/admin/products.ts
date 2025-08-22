@@ -1,7 +1,7 @@
-import clientPromise from '../../_db';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+import clientPromise from '../_db';
+
+export default async function handler(req: any, res: any) {
   const client = await clientPromise;
   const db = client.db();
   const productsCol = db.collection('products');
