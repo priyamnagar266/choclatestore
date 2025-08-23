@@ -64,7 +64,7 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
       // Step 1: Create Razorpay order (for payment)
       let razorpayOrderRes, razorpayOrder;
       try {
-        razorpayOrderRes = await apiRequest("POST", "/api/create-order", {
+  razorpayOrderRes = await apiRequest("POST", "/payment/create-order", {
           amount: amount,
           currency: "INR"
         });
@@ -73,7 +73,7 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
         let serverMsg = 'Could not create Razorpay order. Please try again later.';
         try {
           // Attempt to re-fetch raw response to parse message (apiRequest already threw, so do manual fetch)
-          const raw = await fetch('/api/create-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount, currency: 'INR' }) });
+          const raw = await fetch('/payment/create-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount, currency: 'INR' }) });
           if (!raw.ok) {
             const text = await raw.text();
             serverMsg = text.slice(0,200);
@@ -193,7 +193,7 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
               });
             }
             console.log('[CHECKOUT] pendingOrder before verify-payment (normalized):', pendingOrder);
-            const verificationResponseRaw = await apiRequest("POST", "/api/verify-payment", {
+            const verificationResponseRaw = await apiRequest("POST", "/payment/verify-payment", {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
@@ -458,7 +458,7 @@ export default function Checkout() {
         return;
       }
       console.log("OrderId or amount missing", { orderId, amount });
-      console.log("Calling /api/create-order", { amount });
+  console.log("Calling /payment/create-order (Netlify Function)", { amount });
 
       // 2. Validate order data (only check orderId and amount for testing Razorpay)
       if (!orderId || !amount) {
@@ -474,12 +474,12 @@ export default function Checkout() {
       // 3. Create Razorpay order
       let orderResponseRaw, orderResponse;
       try {
-        orderResponseRaw = await apiRequest("POST", "/api/create-order", {
+  orderResponseRaw = await apiRequest("POST", "/payment/create-order", {
           amount: amount,
           currency: "INR"
         });
         orderResponse = await orderResponseRaw.json();
-        console.log("Order response from /api/create-order:", orderResponse);
+  console.log("Order response from /payment/create-order (function):", orderResponse);
         if (!orderResponse.key || !orderResponse.orderId) {
           console.log("Missing Razorpay key or orderId", orderResponse);
         }
@@ -561,7 +561,7 @@ export default function Checkout() {
               total: pendingOrder.total,
             };
             console.log('[CHECKOUT] orderDataForBackend before verify-payment:', orderDataForBackend);
-            const verificationResponseRaw = await apiRequest("POST", "/api/verify-payment", {
+            const verificationResponseRaw = await apiRequest("POST", "/payment/verify-payment", {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,

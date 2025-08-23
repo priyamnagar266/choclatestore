@@ -53,7 +53,14 @@ export const handler = async (event) => {
     };
 
     const order = await razorpay.orders.create(options);
-    return jsonResponse(200, { success: true, order });
+    return jsonResponse(200, { 
+      success: true, 
+      order,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      key: process.env.RAZORPAY_KEY_ID
+    });
   } catch (err) {
     console.error('create-order error', err);
     const message = err?.error?.description || err?.message || 'Failed to create order';

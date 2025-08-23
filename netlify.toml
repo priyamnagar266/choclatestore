@@ -5,7 +5,30 @@
   publish = "dist/public"
   functions = "netlify/functions"
 
-## Proxy API calls to Render backend (updated with deployed host)
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["razorpay", "mongodb"]
+
+[dev]
+  # Use existing combined Express + Vite dev server instead of rebuilding
+  command = "npm run dev"
+  targetPort = 5000       # The Express server (with Vite middleware) listens here
+  port = 8888             # Netlify dev proxy port you open in browser
+  functionsPort = 9999    # Separate port for function builder (auto-managed)
+  autoLaunch = true
+
+## Payment overrides must appear BEFORE generic /api proxy so they take precedence
+[[redirects]]
+  from = "/api/create-order"
+  to = "/.netlify/functions/create-order"
+  status = 200
+
+[[redirects]]
+  from = "/api/verify-payment"
+  to = "/.netlify/functions/verify-payment"
+  status = 200
+
+## Proxy API calls to Render backend (updated with deployed host) (after overrides)
 [[redirects]]
   from = "/api/*"
   to = "https://choclatestore.onrender.com/api/:splat"
