@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import axios from 'axios';
 import { useAuth } from "../components/auth-context";
 import { useAdminAuth } from "@/components/admin-auth";
 import { Badge } from "@/components/ui/badge";
@@ -30,12 +31,23 @@ interface OrderRecord {
 }
 
 async function fetchOrderHistory(token: string): Promise<OrderRecord[]> {
-  const res = await fetch("/api/orders/me", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Failed to fetch orders");
-  return data.orders || [];
+  const headers: Record<string,string> = token ? { Authorization: `Bearer ${token}` } : {};
+  const { data } = await axios.get('/.netlify/functions/order-history', { headers });
+  if (!data.success) throw new Error(data.error || 'Failed to fetch orders');
+  return (data.orders || []).map((o: any) => ({
+    id: o._id || o.id,
+    orderId: o._id || o.id,
+    total: o.total,
+    subtotal: o.subtotal,
+    deliveryCharges: o.deliveryCharges,
+    status: o.status,
+    razorpayPaymentId: o.razorpayPaymentId,
+    items: o.items || [],
+    customerName: o.customerName,
+    customerEmail: o.customerEmail,
+    customerPhone: o.customerPhone,
+    createdAt: o.createdAt,
+  }));
 }
 
 export default function OrderHistory() {

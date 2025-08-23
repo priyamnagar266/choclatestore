@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import axios from 'axios';
 import { useLocation } from 'wouter';
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -62,21 +63,19 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
       }
 
       // Step 1: Create Razorpay order (for payment)
-      let razorpayOrderRes, razorpayOrder;
-      try {
-  razorpayOrderRes = await apiRequest("POST", "/payment/create-order", {
-          amount: amount,
-          currency: "INR"
-        });
-        razorpayOrder = await razorpayOrderRes.json();
+  let razorpayOrder;
+  try {
+	const { data } = await axios.post('/.netlify/functions/create-order', { amount, currency: 'INR' });
+    razorpayOrder = data;
       } catch (err: any) {
         let serverMsg = 'Could not create Razorpay order. Please try again later.';
         try {
           // Attempt to re-fetch raw response to parse message (apiRequest already threw, so do manual fetch)
-          const raw = await fetch('/payment/create-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ amount, currency: 'INR' }) });
-          if (!raw.ok) {
-            const text = await raw.text();
-            serverMsg = text.slice(0,200);
+          try {
+            const resp = await axios.post('/.netlify/functions/create-order', { amount, currency: 'INR' });
+            razorpayOrder = resp.data;
+          } catch (e:any) {
+            serverMsg = e?.response?.data?.error || e?.message || serverMsg;
           }
         } catch {}
         toast({
@@ -88,7 +87,7 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
         return;
       }
 
-      if (!razorpayOrder.key || !razorpayOrder.orderId) {
+  if (!razorpayOrder?.key || !razorpayOrder?.orderId) {
         toast({
           title: "Payment Error",
           description: "Razorpay key or orderId not received from server.",
@@ -193,13 +192,12 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
               });
             }
             console.log('[CHECKOUT] pendingOrder before verify-payment (normalized):', pendingOrder);
-            const verificationResponseRaw = await apiRequest("POST", "/payment/verify-payment", {
+            const { data: verificationResponse } = await axios.post('/.netlify/functions/verify-payment', {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               orderData: pendingOrder
             });
-            const verificationResponse = await verificationResponseRaw.json();
 
             if (verificationResponse.success) {
               // Use the orderId returned from verificationResponse
@@ -472,13 +470,10 @@ export default function Checkout() {
       }
 
       // 3. Create Razorpay order
-      let orderResponseRaw, orderResponse;
+      let orderResponse;
       try {
-  orderResponseRaw = await apiRequest("POST", "/payment/create-order", {
-          amount: amount,
-          currency: "INR"
-        });
-        orderResponse = await orderResponseRaw.json();
+        const { data } = await axios.post('/.netlify/functions/create-order', { amount, currency: 'INR' });
+        orderResponse = data;
   console.log("Order response from /payment/create-order (function):", orderResponse);
         if (!orderResponse.key || !orderResponse.orderId) {
           console.log("Missing Razorpay key or orderId", orderResponse);
@@ -493,7 +488,7 @@ export default function Checkout() {
         return;
       }
 
-      if (!orderResponse.key || !orderResponse.orderId) {
+  if (!orderResponse?.key || !orderResponse?.orderId) {
         toast({
           title: "Payment Error",
           description: "Razorpay key or orderId not received from server.",
@@ -561,13 +556,12 @@ export default function Checkout() {
               total: pendingOrder.total,
             };
             console.log('[CHECKOUT] orderDataForBackend before verify-payment:', orderDataForBackend);
-            const verificationResponseRaw = await apiRequest("POST", "/payment/verify-payment", {
+            const { data: verificationResponse } = await axios.post('/.netlify/functions/verify-payment', {
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
               orderData: orderDataForBackend
             });
-            const verificationResponse = await verificationResponseRaw.json();
 
             if (verificationResponse.success) {
               // Update orderData._id with the returned orderId before checking
