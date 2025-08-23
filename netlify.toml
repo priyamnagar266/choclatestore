@@ -3,6 +3,7 @@
   # Generate static products.json then build client
   command = "npm run generate:products && npm run build:client"
   publish = "dist/public"
+  functions = "netlify/functions"
 
 ## Proxy API calls to Render backend (updated with deployed host)
 [[redirects]]
@@ -11,6 +12,22 @@
   status = 200
   force = true
   headers = { X-From = "netlify-proxy" }
+
+# Expose payment functions under /functions/payment/* optional nicer paths
+[[redirects]]
+  from = "/payment/create-order"
+  to = "/.netlify/functions/create-order"
+  status = 200
+
+[[redirects]]
+  from = "/payment/verify-payment"
+  to = "/.netlify/functions/verify-payment"
+  status = 200
+
+[[redirects]]
+  from = "/orders/history"
+  to = "/.netlify/functions/order-history"
+  status = 200
 
 [[headers]]
   for = "/products.json"
