@@ -2,14 +2,11 @@
   {
     "_id": "68a7146295b00b76495603c1",
     "id": 1,
-    "name": "Focus Boost",
-    "description": "For those who love texture, Cokha Cocoa & Crunch Chocolate delivers the perfect bite. Enriched with mamra almonds and crispy ragi crunch, this wholesome bar combines nutrition with indulgence, making it both guilt-free and irresistible.",
+    "name": "Rose Pistachio Chocolate",
+    "description": "A delicate balance of floral and nutty notes, Cokha Rose Pistachio Chocolate is an elegant fusion of rose petals and roasted pistachios with velvety cocoa. Perfectly fragrant, beautifully textured — a truly royal chocolate experience.",
     "price": 150,
-    "image": "https://i.postimg.cc/Wpm1d75j/Gemini-Generated-Image-3o5jgi3o5jgi3o5j.png",
-    "benefits": [
-      "Enhanced Focus",
-      "Brain Health"
-    ],
+    "image": "https://i.postimg.cc/1tKg8bYp/rosepc.jpg",
+    "benefits": ["Enhanced Focus", "Brain Health"],
     "category": "cognitive",
     "inStock": 100,
     "energyKcal": "150",
@@ -24,14 +21,11 @@
   {
     "_id": "68a7146295b00b76495603c2",
     "id": 2,
-    "name": "Mood Uplift",
-    "description": "Rich cocoa blended with Ashwagandha to naturally elevate your mood and reduce stress.",
+    "name": "Orange Zest Dark Chocolate",
+    "description": "Refresh your senses with Cokha Orange Zest Dark Chocolate. The bold intensity of dark cocoa is perfectly lifted with tangy notes of real orange zest, creating a zesty, vibrant, and unforgettable chocolate experience.",
     "price": 130,
-    "image": "https://i.postimg.cc/pTGkCjZd/Gemini-Generated-Image-uy3ur8uy3ur8uy3u.png",
-    "benefits": [
-      "Mood Booster",
-      "Stress Relief"
-    ],
+    "image": "https://i.postimg.cc/Hx1ZY8fr/1755841710687.jpg",
+    "benefits": ["Mood Booster", "Stress Relief"],
     "category": "mood",
     "inStock": 100,
     "energyKcal": 160,
@@ -46,14 +40,11 @@
   {
     "_id": "68a7146295b00b76495603c3",
     "id": 3,
-    "name": "Energy Supreme",
-    "description": "Power-packed with dates, nuts, and ginseng for sustained energy throughout your day.",
+    "name": "Velvet Hazelnut Dark Chocolate",
+    "description": "Dive into smooth luxury with Cokha Velvet Hazelnut Dark Chocolate. Each bite offers the creamy richness of roasted hazelnuts paired with premium dark cocoa. A timeless classic, crafted for nut lovers and true chocolate connoisseurs.",
     "price": 125,
-    "image": "https://i.postimg.cc/xj7VTN2Y/Gemini-Generated-Image-q4pnokq4pnokq4pn.png",
-    "benefits": [
-      "Sustained Energy",
-      "Pre-Workout"
-    ],
+    "image": "https://i.postimg.cc/RFv7p7kL/1755841691528.jpg",
+    "benefits": ["Sustained Energy", "Pre-Workout"],
     "category": "energy",
     "inStock": 100,
     "energyKcal": 180,
@@ -68,14 +59,11 @@
   {
     "_id": "68a7146295b00b76495603c4",
     "id": 4,
-    "name": "Memory Master",
-    "description": "Turmeric and walnut fusion designed to enhance memory retention and cognitive function.",
+    "name": "Velvet Vine Dark Chocolate",
+    "description": "Indulge in the richness of Cokha Velvet Vine Dark Chocolate, a premium blend of fine cocoa and plump black raisins. Crafted to perfection, this antioxidant-packed bar balances smooth bitterness with natural fruity sweetness. A perfect treat for those who love depth in every bite.",
     "price": 135,
-    "image": "https://i.postimg.cc/pr8vtPyK/Gemini-Generated-Image-s4palos4palos4pa.png",
-    "benefits": [
-      "Memory Boost",
-      "Cognitive Health"
-    ],
+    "image": "https://i.postimg.cc/8Pf6HXFV/1755841731269.jpg",
+    "benefits": ["Memory Boost", "Cognitive Health"],
     "category": "cognitive",
     "inStock": 100,
     "energyKcal": 155,
@@ -90,14 +78,11 @@
   {
     "_id": "68a7146295b00b76495603c5",
     "id": 5,
-    "name": "Antioxidant Rich",
-    "description": "Loaded with berries, cocoa, and amla for powerful antioxidant protection and cellular health.",
+    "name": "Velvet Walnut Dark Chocolate",
+    "description": "Crunch meets luxury with Cokha Velvet Walnut Dark Chocolate. Made with handpicked walnuts and intense dark cocoa, this bar is a delightful mix of creamy texture and nutty goodness. A wholesome indulgence that feels as nourishing as it tastes.",
     "price": 140,
-    "image": "https://i.postimg.cc/1zQ1DkCz/Gemini-Generated-Image-naulw2naulw2naul.png",
-    "benefits": [
-      "Antioxidants",
-      "Immunity"
-    ],
+    "image": "https://i.postimg.cc/L6Pcjfp8/1755841749172.jpg",
+    "benefits": ["Antioxidants", "Immunity"],
     "category": "health",
     "inStock": 100,
     "energyKcal": 145,
@@ -112,14 +97,11 @@
   {
     "_id": "68a7146295b00b76495603c6",
     "id": 6,
-    "name": "Protein Power",
-    "description": "High-protein blend with hemp seeds and quinoa, perfect for muscle recovery and growth.",
+    "name": "Mint Fusion Dark Chocolate",
+    "description": "Cool, crisp, and indulgent — Cokha Mint Fusion Dark Chocolate combines the freshness of natural mint with the depth of rich cocoa. A perfect after-meal treat or a refreshing pick-me-up for mint lovers.",
     "price": 145,
-    "image": "https://i.postimg.cc/T1kwpdfF/Gemini-Generated-Image-dm9b4pdm9b4pdm9b.png",
-    "benefits": [
-      "High Protein",
-      "Post-Workout"
-    ],
+    "image": "https://i.postimg.cc/jj1c8g60/1755841788325.jpg",
+    "benefits": ["High Protein", "Post-Workout"],
     "category": "fitness",
     "inStock": 100,
     "energyKcal": 200,
@@ -134,14 +116,11 @@
   {
     "_id": "68a7146295b00b76495603c7",
     "id": 7,
-    "name": "Digestive Wellness",
-    "description": "Ginger and fiber-rich ingredients to support healthy digestion and gut wellness.",
+    "name": "Khas-Badam Dark Chocolate",
+    "description": "Experience tradition wrapped in indulgence with Cokha Khas-Badam Dark Chocolate. Infused with almonds and poppy seeds, this bar is inspired by timeless flavors that comfort the soul. A blend of culture and cocoa, created for those who enjoy richness with heritage.",
     "price": 128,
-    "image": "https://i.postimg.cc/nL5NVNy2/Gemini-Generated-Image-2wd0ql2wd0ql2wd0.png",
-    "benefits": [
-      "Digestive Health",
-      "Gut Friendly"
-    ],
+    "image": "https://i.postimg.cc/8591zShK/1755841768406.jpg",
+    "benefits": ["Digestive Health", "Gut Friendly"],
     "category": "wellness",
     "inStock": 100,
     "energyKcal": 140,
@@ -156,14 +135,11 @@
   {
     "_id": "68a7146295b00b76495603c8",
     "id": 8,
-    "name": "Sleep & Calm",
-    "description": "Evening blend with chamomile and jatamansi for natural relaxation and better sleep quality.",
+    "name": "Cocoa & Crunch Chocolate",
+    "description": "For those who love texture, Cokha Cocoa & Crunch Chocolate delivers the perfect bite. Enriched with mamra almonds and crispy ragi crunch, this wholesome bar combines nutrition with indulgence, making it both guilt-free and irresistible.",
     "price": 132,
-    "image": "https://i.postimg.cc/4xX1twvg/Gemini-Generated-Image-2maasg2maasg2maa.png",
-    "benefits": [
-      "Relaxation",
-      "Sleep Support"
-    ],
+    "image": "https://i.postimg.cc/tgbk8ZwD/1755840873957-1.jpg",
+    "benefits": ["Relaxation", "Sleep Support"],
     "category": "wellness",
     "inStock": 100,
     "energyKcal": 135,

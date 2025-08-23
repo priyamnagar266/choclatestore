@@ -1,3 +1,4 @@
+import BrandLogo from './brand-logo';
 import * as React from "react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
@@ -200,8 +201,7 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
       React.createElement(
         'div',
         { className: 'text-center leading-tight' },
-        React.createElement('span', { className: 'block text-2xl font-bold tracking-wide text-primary' }, 'COKHA'),
-        React.createElement('span', { className: 'block text-[10px] text-green-700' }, 'by Rajasic Foods')
+        React.createElement(BrandLogo, { size: 'md' })
       )
     ),
     React.createElement(
@@ -222,15 +222,14 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
       { className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8' },
       React.createElement(
         'div',
-        { className: 'flex items-center h-16 justify-between' },
+        { className: 'flex items-center h-16 justify-between overflow-visible' },
         React.createElement(
           'div',
           { className: 'hidden md:flex items-center' },
           React.createElement(
             'div',
             { className: 'text-center leading-tight' },
-            React.createElement('span', { className: 'block text-3xl font-bold tracking-wide text-primary' }, 'COKHA'),
-            React.createElement('span', { className: 'block text-xs text-green-700' }, 'by Rajasic Foods')
+            React.createElement(BrandLogo, { size: 'lg' })
           )
         ),
         desktopSection,

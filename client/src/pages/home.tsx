@@ -1,6 +1,8 @@
 import { useAuth } from "@/components/auth-context";
 // Import media assets so they are processed by Vite during build (fixes deployment path issues)
 import productVideo from "@/components/Assets/20250721_111849_0001.mp4";
+import heroVideo from "@/components/Assets/herosectionvideo.mp4";
+
 import { useState, useEffect, useRef } from "react";
 import { useReveal } from "@/hooks/useReveal";
 import { useLocation } from "wouter";
@@ -405,66 +407,62 @@ export default function Home() {
         onCartClick={() => setShowCart(true)} 
       />
       
-      {/* Hero Section */}
-  <section id="home" className="relative bg-gradient-to-br from-primary to-green-800 text-white anim-fade-in" data-anim>
-        <div className="absolute inset-0 opacity-20">
-          <img 
-            src="https://images.unsplash.com/photo-1606787366850-de6330128bfc?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&h=1080" 
-            alt="Ancient Indian superfoods background" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-5xl lg:text-6xl font-bold mb-6">
-                Brain + Mood<br />
-                <span className="text-accent">Energy Bars</span>
-              </h1>
-              <p className="text-xl mb-8 opacity-90">
-                Crafted with Ancient Indian Superfoods & Rich Cocoa
-              </p>
-              <p className="text-lg mb-10 opacity-80">
-                Fuel your mind and elevate your mood with nature's most powerful ingredients. Each bar is carefully crafted to deliver sustained energy and mental clarity.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button
-                  onClick={scrollToProducts}
-                  className="bg-accent text-white hover:bg-orange-500 px-8 py-4 text-lg font-semibold transform hover:scale-105"
-                >
-                  Shop Now
-                </Button>
-              </div>
-            </div>
-            <div className="relative">
-              <img 
-                src="https://i.postimg.cc/cLZtLg16/Gemini-Generated-Image-wv9jaswv9jaswv9j.png" 
-                alt="Cokha energy bars with ancient superfoods" 
-                className="rounded-2xl shadow-2xl" 
-                loading="lazy"
-                decoding="async"
-                fetchPriority="high"
-              />
-              <div className="absolute -top-4 -right-4 flex flex-col items-end" style={{ gap: '0.75rem' }}>
-                <div
-                  className="px-7 py-3 rounded-full font-bold text-lg shadow"
-                  style={{ background: '#ff9800', color: '#fff', fontWeight: 700, minWidth: '180px', textAlign: 'center' }}
-                >
-                  <span style={{ color: '#fff', textShadow: '0 1px 2px #0002' }}>100% Natural</span>
-                </div>
-                <div
-                  className="px-6 py-2 rounded-full font-semibold text-base shadow"
-                  style={{ background: '#ff9800', color: '#fff', minWidth: '180px', textAlign: 'center' }}
-                >Handcrafted</div>
-                <div
-                  className="px-6 py-2 rounded-full font-semibold text-base shadow"
-                  style={{ background: '#ff9800', color: '#fff', minWidth: '180px', textAlign: 'center' }}
-                >No Preservatives</div>
-              </div>
+      {/* Hero Section (Video Background) */}
+      <section id="home" className="relative h-[70vh] min-h-[560px] w-full overflow-hidden anim-fade-in" data-anim>
+        {/* Video background */}
+        <video
+          className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-700"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          src={productVideo}
+          onCanPlay={(e)=>{ (e.currentTarget as HTMLVideoElement).classList.remove('opacity-0'); (e.currentTarget as HTMLVideoElement).classList.add('opacity-100'); }}
+        >
+          Your browser does not support the video tag.
+        </video>
+        {/* Translucent green overlay (lighter so video is visible) */}
+        <div className="absolute inset-0 bg-primary/55 backdrop-brightness-95" />
+        {/* Content */}
+        <div className="relative z-10 max-w-5xl mx-auto px-6 lg:px-8 h-full flex flex-col justify-center">
+          <div className="max-w-2xl">
+            <h1 className="text-4xl lg:text-6xl font-bold leading-tight mb-6 drop-shadow-md hero-animate text-white">
+              <span>Immune</span> <span className="text-white">+</span> <span>Mood</span><br />
+              <span>Energy</span> <span>Bar</span>
+            </h1>
+            <p className="text-lg lg:text-xl mb-8 text-white max-w-xl">
+              Clean energy, cognitive clarity and mood balance in every bar—crafted with real ingredients, never preservatives.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Button onClick={scrollToProducts} variant="cta" className="px-8 py-4 text-lg font-semibold rounded-xl">
+                Shop Now
+              </Button>
+              {/* Removed View Benefits button per request */}
             </div>
           </div>
         </div>
+        {/* Subtle gradient fade bottom */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background/60 to-transparent" />
       </section>
+
+      {/* Marquee USP Bar */}
+      <div className="marquee-wrapper bg-primary text-white py-3 border-y border-primary/30">
+        <div className="relative">
+          <div className="marquee-track gap-16 px-8 font-semibold tracking-wide text-sm md:text-base">
+            {Array.from({length:2}).map((_,i)=>(
+              <div key={i} className="flex gap-16">
+                <span>100% ORGANIC</span>
+                <span>SUGAR FREE</span>
+                <span>NO PRESERVATIVES</span>
+                <span>HAND CRAFTED</span>
+                <span>ARTISAN ENERGY BARS</span>
+              </div>
+            ))}
+          </div>
+          <div className="marquee-fade bg-gradient-to-r from-primary via-transparent to-primary opacity-20" />
+        </div>
+      </div>
 
       {/* Products Section */}
   <section id="products" className="py-20 bg-neutral anim-fade-up" data-anim>
@@ -501,9 +499,12 @@ export default function Home() {
             <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl">
                 <div className="aspect-video bg-gray-900 flex items-center justify-center relative">
                 <video 
-                  src={productVideo}
+                  src={heroVideo}
+                  autoPlay
+                  muted
+                  playsInline
                   controls
-                  preload="metadata"
+                  preload="auto"
                   poster="https://i.postimg.cc/cLZtLg16/Gemini-Generated-Image-wv9jaswv9jaswv9j.png"
                   className="w-full h-full object-cover"
                 />
@@ -633,32 +634,32 @@ export default function Home() {
                     <p className="text-gray-600 text-sm leading-relaxed">Mon - Sat: 9:00 AM - 8:00 PM<br />Sun: 10:00 AM - 6:00 PM</p>
                   </div>
                 </div>
-                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="p-4 whatsapp-gradient rounded-lg shadow-sm">
                   <div className="flex items-center mb-3">
-                    <MessageCircle className="text-green-600 h-6 w-6 mr-3" />
+                    <MessageCircle className="h-6 w-6 mr-3 text-whatsapp-foreground" />
                     <div>
-                      <h4 className="font-semibold text-green-800">WhatsApp Support</h4>
-                      <p className="text-green-700 text-xs">Get instant answers to your questions</p>
+                      <h4 className="font-semibold">WhatsApp Support</h4>
+                      <p className="text-whatsapp-foreground/85 text-xs">Get instant answers to your questions</p>
                     </div>
                   </div>
                   <Button
                     onClick={() => window.open('https://wa.me/917801901855', '_blank')}
-                    className="w-full bg-green-600 text-white hover:bg-green-700 h-9 text-sm"
+                    className="w-full whatsapp-gradient-inset-btn text-whatsapp-foreground h-9 text-sm border border-whatsapp-foreground/30 hover:border-whatsapp-foreground/50 transition-colors font-medium"
                   >
                     <MessageCircle className="mr-2 h-4 w-4" /> Chat with Us on WhatsApp
                   </Button>
                 </div>
-                <div className="p-4 bg-gradient-to-r from-pink-500 via-purple-500 to-orange-400 rounded-lg shadow-sm text-white">
+                <div className="p-4 brand-gradient rounded-lg shadow-sm">
                   <div className="flex items-center mb-3">
-                    <Instagram className="h-6 w-6 mr-3" />
+                    <Instagram className="h-6 w-6 mr-3 text-cta" />
                     <div>
                       <h4 className="font-semibold">Instagram</h4>
-                      <p className="text-white/90 text-xs">Follow & DM us for updates</p>
+                      <p className="text-primary-foreground/90 text-xs">Follow & DM us for updates</p>
                     </div>
                   </div>
                   <Button
                     onClick={() => window.open('https://www.instagram.com/foodsrajasic/?hl=en', '_blank')}
-                    className="w-full bg-white/15 hover:bg-white/25 text-white backdrop-blur h-9 text-sm border border-white/20"
+                    className="w-full brand-gradient-inset-btn text-primary-foreground h-9 text-sm border border-primary/25 hover:border-primary/40 transition-colors"
                   >
                     <Instagram className="mr-2 h-4 w-4" /> Visit @foodsrajasic
                   </Button>

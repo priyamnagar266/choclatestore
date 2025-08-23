@@ -37,6 +37,14 @@ export default {
           DEFAULT: "var(--accent)",
           foreground: "var(--accent-foreground)",
         },
+        cta: {
+          DEFAULT: "var(--cta)",
+          foreground: "var(--cta-foreground)",
+        },
+        whatsapp: {
+          DEFAULT: "var(--whatsapp)",
+          foreground: "var(--whatsapp-foreground)",
+        },
         destructive: {
           DEFAULT: "var(--destructive)",
           foreground: "var(--destructive-foreground)",
