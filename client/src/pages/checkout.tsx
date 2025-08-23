@@ -201,7 +201,7 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
 
             if (verificationResponse.success) {
               // Use the orderId returned from verificationResponse
-              const patchOrderId = verificationResponse.orderId;
+              const patchOrderId = verificationResponse.orderId || verificationResponse?.order?._id || verificationResponse?.order?.id;
               if (patchOrderId) {
                 // Store order as placed in localStorage for user reference
                 const placedOrder = {
@@ -574,10 +574,14 @@ export default function Checkout() {
                 });
                 return;
               }
-              await apiRequest("PATCH", `/api/orders/${orderData._id}/payment`, {
-                razorpayPaymentId: response.razorpay_payment_id,
-                status: 'placed'
-              });
+              try {
+                await apiRequest("PATCH", `/api/orders/${orderData._id}/payment`, {
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  status: 'placed'
+                });
+              } catch (e) {
+                console.warn('[checkout] PATCH payment update failed (Render backend maybe sleeping):', e);
+              }
               toast({
                 title: "Payment Successful!",
                 description: "Thank you for your purchase! Your order has been confirmed.",

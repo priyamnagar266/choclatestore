@@ -75,7 +75,12 @@ export const handler = async (event) => {
       orderRecord = await maybeCreateOrder(body.orderData, razorpay_payment_id);
     }
 
-    return jsonResponse(200, { success: true, valid: true, order: orderRecord });
+    return jsonResponse(200, { 
+      success: true, 
+      valid: true, 
+      orderId: orderRecord?._id || orderRecord?.id || null,
+      order: orderRecord 
+    });
   } catch (err) {
     console.error('verify-payment error', err);
     return jsonResponse(500, { success: false, error: err?.message || 'Verification failed' });
