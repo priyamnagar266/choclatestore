@@ -49,6 +49,8 @@ export default function AdminProducts() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  // Collect product IDs that have been edited but not yet applied (batched deploy)
+  const [pendingChanges, setPendingChanges] = useState<Set<number>>(new Set());
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
     description: "",
@@ -66,6 +68,8 @@ export default function AdminProducts() {
     saturatedFatG: undefined,
     transFatG: undefined,
   });
+  // Keep a raw string for benefits so typing doesn't constantly reformat & reset cursor
+  const [benefitsRaw, setBenefitsRaw] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 20;
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -176,6 +180,7 @@ export default function AdminProducts() {
 
   const resetForm = () => {
   setFormData({ name: '', description: '', price: 0, image: '', benefits: [], category: '', inStock: 0 });
+  setBenefitsRaw('');
     setEditingProduct(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -183,7 +188,7 @@ export default function AdminProducts() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingProduct) {
-      updateProductMutation.mutate({ id: editingProduct.id, data: formData });
+  updateProductMutation.mutate({ id: editingProduct.id, data: formData }, { onSuccess: ()=> setPendingChanges(prev => { const arr = Array.from(prev); if(!arr.includes(editingProduct.id)) arr.push(editingProduct.id); return new Set(arr); }) });
     } else {
       createProductMutation.mutate(formData);
     }
@@ -192,6 +197,7 @@ export default function AdminProducts() {
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
   setFormData({ name: product.name, description: product.description, price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, image: product.image, benefits: product.benefits, category: product.category, inStock: product.inStock, energyKcal: product.energyKcal, proteinG: product.proteinG, carbohydratesG: product.carbohydratesG, totalSugarG: product.totalSugarG, addedSugarG: product.addedSugarG, totalFatG: product.totalFatG, saturatedFatG: product.saturatedFatG, transFatG: product.transFatG });
+  setBenefitsRaw(product.benefits?.join(', ') || '');
     setIsDialogOpen(true);
   };
 
@@ -202,6 +208,22 @@ export default function AdminProducts() {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Product Management</h1>
+  <div className="flex gap-2 items-center">
+          {pendingChanges.size > 0 && (
+            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded border border-amber-300">{pendingChanges.size} pending</span>
+          )}
+          <Button variant="secondary" disabled={pendingChanges.size===0 || createProductMutation.isPending || updateProductMutation.isPending}
+            onClick={async ()=>{
+              // Trigger static products regeneration & Netlify build via backend manual endpoint
+              try {
+                await apiFetch('/api/admin/trigger-rebuild', { method:'POST', headers:{ Authorization: `Bearer ${token}` }});
+                toast({ title: 'Deploy triggered', description: 'Rebuild started with your pending changes.' });
+                setPendingChanges(new Set());
+              } catch {
+                toast({ title:'Failed to trigger rebuild', variant:'destructive' });
+              }
+            }}>Apply Changes</Button>
+        </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
@@ -290,7 +312,15 @@ export default function AdminProducts() {
               </div>
               <div>
                 <Label htmlFor="benefits">Benefits (comma separated)</Label>
-                <Input id="benefits" value={formData.benefits.join(', ')} onChange={(e)=>setFormData({...formData,benefits:e.target.value.split(',').map(b=>b.trim()).filter(Boolean)})} />
+                <Input
+                  id="benefits"
+                  value={benefitsRaw}
+                  onChange={(e)=> setBenefitsRaw(e.target.value)}
+                  onBlur={()=> setFormData({...formData, benefits: benefitsRaw.split(',').map(b=>b.trim()).filter(Boolean)})}
+                  placeholder="e.g. Mood Booster, Stress Relief"
+                />
+                {/* Hidden sync on submit in case user never blurs */}
+                <input type="hidden" value={benefitsRaw} readOnly />
               </div>
               {/* No file upload preview */}
               <div className='flex justify-end gap-2'>
