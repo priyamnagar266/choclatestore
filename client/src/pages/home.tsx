@@ -127,6 +127,9 @@ export default function Home() {
     refetchOnWindowFocus: false,
   });
 
+  // Expose products array globally for modal suggestion reuse (lightweight, read-only)
+  useEffect(()=>{ (window as any).__ALL_PRODUCTS = products; try { window.dispatchEvent(new CustomEvent('products-ready')); } catch {} }, [products]);
+
   // Forms
   const orderForm = useForm({
     resolver: zodResolver(orderFormSchema),

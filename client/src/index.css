@@ -123,3 +123,7 @@
   .marquee-track { display:flex; width:max-content; animation: marquee-scroll 28s linear infinite; }
   .marquee-fade { position:absolute; inset:0; pointer-events:none; }
   .marquee-wrapper { overflow:hidden; }
+
+  /* Product modal swap animation */
+  @keyframes fadeScaleIn { 0% {opacity:0; transform:scale(.96);} 100% {opacity:1; transform:scale(1);} }
+  .fade-swap { animation: fadeScaleIn .22s ease; }

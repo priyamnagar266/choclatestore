@@ -80,5 +80,8 @@ export default function ProductCard({ product, onAddToCart, onBuyNow, withModal 
 
   if (!withModal) return card;
 
-  return React.createElement(ProductModal, { product, onAddToCart, trigger: card });
+  // Forward full product list if available on window for richer suggestions
+  const all = (typeof window !== 'undefined' ? (window as any).__ALL_PRODUCTS : undefined) as Product[] | undefined;
+  const passAll = Array.isArray(all) && all.length > 0 ? all : undefined; // avoid locking an empty array early
+  return React.createElement(ProductModal, { product, onAddToCart, trigger: card, productsAll: passAll });
 }
