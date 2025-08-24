@@ -5,6 +5,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { client } from './db';
+import mongoose from 'mongoose';
 import cors from 'cors';
 
 const app = express();
@@ -57,6 +58,18 @@ app.use((req, res, next) => {
     } catch (err) {
       console.error('Failed to connect to MongoDB', err);
     }
+  }
+
+  // Ensure Mongoose (used by testimonial & other schemas) is connected
+  try {
+    const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+    const dbName = process.env.MONGODB_DBNAME || 'cokhaenergyfoods';
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(uri, { dbName });
+      log('[mongoose] connected');
+    }
+  } catch (e) {
+    console.error('[mongoose] connection failed:', e);
   }
 
   const server = await registerRoutes(app);

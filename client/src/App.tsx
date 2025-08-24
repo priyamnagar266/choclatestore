@@ -24,6 +24,7 @@ const AdminCustomers = React.lazy(() => import("@/pages/admin/customers"));
 const AdminReports = React.lazy(() => import("@/pages/admin/reports"));
 const AdminSettings = React.lazy(() => import("@/pages/admin/settings"));
 const AdminHome = React.lazy(() => import("@/pages/admin/home"));
+const AdminTestimonials = React.lazy(() => import("@/pages/admin/testimonials"));
 
 function AdminRootRedirect() {
   const [, setLocation] = useLocation();
@@ -51,6 +52,7 @@ function Router() {
       React.createElement(Route, { path: "/admin/home", component: AdminHome }),
       React.createElement(Route, { path: "/admin/products", component: AdminProducts }),
       React.createElement(Route, { path: "/admin/orders", component: AdminOrders }),
+  React.createElement(Route, { path: "/admin/testimonials", component: AdminTestimonials }),
       React.createElement(Route, { path: "/admin/login", component: AdminLogin }),
       React.createElement(Route, { path: "/admin/overview", component: AdminOverview }),
       React.createElement(Route, { path: "/admin/customers", component: AdminCustomers }),

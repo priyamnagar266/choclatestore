@@ -6,7 +6,7 @@ import { createServer, type Server } from "http";
 import Razorpay from "razorpay";
 import { storage } from "./storage.mongodb";
 import { db } from './db';
-import { insertOrderSchema, insertContactSchema, insertNewsletterSchema, insertUserSchema } from "@shared/schema";
+import { insertOrderSchema, insertContactSchema, insertNewsletterSchema, insertUserSchema, TestimonialModel, insertTestimonialSchema, updateTestimonialSchema } from "@shared/schema";
 import bcrypt from "bcryptjs";
 import { generateJWT, authenticateJWT } from "./jwt";
 import crypto from "crypto";
@@ -170,6 +170,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       res.status(500).json({ message: "Error fetching product: " + error.message });
     }
+  });
+
+  // Public: list active testimonials
+  app.get('/api/testimonials', async (_req, res) => {
+    try {
+      const list = await TestimonialModel.find({ active: true }).sort({ order: 1, createdAt: -1 }).lean();
+      res.json(list);
+    } catch (e:any) { res.status(500).json({ message: e.message }); }
+  });
+
+  // Admin auth helper (reuse JWT middleware + role check)
+  function requireAdmin(req: any, res: any, next: any){
+    authenticateJWT(req,res,()=>{
+      if(!req.user || req.user.role !== 'admin') return res.status(403).json({ message:'Admin only'});
+      next();
+    });
+  }
+
+  // Admin: create testimonial
+  app.post('/api/admin/testimonials', requireAdmin, async (req,res)=>{
+    try {
+      const data = insertTestimonialSchema.parse(req.body);
+      const t = await TestimonialModel.create(data);
+      triggerNetlifyBuild('testimonial-create');
+      res.json(t);
+    } catch(e:any){ res.status(400).json({ message:e.message }); }
+  });
+
+  // Admin: update testimonial
+  app.patch('/api/admin/testimonials/:id', requireAdmin, async (req,res)=>{
+    try {
+      const data = updateTestimonialSchema.parse(req.body);
+      const t = await TestimonialModel.findByIdAndUpdate(req.params.id, data, { new:true });
+      if(!t) return res.status(404).json({ message:'Not found'});
+      triggerNetlifyBuild('testimonial-update');
+      res.json(t);
+    } catch(e:any){ res.status(400).json({ message:e.message }); }
+  });
+
+  // Admin: delete testimonial
+  app.delete('/api/admin/testimonials/:id', requireAdmin, async (req,res)=>{
+    try {
+      const t = await TestimonialModel.findByIdAndDelete(req.params.id);
+      if(!t) return res.status(404).json({ message:'Not found'});
+      triggerNetlifyBuild('testimonial-delete');
+      res.json({ success:true });
+    } catch(e:any){ res.status(400).json({ message:e.message }); }
+  });
+
+  // Admin: list all testimonials (including inactive)
+  app.get('/api/admin/testimonials', requireAdmin, async (_req,res)=>{
+    try { const list = await TestimonialModel.find().sort({ order:1, createdAt:-1 }); res.json(list); }
+    catch(e:any){ res.status(500).json({ message:e.message }); }
   });
   // (Removed legacy duplicate minimal admin product routes; unified later with full-featured routes.)
 

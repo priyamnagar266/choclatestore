@@ -162,6 +162,25 @@ export default function Home() {
     },
   });
 
+  // Testimonials (dynamic - admin editable)
+  const fallbackTestimonials = [
+    { text:"These energy bars have completely changed my afternoon slump. The Focus Boost bar gives me 4+ hours of sustained mental clarity without any crash!", name:"Priya Sharma", role:"Software Engineer", rating:5 },
+    { text:"As a fitness enthusiast, I love the Protein Power bar. It's perfectly balanced nutrition with authentic Indian flavors. Finally, a healthy snack that tastes amazing!", name:"Rahul Kumar", role:"Fitness Coach", rating:5 },
+    { text:"The Mood Uplift bar has become my daily stress-buster. I can feel the difference in my mood and energy levels. These are not just snacks, they're wellness in a bar!", name:"Anita Desai", role:"Marketing Executive", rating:5 },
+  ];
+  const [testimonials, setTestimonials] = useState<any[] | null>(null);
+  useEffect(()=>{
+    (async()=>{
+      try {
+        const r = await fetch('/api/testimonials');
+        if(r.ok){
+          const data = await r.json();
+          if(Array.isArray(data) && data.length) setTestimonials(data);
+        }
+      } catch {}
+    })();
+  },[]);
+
   // Mutations
   const createOrderMutation = useMutation({
     mutationFn: (orderData: any) => apiRequest("POST", "/api/orders", orderData),
@@ -525,26 +544,7 @@ export default function Home() {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                text: "These energy bars have completely changed my afternoon slump. The Focus Boost bar gives me 4+ hours of sustained mental clarity without any crash!",
-                name: "Priya Sharma",
-                role: "Software Engineer",
-                image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"
-              },
-              {
-                text: "As a fitness enthusiast, I love the Protein Power bar. It's perfectly balanced nutrition with authentic Indian flavors. Finally, a healthy snack that tastes amazing!",
-                name: "Rahul Kumar",
-                role: "Fitness Coach",
-                image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"
-              },
-              {
-                text: "The Mood Uplift bar has become my daily stress-buster. I can feel the difference in my mood and energy levels. These are not just snacks, they're wellness in a bar!",
-                name: "Anita Desai",
-                role: "Marketing Executive",
-                image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&h=100"
-              }
-            ].map((testimonial, index) => (
+            {(testimonials || fallbackTestimonials).map((testimonial, index) => (
               <Card key={index} className="bg-neutral p-8">
                 <CardContent className="p-0">
                   <div className="flex items-center mb-4">
@@ -554,11 +554,9 @@ export default function Home() {
                   </div>
                   <p className="text-gray-600 mb-6 italic">"{testimonial.text}"</p>
                   <div className="flex items-center">
-                    <img 
-                      src={testimonial.image} 
-                      alt={testimonial.name} 
-                      className="w-12 h-12 rounded-full object-cover mr-4"
-                    />
+                    <div className="w-12 h-12 rounded-full bg-white border border-neutral-300 flex items-center justify-center font-semibold mr-4 text-lg text-amber-500 shadow-sm select-none">
+                      {testimonial.name.charAt(0)}
+                    </div>
                     <div>
                       <div className="font-semibold text-primary">{testimonial.name}</div>
                       <div className="text-gray-500 text-sm">{testimonial.role}</div>

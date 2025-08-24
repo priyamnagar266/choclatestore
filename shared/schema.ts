@@ -59,6 +59,17 @@ export interface Newsletter extends Document {
   subscribedAt: Date;
 }
 
+export interface Testimonial extends Document {
+  name: string;        // Person's name
+  role: string;        // Short role / title
+  text: string;        // Testimonial body
+  rating: number;      // 1-5 stars
+  createdAt: Date;
+  updatedAt: Date;
+  order?: number;      // For manual ordering
+  active: boolean;     // Allow soft-hide
+}
+
 export const ProductModel = mongoose.model<Product>("Product", new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String, required: true },
@@ -109,6 +120,17 @@ export const NewsletterModel = mongoose.model<Newsletter>("Newsletter", new mong
   subscribedAt: { type: Date, default: Date.now },
 }));
 
+export const TestimonialModel = mongoose.model<Testimonial>("Testimonial", new mongoose.Schema({
+  name: { type: String, required: true },
+  role: { type: String, required: true },
+  text: { type: String, required: true },
+  rating: { type: Number, required: true, min: 1, max: 5, default: 5 },
+  order: { type: Number, default: 0 },
+  active: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+}).pre('save', function(next){ (this as any).updatedAt = new Date(); next(); }));
+
 export const insertOrderSchema = z.object({
   userId: z.string(),
   customerName: z.string(),
@@ -144,3 +166,14 @@ export const insertUserSchema = z.object({
   password: z.string().min(6),
   role: z.string().optional(),
 });
+
+export const insertTestimonialSchema = z.object({
+  name: z.string().min(1),
+  role: z.string().min(1),
+  text: z.string().min(5),
+  rating: z.number().min(1).max(5).default(5),
+  order: z.number().int().nonnegative().optional(),
+  active: z.boolean().optional(),
+});
+
+export const updateTestimonialSchema = insertTestimonialSchema.partial().refine(o => Object.keys(o).length>0, { message: 'No fields to update' });
