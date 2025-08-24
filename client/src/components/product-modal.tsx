@@ -112,7 +112,7 @@ export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSu
               <img
                 src={currentProduct.image}
                 alt={currentProduct.name}
-                className="w-full h-full object-cover fade-swap"
+                className="w-full h-full object-cover object-top md:object-center fade-swap"
               />
             </div>
           </div>
