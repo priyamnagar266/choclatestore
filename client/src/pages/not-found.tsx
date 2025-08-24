@@ -1,9 +1,16 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
+import { Helmet } from 'react-helmet-async';
 
 export default function NotFound() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+      <Helmet>
+        <title>Page Not Found (404) | Cokha Chocolates</title>
+        <meta name="robots" content="noindex,follow" />
+        <meta name="description" content="The page you are looking for does not exist on Cokha Chocolates." />
+        <link rel="canonical" href="https://your-domain.com/404" />
+      </Helmet>
       <Card className="w-full max-w-md mx-4">
         <CardContent className="pt-6">
           <div className="flex mb-4 gap-2">

@@ -1,4 +1,5 @@
 import { useAuth } from "@/components/auth-context";
+import { Helmet } from 'react-helmet-async';
 // Import media assets so they are processed by Vite during build (fixes deployment path issues)
 import productVideo from "@/components/Assets/20250721_111849_0001.mp4";
 import heroVideo from "@/components/Assets/herosectionvideo.mp4";
@@ -424,6 +425,12 @@ export default function Home() {
 
   return (
   <div className="min-h-screen bg-white">
+      <Helmet>
+        <title>Buy Premium Functional Chocolates Online | Cokha</title>
+        <meta name="description" content="Shop handcrafted functional chocolates enriched with natural ingredients for mood, energy, focus and wellness." />
+        <meta name="keywords" content="functional chocolates,premium chocolates,handcrafted chocolate,energy bar,mood boosting chocolate,healthy dark chocolate,buy chocolates online" />
+        <link rel="canonical" href="https://your-domain.com/" />
+      </Helmet>
       <Navigation 
         cartItemCount={calculateItemCount(cart)} 
         onCartClick={() => setShowCart(true)} 

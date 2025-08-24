@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Helmet } from 'react-helmet-async';
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,6 +83,12 @@ export default function DeliveryInfo() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral py-8">
+      <Helmet>
+        <title>Enter Delivery Information | Cokha Chocolates</title>
+        <meta name="description" content="Provide delivery details to complete your handcrafted functional chocolate order." />
+        <meta name="keywords" content="delivery information,checkout,cokha chocolates" />
+        <link rel="canonical" href="https://your-domain.com/delivery" />
+      </Helmet>
       <Card className="w-full max-w-xl mx-auto">
         <CardHeader>
           <CardTitle className="text-2xl text-primary">Delivery Information</CardTitle>

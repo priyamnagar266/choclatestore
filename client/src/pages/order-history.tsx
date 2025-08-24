@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { Helmet } from 'react-helmet-async';
 import axios from 'axios';
 import { useAuth } from '../components/auth-context';
 import { useAdminAuth } from '@/components/admin-auth';
@@ -172,6 +173,12 @@ export default function OrderHistory() {
   );
 
   return React.createElement('div',{className:'max-w-6xl mx-auto p-6 space-y-6'},
+    React.createElement(Helmet,null,
+      React.createElement('title',null,'Order History | Cokha Chocolates'),
+      React.createElement('meta',{name:'description',content:'View and track your past Cokha functional chocolate orders.'}),
+      React.createElement('meta',{name:'keywords',content:'order history,cokha orders,track chocolate order'}),
+      React.createElement('link',{rel:'canonical',href:'https://your-domain.com/orders'})
+    ),
     React.createElement('div',{className:'flex flex-col md:flex-row md:items-end md:justify-between gap-4'},
       React.createElement('div',null,
         React.createElement('h2',{className:'text-3xl font-bold tracking-tight'},'Your Orders'),
