@@ -411,14 +411,13 @@ export default function Home() {
       <section id="home" className="relative h-[70vh] min-h-[560px] w-full overflow-hidden anim-fade-in" data-anim>
         {/* Video background */}
         <video
-          className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-700"
+          className="absolute inset-0 w-full h-full object-cover"
           autoPlay
           loop
           muted
           playsInline
           preload="auto"
           src={productVideo}
-          onCanPlay={(e)=>{ (e.currentTarget as HTMLVideoElement).classList.remove('opacity-0'); (e.currentTarget as HTMLVideoElement).classList.add('opacity-100'); }}
         >
           Your browser does not support the video tag.
         </video>
@@ -503,7 +502,7 @@ export default function Home() {
                   autoPlay
                   muted
                   playsInline
-                  controls
+                  loop
                   preload="auto"
                   poster="https://i.postimg.cc/cLZtLg16/Gemini-Generated-Image-wv9jaswv9jaswv9j.png"
                   className="w-full h-full object-cover"
