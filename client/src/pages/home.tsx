@@ -829,23 +829,56 @@ export default function Home() {
               <>
                 <div className="mt-6 flex-1 overflow-y-auto pr-1 space-y-4">
                   {cart.map((item) => (
-                    <div key={item.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-md" />
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-gray-900 truncate">{item.name}</h4>
-                        <p className="text-sm text-gray-600">{formatPrice(item.price)} each</p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button size="sm" variant="outline" onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}>
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-                        <Button size="sm" variant="outline" onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}>
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => removeFromCart(item.id)} className="text-red-600 hover:text-red-700">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                    <div
+                      key={item.id}
+                      className="p-4 bg-gray-50 rounded-lg flex items-start gap-3"
+                    >
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-20 h-20 object-cover rounded-md flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <h4 className="font-medium text-gray-900 text-sm sm:text-base leading-snug line-clamp-2">
+                          {item.name}
+                        </h4>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <p className="text-xs sm:text-sm text-gray-600 m-0">
+                            {formatPrice(item.price)} each
+                          </p>
+                          <div className="flex items-center gap-2 bg-white rounded-md px-2 py-1 shadow-sm">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 w-7 p-0"
+                              onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
+                              aria-label={`Decrease quantity of ${item.name}`}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <span className="w-6 text-center text-sm font-semibold">
+                              {item.quantity}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 w-7 p-0"
+                              onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
+                              aria-label={`Increase quantity of ${item.name}`}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => removeFromCart(item.id)}
+                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700 bg-white shadow-sm"
+                            aria-label={`Remove ${item.name} from cart`}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
