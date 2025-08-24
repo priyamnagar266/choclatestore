@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { AdminLayout } from '@/components/admin-nav';
 import { useAuth } from '@/components/auth-context';
 import { useAdminAuth } from '@/components/admin-auth';
@@ -64,16 +64,33 @@ export default function AdminReports() {
               <div className='grid lg:grid-cols-2 gap-10'>
                 <Card className='col-span-1'>
                   <CardHeader><CardTitle className='text-base'>Top Selling Products (Qty)</CardTitle></CardHeader>
-                  <CardContent style={{height:400}}>
+                  <CardContent style={{height:420}}>
                     {data.topProducts.length ? (
-                      <ResponsiveContainer width='100%' height='100%'>
-                        <BarChart data={data.topProducts} margin={{ left: 0, right: 10, top: 10, bottom: 10 }}>
-                          <XAxis dataKey='name' hide={data.topProducts.length>12} interval={0} angle={-45} textAnchor='end' height={data.topProducts.length>12?0:80} />
-                          <YAxis />
-                          <ReTooltip />
-                          <Bar dataKey='totalQuantity' fill='#6366f1' />
-                        </BarChart>
-                      </ResponsiveContainer>
+                      (()=>{
+                        // Custom tick to improve readability of long product names
+                        const ProductTick = (props:any) => {
+                          const { x, y, payload } = props;
+                          const label: string = payload?.value || '';
+                          const maxLen = 18;
+                          const display = label.length > maxLen ? label.slice(0, maxLen-1) + '…' : label;
+                          return (
+                            <g transform={`translate(${x},${y})`}>
+                              <title>{label}</title>
+                              <text dy={16} textAnchor='end' transform='rotate(-30)' style={{ fontSize: 11, fill: '#374151' }}>{display}</text>
+                            </g>
+                          );
+                        };
+                        return (
+                          <ResponsiveContainer width='100%' height='100%'>
+                            <BarChart data={data.topProducts} margin={{ left: 0, right: 10, top: 10, bottom: 80 }}>
+                              <XAxis dataKey='name' interval={0} height={90} tickLine tick={<ProductTick />} />
+                              <YAxis />
+                              <ReTooltip />
+                              <Bar dataKey='totalQuantity' fill='#6366f1' />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        );
+                      })()
                     ) : <div className='text-xs text-muted-foreground'>No product data in range.</div>}
                   </CardContent>
                 </Card>

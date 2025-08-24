@@ -801,26 +801,23 @@ export default function Home() {
       {/* Shopping Cart Modal */}
       <Sheet open={showCart} onOpenChange={setShowCart}>
         <SheetContent side="right" className="w-full sm:max-w-lg">
-          <SheetHeader>
-            <SheetTitle className="text-primary">Shopping Cart ({calculateItemCount(cart)} items)</SheetTitle>
-            <SheetDescription>
-              Review your selected items before proceeding to checkout
-            </SheetDescription>
-          </SheetHeader>
-          
-          <div className="mt-6 flex-1 overflow-y-auto">
+          <div className="h-full flex flex-col">
+            <SheetHeader>
+              <SheetTitle className="text-primary">Shopping Cart ({calculateItemCount(cart)} items)</SheetTitle>
+              <SheetDescription>
+                Review your selected items before proceeding to checkout
+              </SheetDescription>
+            </SheetHeader>
             {cart.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="flex-1 flex flex-col items-center justify-center py-16 text-center">
                 <div className="text-6xl text-gray-300 mb-4">🛒</div>
                 <h3 className="text-lg font-medium text-gray-600 mb-2">Your cart is empty</h3>
                 <p className="text-gray-500 mb-4">Add some delicious energy bars to get started!</p>
-                <Button onClick={() => setShowCart(false)} className="bg-primary hover:bg-green-800">
-                  Continue Shopping
-                </Button>
+                <Button onClick={() => setShowCart(false)} className="bg-primary hover:bg-green-800">Continue Shopping</Button>
               </div>
             ) : (
               <>
-                <div className="space-y-4">
+                <div className="mt-6 flex-1 overflow-y-auto pr-1 space-y-4">
                   {cart.map((item) => (
                     <div key={item.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                       <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-md" />
@@ -829,40 +826,24 @@ export default function Home() {
                         <p className="text-sm text-gray-600">{formatPrice(item.price)} each</p>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
-                        >
+                        <Button size="sm" variant="outline" onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}>
                           <Minus className="h-3 w-3" />
                         </Button>
                         <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
-                        >
+                        <Button size="sm" variant="outline" onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}>
                           <Plus className="h-3 w-3" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => removeFromCart(item.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
+                        <Button size="sm" variant="outline" onClick={() => removeFromCart(item.id)} className="text-red-600 hover:text-red-700">
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
                   ))}
                 </div>
-                
-                <div className="mt-6 space-y-4">
-                  <Separator />
+                <div className="mt-4 border-t pt-4 space-y-4 bg-white sticky bottom-0">
                   <div className="flex justify-between items-center text-lg font-semibold">
                     <span>Total: {formatPrice(calculateCartTotal(cart))}</span>
                   </div>
-                  
                   <div className="space-y-2">
                     <Button
                       onClick={() => {
@@ -915,13 +896,7 @@ export default function Home() {
                     >
                       Proceed to Order Form
                     </Button>
-                    <Button
-                      onClick={clearCart}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      Clear Cart
-                    </Button>
+                    <Button onClick={clearCart} variant="outline" className="w-full">Clear Cart</Button>
                   </div>
                 </div>
               </>
