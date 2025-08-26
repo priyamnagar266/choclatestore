@@ -1,0 +1,21 @@
+[
+  {
+    "_id": "68a7146295b00b76495603c1",
+    "id": 1,
+    "name": "Rose Pistachio Chocolate",
+    "description": "A delicate balance of floral and nutty notes, Cokha Rose Pistachio Chocolate is an elegant fusion of rose petals and roasted pistachios with velvety cocoa. Perfectly fragrant, beautifully textured — a truly royal chocolate experience.",
+    "price": 150,
+    "image": "https://i.postimg.cc/1tKg8bYp/rosepc.jpg",
+    "benefits": ["Enhanced Focus", "Brain Health"],
+    "category": "cognitive",
+    "inStock": 100,
+    "energyKcal": "150",
+    "proteinG": "4",
+    "carbohydratesG": "18",
+    "totalSugarG": "8",
+    "addedSugarG": "3",
+    "totalFatG": "6",
+    "saturatedFatG": "2",
+    "transFatG": "0"
+  }
+]

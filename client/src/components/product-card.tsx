@@ -11,9 +11,10 @@ interface ProductCardProps {
   onAddToCart: (product: Product) => void;
   onBuyNow?: (product: Product) => void;
   withModal?: boolean; // allow disabling modal wrapper if only small card is desired
+  productsAll?: Product[];
 }
 
-export default function ProductCard({ product, onAddToCart, onBuyNow, withModal = true }: ProductCardProps) {
+export default function ProductCard({ product, onAddToCart, onBuyNow, withModal = true, productsAll }: ProductCardProps) {
   const card = React.createElement(
     Card as any,
     {
@@ -56,10 +57,10 @@ export default function ProductCard({ product, onAddToCart, onBuyNow, withModal 
       ),
       React.createElement(
         "div",
-        { className: "flex justify-between items-center gap-2" },
+        { className: "flex flex-col xs:flex-row justify-between items-stretch xs:items-center gap-2" },
         React.createElement(
           "span",
-          { className: "text-[10px] xs:text-xs sm:text-sm font-semibold text-secondary" },
+          { className: "text-[10px] xs:text-xs sm:text-sm font-semibold text-secondary xs:mr-2" },
           formatPrice(product.price)
         ),
         React.createElement(
@@ -69,7 +70,7 @@ export default function ProductCard({ product, onAddToCart, onBuyNow, withModal 
               e.stopPropagation();
               onAddToCart(product);
             },
-            className: "bg-primary text-white hover:bg-green-800 transition-colors h-8 px-2 sm:px-3 text-xs sm:text-sm",
+            className: "bg-primary text-white hover:bg-green-800 transition-colors h-8 w-full xs:w-auto px-2 sm:px-3 text-xs sm:text-sm",
             disabled: product.inStock === 0
           },
           product.inStock === 0 ? "Out of Stock" : "Add to Cart"
@@ -80,8 +81,10 @@ export default function ProductCard({ product, onAddToCart, onBuyNow, withModal 
 
   if (!withModal) return card;
 
-  // Forward full product list if available on window for richer suggestions
-  const all = (typeof window !== 'undefined' ? (window as any).__ALL_PRODUCTS : undefined) as Product[] | undefined;
-  const passAll = Array.isArray(all) && all.length > 0 ? all : undefined; // avoid locking an empty array early
+  // Prefer explicit productsAll prop, fallback to window.__ALL_PRODUCTS
+  const all = productsAll && productsAll.length > 0
+    ? productsAll
+    : (typeof window !== 'undefined' ? (window as any).__ALL_PRODUCTS : undefined);
+  const passAll = Array.isArray(all) && all.length > 0 ? all : undefined;
   return React.createElement(ProductModal, { product, onAddToCart, trigger: card, productsAll: passAll });
 }

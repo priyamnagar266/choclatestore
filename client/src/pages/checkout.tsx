@@ -119,7 +119,7 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
         } catch {}
         const orderPayload = {
           ...orderDataWithoutId,
-          userId: authUserId || orderDataWithoutId.userId || '',
+          userId: authUserId || orderDataWithoutId.userId || '', // allow blank for guest
           items,
           razorpayOrderId: razorpayOrder.orderId,
           total: amount,
@@ -543,7 +543,7 @@ export default function Checkout() {
               }
             } catch {}
             const orderDataForBackend = {
-              userId: authUserId2 || userId || '',
+              userId: authUserId2 || userId || '', // allow blank for guest
               customerName: delivery.customerName || '',
               customerEmail: delivery.customerEmail || '',
               customerPhone: delivery.customerPhone || '',

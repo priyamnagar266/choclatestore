@@ -1,3 +1,4 @@
+// Removed react-router-dom Link, use Wouter navigation instead
 import { useAuth } from "@/components/auth-context";
 import { Helmet } from 'react-helmet-async';
 // Import media assets so they are processed by Vite during build (fixes deployment path issues)
@@ -5,6 +6,7 @@ import productVideo from "@/components/Assets/20250721_111849_0001.mp4";
 import heroVideo from "@/components/Assets/herosectionvideo.mp4";
 
 import { useState, useEffect, useRef } from "react";
+import { useCart } from "@/context/CartContext";
 import { useReveal } from "@/hooks/useReveal";
 import { useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -26,7 +28,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import CartSheet from "@/components/cart-sheet";
 import { Play, Star, Phone, Mail, MapPin, Clock, MessageCircle, Instagram, X, Minus, Plus, Trash2 } from "lucide-react";
 
 import type { Product } from "@shared/schema";
@@ -53,17 +56,11 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  
-  // Cart state (persisted in localStorage until payment)
+  // Helper to resolve cart key for current user
   const resolveCartKey = (u = user) => u ? `cart_${u.id}` : 'cart_guest';
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    try {
-      const savedCart = localStorage.getItem(resolveCartKey());
-      return savedCart ? JSON.parse(savedCart) : [];
-    } catch { return []; }
-  });
-  const [showCart, setShowCart] = useState(false);
+  const queryClient = useQueryClient();
+  // Use global cart context
+  const { cart, setCart, showCart, closeCart } = useCart();
   // Mobile contact form collapse state
   const [mobileFormOpen, setMobileFormOpen] = useState(false);
 
@@ -130,6 +127,9 @@ export default function Home() {
 
   // Expose products array globally for modal suggestion reuse (lightweight, read-only)
   useEffect(()=>{ (window as any).__ALL_PRODUCTS = products; try { window.dispatchEvent(new CustomEvent('products-ready')); } catch {} }, [products]);
+
+  // Limit homepage display to first 4 products (bestsellers placeholder)
+  const bestsellers = products.slice(0, 4);
 
   // Forms
   const orderForm = useForm({
@@ -431,10 +431,7 @@ export default function Home() {
         <meta name="keywords" content="functional chocolates,premium chocolates,handcrafted chocolate,energy bar,mood boosting chocolate,healthy dark chocolate,buy chocolates online" />
         <link rel="canonical" href="https://your-domain.com/" />
       </Helmet>
-      <Navigation 
-        cartItemCount={calculateItemCount(cart)} 
-        onCartClick={() => setShowCart(true)} 
-      />
+  {/* Navigation is now handled by Layout */}
       
       {/* Hero Section (Video Background) */}
       <section id="home" className="relative h-[70vh] min-h-[560px] w-full overflow-hidden anim-fade-in" data-anim>
@@ -496,21 +493,35 @@ export default function Home() {
   <section id="products" className="py-20 bg-neutral anim-fade-up" data-anim>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-primary">Products</h2>
+            <h2 className="text-4xl font-bold text-primary">Our Bestsellers</h2>
+            <p className="text-gray-600 mt-2">Customer favorites crafted for performance and taste</p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-            {products.map((product) => (
+            {bestsellers.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
                 onAddToCart={addToCart}
+                productsAll={products}
               />
             ))}
-            {products.length === 0 && (
+            {bestsellers.length === 0 && (
               <div className="col-span-full text-center text-sm text-muted-foreground py-8">No products available.</div>
             )}
           </div>
+
+          {products.length > 4 && (
+            <div className="mt-12 text-center">
+              <Button
+                onClick={() => setLocation('/products')}
+                variant="cta"
+                className="px-8 py-4 text-lg font-semibold rounded-xl"
+              >
+                View All Products
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -585,7 +596,15 @@ export default function Home() {
           <div className="flex-1 text-left md:text-justify">
             <h2 className="text-4xl font-bold text-primary mb-4">About Us</h2>
             <p className="text-xl text-gray-600 mb-6">Cokha Energy Foods is dedicated to crafting premium energy bars using ancient Indian superfoods and rich cocoa. Our mission is to fuel your mind, elevate your mood, and energize your life naturally. We believe in honest nutrition, authentic flavors, and wellness for everyone.</p>
-            {/* Removed additional descriptive lines per request */}
+            <div className="mt-8">
+              <Button
+                variant="cta"
+                className="px-8 py-4 text-lg font-semibold rounded-xl shadow-md hover:bg-[#e58800] transition-colors"
+                onClick={() => setLocation('/about')}
+              >
+                Learn About Us More and FAQs
+              </Button>
+            </div>
           </div>
           <div className="flex-1 flex justify-center">
             <img src="https://i.postimg.cc/nLv7Jfq6/image.png" />
@@ -799,152 +818,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-400 text-sm">&copy; {new Date().getFullYear()} Rajasic Foods Pvt Ltd. All rights reserved.</p>
-        </div>
-      </footer>
-
-      <FloatingButtons onBuyNowClick={scrollToOrder} />
+  {/* Footer and FloatingButtons are now handled by the shared Layout component for consistent dark style and no duplication */}
       
       {/* Shopping Cart Modal */}
-      <Sheet open={showCart} onOpenChange={setShowCart}>
+      <Sheet open={showCart} onOpenChange={open => { if (!open) closeCart(); }}>
         <SheetContent side="right" className="w-full sm:max-w-lg">
-          <div className="h-full flex flex-col">
-            <SheetHeader>
-              <SheetTitle className="text-primary">Shopping Cart ({calculateItemCount(cart)} items)</SheetTitle>
-              <SheetDescription>
-                Review your selected items before proceeding to checkout
-              </SheetDescription>
-            </SheetHeader>
-            {cart.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center py-16 text-center">
-                <div className="text-6xl text-gray-300 mb-4">🛒</div>
-                <h3 className="text-lg font-medium text-gray-600 mb-2">Your cart is empty</h3>
-                <p className="text-gray-500 mb-4">Add some delicious energy bars to get started!</p>
-                <Button onClick={() => setShowCart(false)} className="bg-primary hover:bg-green-800">Continue Shopping</Button>
-              </div>
-            ) : (
-              <>
-                <div className="mt-6 flex-1 overflow-y-auto pr-1 space-y-4">
-                  {cart.map((item) => (
-                    <div
-                      key={item.id}
-                      className="p-4 bg-gray-50 rounded-lg flex items-start gap-3"
-                    >
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-20 h-20 object-cover rounded-md flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0 space-y-1">
-                        <h4 className="font-medium text-gray-900 text-sm sm:text-base leading-snug line-clamp-2">
-                          {item.name}
-                        </h4>
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <p className="text-xs sm:text-sm text-gray-600 m-0">
-                            {formatPrice(item.price)} each
-                          </p>
-                          <div className="flex items-center gap-2 bg-white rounded-md px-2 py-1 shadow-sm">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 w-7 p-0"
-                              onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
-                              aria-label={`Decrease quantity of ${item.name}`}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-6 text-center text-sm font-semibold">
-                              {item.quantity}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 w-7 p-0"
-                              onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
-                              aria-label={`Increase quantity of ${item.name}`}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => removeFromCart(item.id)}
-                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700 bg-white shadow-sm"
-                            aria-label={`Remove ${item.name} from cart`}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 border-t pt-4 space-y-4 bg-white sticky bottom-0">
-                  <div className="flex justify-between items-center text-lg font-semibold">
-                    <span>Total: {formatPrice(calculateCartTotal(cart))}</span>
-                  </div>
-                  <div className="space-y-2">
-                    <Button
-                      onClick={() => {
-                        if (!user) {
-                          toast({
-                            title: "Login Required",
-                            description: "Please log in to continue with your order.",
-                            variant: "destructive",
-                          });
-                          setShowCart(false);
-                          setLocation("/login");
-                          return;
-                        }
-                        // Prepare order object and save to localStorage before redirecting
-                        // Always save the full cart to pendingOrder.products and recalculate totals
-                        const cartRaw = localStorage.getItem(resolveCartKey());
-                        const cartItems = cartRaw ? JSON.parse(cartRaw) : cart;
-                        if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
-                          toast({
-                            title: "Cart Empty",
-                            description: "Please add products to your cart before proceeding.",
-                            variant: "destructive",
-                          });
-                          setShowCart(false);
-                          setLocation("/");
-                          return;
-                        }
-                        // Calculate totals
-                        const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                        const deliveryCharges = 50;
-                        const total = subtotal + deliveryCharges;
-                        // Merge or create pendingOrder
-                        let pendingOrder = {};
-                        try {
-                          const pendingOrderRaw = localStorage.getItem('pendingOrder');
-                          pendingOrder = pendingOrderRaw ? JSON.parse(pendingOrderRaw) : {};
-                        } catch {}
-                        const newPendingOrder = {
-                          ...pendingOrder,
-                          products: cartItems,
-                          subtotal,
-                          deliveryCharges,
-                          total,
-                        };
-                        localStorage.setItem('pendingOrder', JSON.stringify(newPendingOrder));
-                        setShowCart(false);
-                        setLocation("/delivery");
-                      }}
-                      className="w-full bg-primary hover:bg-green-800"
-                    >
-                      Proceed to Order Form
-                    </Button>
-                    <Button onClick={clearCart} variant="outline" className="w-full">Clear Cart</Button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+          <CartSheet />
         </SheetContent>
       </Sheet>
     </div>

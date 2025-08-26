@@ -6,10 +6,14 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/home";
+import AboutUsPage from "@/pages/AboutUsPage";
+import Layout from "@/components/layout";
+import { CartProvider } from "@/context/CartContext";
 
 const Checkout = React.lazy(() => import("@/pages/checkout"));
 const DeliveryInfo = React.lazy(() => import("@/pages/delivery"));
 const NotFound = React.lazy(() => import("@/pages/not-found"));
+const ProductsPage = React.lazy(() => import("@/pages/products"));
 const LoginFormLazy = React.lazy(async () => ({ default: (await import("@/components/auth-forms")).LoginForm }));
 const SignupFormLazy = React.lazy(async () => ({ default: (await import("@/components/auth-forms")).SignupForm }));
 const UserDashboard = React.lazy(() => import("@/pages/dashboard"));
@@ -33,45 +37,48 @@ function AdminRootRedirect() {
 }
 
 function Router() {
-  return React.createElement(
-    Suspense,
-    { fallback: React.createElement("div", null) },
-    React.createElement(
-      Switch,
-      null,
-      React.createElement(Route, { path: "/", component: Home }),
-      React.createElement(Route, { path: "/checkout", component: Checkout }),
-      React.createElement(Route, { path: "/delivery", component: DeliveryInfo }),
-      React.createElement(Route, { path: "/login", component: () => React.createElement(LoginFormLazy) }),
-      React.createElement(Route, { path: "/signup", component: () => React.createElement(SignupFormLazy) }),
-      React.createElement(Route, { path: "/dashboard", component: UserDashboard }),
-      React.createElement(Route, { path: "/orders", component: OrderHistory }),
-      React.createElement(Route, { path: "/profile", component: ProfileManagement }),
-      React.createElement(Route, { path: "/admin", component: AdminRootRedirect }),
-      React.createElement(Route, { path: "/admin/dashboard", component: AdminDashboard }),
-      React.createElement(Route, { path: "/admin/home", component: AdminHome }),
-      React.createElement(Route, { path: "/admin/products", component: AdminProducts }),
-      React.createElement(Route, { path: "/admin/orders", component: AdminOrders }),
-  React.createElement(Route, { path: "/admin/testimonials", component: AdminTestimonials }),
-      React.createElement(Route, { path: "/admin/login", component: AdminLogin }),
-      React.createElement(Route, { path: "/admin/overview", component: AdminOverview }),
-      React.createElement(Route, { path: "/admin/customers", component: AdminCustomers }),
-      React.createElement(Route, { path: "/admin/reports", component: AdminReports }),
-      React.createElement(Route, { path: "/admin/settings", component: AdminSettings }),
-      React.createElement(Route, { component: NotFound })
-    )
+  return (
+    <Suspense fallback={<div />}>
+      <Layout>
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/about" component={AboutUsPage} />
+          <Route path="/checkout" component={Checkout} />
+          <Route path="/delivery" component={DeliveryInfo} />
+          <Route path="/login" component={() => <LoginFormLazy />} />
+          <Route path="/signup" component={() => <SignupFormLazy />} />
+          <Route path="/dashboard" component={UserDashboard} />
+          <Route path="/orders" component={OrderHistory} />
+          <Route path="/profile" component={ProfileManagement} />
+          <Route path="/products" component={ProductsPage} />
+          <Route path="/admin" component={AdminRootRedirect} />
+          <Route path="/admin/dashboard" component={AdminDashboard} />
+          <Route path="/admin/home" component={AdminHome} />
+          <Route path="/admin/products" component={AdminProducts} />
+          <Route path="/admin/orders" component={AdminOrders} />
+          <Route path="/admin/testimonials" component={AdminTestimonials} />
+          <Route path="/admin/login" component={AdminLogin} />
+          <Route path="/admin/overview" component={AdminOverview} />
+          <Route path="/admin/customers" component={AdminCustomers} />
+          <Route path="/admin/reports" component={AdminReports} />
+          <Route path="/admin/settings" component={AdminSettings} />
+          <Route component={NotFound} />
+        </Switch>
+      </Layout>
+    </Suspense>
   );
 }
 
+
 export default function App() {
-  return React.createElement(
-    QueryClientProvider,
-    { client: queryClient },
-    React.createElement(
-      TooltipProvider,
-      null,
-      React.createElement(Toaster, null),
-      React.createElement(Router, null)
-    )
+  return (
+    <QueryClientProvider client={queryClient}>
+      <CartProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </CartProvider>
+    </QueryClientProvider>
   );
 }

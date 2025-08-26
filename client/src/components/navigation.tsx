@@ -1,18 +1,15 @@
+import React, { useState, useEffect, useRef } from "react";
 import BrandLogo from './brand-logo';
-import * as React from "react";
-import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/context/CartContext";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, ShoppingCart, User as UserIcon } from "lucide-react";
 import { useAuth } from "./auth-context";
 import { useLocation } from "wouter";
 
-interface NavigationProps {
-  cartItemCount: number;
-  onCartClick: () => void;
-}
-
-export default function Navigation({ cartItemCount, onCartClick }: NavigationProps) {
+export default function Navigation() {
+  const { cart, openCart } = useCart();
+  const cartItemCount = cart.reduce((count, item) => count + (item.quantity || 1), 0);
   // Desktop user dropdown
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   // Mobile navigation sheet
@@ -46,7 +43,6 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
     { label: "Home", id: "home" },
     { label: "Products", id: "products" },
     { label: "About", id: "aboutus" },
-    { label: "Contact", id: "contact" },
   ];
 
   // Desktop nav items list
@@ -57,7 +53,12 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
       'button',
       {
         key: item.id,
-        onClick: () => scrollToSection(item.id),
+        onClick: () => {
+          if (item.id === 'home') setLocation('/');
+          else if (item.id === 'products') setLocation('/products');
+          else if (item.id === 'aboutus') setLocation('/about');
+          else scrollToSection(item.id);
+        },
         className: 'text-gray-700 hover:text-primary transition-colors font-medium tracking-wide'
       },
       item.label
@@ -116,7 +117,7 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
       { className: 'flex items-center space-x-6' },
       React.createElement(
         Button,
-        { onClick: onCartClick, variant: 'ghost', className: 'relative h-10 w-10 p-0 hover:bg-neutral/60', 'aria-label': 'Open cart' as any },
+  { onClick: openCart, variant: 'ghost', className: 'relative h-10 w-10 p-0 hover:bg-neutral/60', 'aria-label': 'Open cart' as any },
         React.createElement(ShoppingCart, { className: 'h-6 w-6 text-gray-800' }),
         cartBadge(cartItemCount)
       ),
@@ -146,7 +147,13 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
         { className: 'flex flex-col space-y-2' },
         ...navItems.map(item => React.createElement('button', {
           key: item.id,
-          onClick: () => { scrollToSection(item.id); setMobileNavOpen(false); },
+          onClick: () => {
+            if (item.id === 'home') setLocation('/');
+            else if (item.id === 'products') setLocation('/products');
+            else if (item.id === 'aboutus') setLocation('/about');
+            else scrollToSection(item.id);
+            setMobileNavOpen(false);
+          },
           className: 'text-left text-lg text-gray-700 hover:text-primary transition-colors py-1'
         }, item.label)),
         user ? React.createElement('button', {
@@ -157,7 +164,7 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
       React.createElement(
         Button,
         {
-          onClick: () => { onCartClick(); setMobileNavOpen(false); },
+          onClick: () => { openCart(); setMobileNavOpen(false); },
           className: 'bg-primary text-white hover:bg-green-800 mt-6'
         },
         React.createElement(ShoppingCart, { className: 'mr-2 h-4 w-4' }),
@@ -207,7 +214,7 @@ export default function Navigation({ cartItemCount, onCartClick }: NavigationPro
     React.createElement(
       'div',
       { className: 'flex items-center' },
-      React.createElement(Button, { variant: 'ghost' as any, size: 'sm' as any, onClick: (e: any) => { e.stopPropagation(); onCartClick(); }, className: 'relative' },
+  React.createElement(Button, { variant: 'ghost' as any, size: 'sm' as any, onClick: (e: any) => { e.stopPropagation(); openCart(); }, className: 'relative' },
         React.createElement(ShoppingCart, { className: 'h-6 w-6' }),
         cartBadge(cartItemCount, 'rounded-full px-1.5 py-0.5')
       )

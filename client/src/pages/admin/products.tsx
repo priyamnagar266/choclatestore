@@ -243,7 +243,16 @@ export default function AdminProducts() {
                 </div>
                 <div>
                   <Label htmlFor="category">Category</Label>
-                  <Input id="category" value={formData.category} onChange={(e)=>setFormData({...formData,category:e.target.value})} required />
+                  <Select value={formData.category} onValueChange={v => setFormData({ ...formData, category: v })}>
+                    <SelectTrigger id="category">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from(new Set(products.map(p => p.category))).map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div>
