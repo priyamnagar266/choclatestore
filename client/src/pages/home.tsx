@@ -6,6 +6,17 @@ import productVideo from "@/components/Assets/20250721_111849_0001.mp4";
 import heroVideo from "@/components/Assets/herosectionvideo.mp4";
 
 import { useState, useEffect, useRef } from "react";
+import BestsellerPopup from "@/components/BestsellerPopup";
+// Demo data for popup (replace with real customer data if available)
+const DEMO_LOCATIONS = [
+  "Nilanjana from Morepukur, Rishra",
+  "Amit from Mumbai",
+  "Priya from Delhi",
+  "Rahul from Bangalore",
+  "Sneha from Kolkata",
+  "Vikas from Pune",
+  "Anita from Hyderabad"
+];
 import { useCart } from "@/context/CartContext";
 import { useReveal } from "@/hooks/useReveal";
 import { useLocation } from "wouter";
@@ -51,6 +62,7 @@ const contactFormSchema = insertContactSchema;
 const newsletterFormSchema = insertNewsletterSchema;
 
 export default function Home() {
+
   // Trigger reveal animations
   useReveal();
   const [, setLocation] = useLocation();
@@ -63,6 +75,7 @@ export default function Home() {
   const { cart, setCart, showCart, closeCart } = useCart();
   // Mobile contact form collapse state
   const [mobileFormOpen, setMobileFormOpen] = useState(false);
+
 
   // Persist cart when user changes (load their specific cart)
   useEffect(()=>{
@@ -130,6 +143,33 @@ export default function Home() {
 
   // Limit homepage display to first 4 products (bestsellers placeholder)
   const bestsellers = products.slice(0, 4);
+
+  // Bestseller popup state (must be after bestsellers definition)
+  const [popupIdx, setPopupIdx] = useState(0);
+  const [showPopup, setShowPopup] = useState(false);
+
+  useEffect(() => {
+    if (!bestsellers.length) return;
+    setShowPopup(true);
+    let hideTimeout: NodeJS.Timeout;
+    const interval = setInterval(() => {
+      setShowPopup(true);
+      hideTimeout = setTimeout(() => setShowPopup(false), 2000); // Show for 2s
+      setTimeout(() => {
+        setPopupIdx((i) => (i + 1) % bestsellers.length);
+      }, 12000); // Move to next after 12s
+    }, 12000);
+    // Initial hide after 2s
+    hideTimeout = setTimeout(() => setShowPopup(false), 2000);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(hideTimeout);
+    };
+  }, [bestsellers.length]);
+
+  // Render popup
+  const popupProduct = bestsellers[popupIdx];
+  const popupLocation = DEMO_LOCATIONS[popupIdx % DEMO_LOCATIONS.length];
 
   // Forms
   const orderForm = useForm({
@@ -425,6 +465,15 @@ export default function Home() {
 
   return (
   <div className="min-h-screen bg-white">
+    {showPopup && popupProduct && (
+      <BestsellerPopup
+  image={popupProduct.image || "/logo.jpg"}
+        name={popupProduct.name}
+        location={popupLocation}
+        timeAgo={"just now"}
+        onClose={() => setShowPopup(false)}
+      />
+    )}
       <Helmet>
         <title>Buy Premium Functional Chocolates Online | Cokha</title>
         <meta name="description" content="Shop handcrafted functional chocolates enriched with natural ingredients for mood, energy, focus and wellness." />
