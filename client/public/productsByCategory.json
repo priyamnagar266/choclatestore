@@ -360,7 +360,7 @@
       "id": 16
     }
   ],
-  "Dark Chocolate and Indian Super Food Fusion": [
+  "Indian Super Food Fusion": [
     {
       "_id": "fusion-7",
       "name": "Khas-Badam Dark Chocolate",
@@ -371,7 +371,7 @@
         "Digestive Health",
         "Gut Friendly"
       ],
-      "category": "Dark Chocolate and Indian Super Food Fusion",
+      "category": "Indian Super Food Fusion",
       "inStock": 100,
       "energyKcal": 140,
       "proteinG": 3,
@@ -393,7 +393,7 @@
         "Relaxation",
         "Sleep Support"
       ],
-      "category": "Dark Chocolate and Indian Super Food Fusion",
+      "category": "Indian Super Food Fusion",
       "inStock": 100,
       "energyKcal": 135,
       "proteinG": 2,
@@ -415,7 +415,7 @@
         "Mood Booster",
         "Stress Relief"
       ],
-      "category": "Dark Chocolate and Indian Super Food Fusion",
+      "category": "Indian Super Food Fusion",
       "inStock": 100,
       "energyKcal": 160,
       "proteinG": 3,
@@ -437,7 +437,7 @@
         "Antioxidants",
         "Superfood"
       ],
-      "category": "Dark Chocolate and Indian Super Food Fusion",
+      "category": "Indian Super Food Fusion",
       "inStock": 50,
       "energyKcal": 155,
       "proteinG": 5,

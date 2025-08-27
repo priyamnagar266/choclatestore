@@ -602,7 +602,7 @@ export default function Home() {
                 className="px-8 py-4 text-lg font-semibold rounded-xl shadow-md hover:bg-[#e58800] transition-colors"
                 onClick={() => setLocation('/about')}
               >
-                Learn About Us More and FAQs
+                Learn About Us More
               </Button>
             </div>
           </div>

@@ -16,15 +16,15 @@ export default function FloatingButtons({ onBuyNowClick }: FloatingButtonsProps)
 
   return React.createElement(
     'div',
-    { className: 'fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-4' },
+  { className: 'fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-4 pb-20 md:pb-10 pointer-events-none' },
     [
       React.createElement(
         Button,
         {
           key: 'wa',
-            'aria-label': 'Chat on WhatsApp',
+          'aria-label': 'Chat on WhatsApp',
           onClick: handleWhatsAppClick,
-          className: 'bg-green-500 text-white hover:bg-green-600 transform hover:scale-110 transition-all p-4 rounded-full shadow-lg',
+          className: 'bg-green-500 text-white hover:bg-green-600 transform hover:scale-110 transition-all p-4 rounded-full shadow-lg pointer-events-auto',
           size: 'icon'
         },
         React.createElement(MessageCircle, { className: 'h-6 w-6' })
@@ -35,7 +35,7 @@ export default function FloatingButtons({ onBuyNowClick }: FloatingButtonsProps)
           key: 'buy',
           'aria-label': 'Buy Now',
           onClick: onBuyNowClick,
-          className: 'bg-[#ff7a00] text-white font-semibold px-6 py-3 rounded-full shadow-lg transform hover:scale-110 transition-transform focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#ff7a00] focus:outline-none'
+          className: 'bg-[#ff7a00] text-white font-semibold px-6 py-3 rounded-full shadow-lg transform hover:scale-110 transition-transform focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#ff7a00] focus:outline-none pointer-events-auto'
         },
         [
           React.createElement(ShoppingCart, { key: 'icon', className: 'mr-2 h-4 w-4' }),

@@ -42,7 +42,7 @@ const ProductsPage = () => {
     'Nuts based Energy Bar': '🥜',
     'Dark Chocolates': '🍫',
     'Milk Chocolates': '🥛',
-    'Dark Chocolate and Indian Super Food Fusion': '✨',
+    'Indian Super Food Fusion': '✨',
   };
 
   return (
@@ -53,9 +53,10 @@ const ProductsPage = () => {
           key={category}
           className={`rounded-2xl shadow-lg mb-12 px-4 py-8 max-w-7xl mx-auto bg-white/80 backdrop-blur-[2px] border border-gray-200 ${idx % 2 === 0 ? 'animate-fade-in-up' : 'animate-fade-in-down'}`}
         >
-          <div className="flex items-center gap-3 mb-6">
-            <span className="text-3xl md:text-4xl">{categoryIcons[category] || '🍬'}</span>
-            <h2 className="text-2xl md:text-3xl font-bold text-primary">{category}</h2>
+          <div className="w-full flex items-center gap-3 mb-6">
+              <h2 className="text-2xl md:text-3xl font-bold w-full text-center" style={{ backgroundColor: '#1f392f', margin: 0, padding: '0.75rem 1.5rem', borderRadius: '1rem', color: '#fff' }}>
+                {category}
+              </h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {(products as any[]).map((product: any, i: number) => (
