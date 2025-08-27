@@ -667,7 +667,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-primary mb-4">Get in Touch</h2>
-            <p className="text-xl text-gray-600">Have questions about our products or need personalized nutrition advice?</p>
+
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
@@ -683,8 +683,7 @@ export default function Home() {
                     <h4 className="font-semibold text-primary">Address</h4>
                     <p className="text-gray-600 text-sm leading-relaxed">
                       Rajasic Foods Pvt Ltd<br />
-                      123 Wellness Street, Organic Plaza<br />
-                      Mumbai, Maharashtra 400001
+                      Nimbahera, Rajasthan<br />
                     </p>
                   </div>
                 </div>
@@ -702,13 +701,7 @@ export default function Home() {
                     <p className="text-gray-600 text-sm leading-relaxed">info@rajasicfoods.com<br />orders@rajasicfoods.com</p>
                   </div>
                 </div>
-                <div className="flex items-start space-x-4">
-                  <div className="bg-primary text-white p-3 rounded-md"><Clock className="h-5 w-5" /></div>
-                  <div>
-                    <h4 className="font-semibold text-primary">Business Hours</h4>
-                    <p className="text-gray-600 text-sm leading-relaxed">Mon - Sat: 9:00 AM - 8:00 PM<br />Sun: 10:00 AM - 6:00 PM</p>
-                  </div>
-                </div>
+               
                 <div className="p-4 whatsapp-gradient rounded-lg shadow-sm">
                   <div className="flex items-center mb-3">
                     <MessageCircle className="h-6 w-6 mr-3 text-whatsapp-foreground" />
