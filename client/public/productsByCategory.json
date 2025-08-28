@@ -2,7 +2,7 @@
   "Seed based Energy Bar": [
     {
       "_id": "68a7146295b00b76495603c7",
-      "name": "Khas-Badam",
+      "name": "Khas-Badam Dark choclate",
       "description": "Experience tradition wrapped in indulgence with Cokha Khas-Badam Dark Chocolate. Infused with almonds and poppy seeds, this bar is inspired by timeless flavors that comfort the soul. A blend of culture and cocoa, created for those who enjoy richness with heritage.",
       "price": 128,
       "image": "https://i.postimg.cc/8591zShK/1755841768406.jpg",
@@ -21,7 +21,8 @@
       "saturatedFatG": 1,
       "transFatG": 0,
       "id": 1,
-      "updatedAt": "2025-08-26T09:50:32.284Z"
+      "updatedAt": "2025-08-26T11:38:54.508Z",
+      "slug": "khas-badam-dark-choclate"
     },
     {
       "_id": "68a7146295b00b76495603c8",
@@ -43,7 +44,8 @@
       "totalFatG": 4,
       "saturatedFatG": 1,
       "transFatG": 0,
-      "id": 2
+      "id": 2,
+      "slug": "cocoa-crunch-chocolate"
     },
     {
       "_id": "68a7146295b00b76495603c6",
@@ -65,7 +67,8 @@
       "totalFatG": 9,
       "saturatedFatG": 2,
       "transFatG": 0,
-      "id": 3
+      "id": 3,
+      "slug": "mint-fusion-dark-chocolate"
     },
     {
       "_id": "seedbar-mock-1",
@@ -87,7 +90,8 @@
       "totalFatG": 7,
       "saturatedFatG": 1,
       "transFatG": 0,
-      "id": 4
+      "id": 4,
+      "slug": "super-seeds-crunch-bar"
     }
   ],
   "Nuts based Energy Bar": [
@@ -111,7 +115,8 @@
       "totalFatG": 6,
       "saturatedFatG": 2,
       "transFatG": 0,
-      "id": 5
+      "id": 5,
+      "slug": "rose-pistachio-chocolate"
     },
     {
       "_id": "68a7146295b00b76495603c3",
@@ -133,7 +138,8 @@
       "totalFatG": 8,
       "saturatedFatG": 2,
       "transFatG": 0,
-      "id": 6
+      "id": 6,
+      "slug": "velvet-hazelnut-dark-chocolate"
     },
     {
       "_id": "68a7146295b00b76495603c5",
@@ -155,7 +161,8 @@
       "totalFatG": 5,
       "saturatedFatG": 2,
       "transFatG": 0,
-      "id": 7
+      "id": 7,
+      "slug": "velvet-walnut-dark-chocolate"
     },
     {
       "_id": "nutsbar-mock-1",
@@ -177,7 +184,8 @@
       "totalFatG": 8,
       "saturatedFatG": 2,
       "transFatG": 0,
-      "id": 8
+      "id": 8,
+      "slug": "almond-power-bar"
     }
   ],
   "Dark Chocolates": [
@@ -201,7 +209,8 @@
       "totalFatG": 7,
       "saturatedFatG": 3,
       "transFatG": 0,
-      "id": 9
+      "id": 9,
+      "slug": "orange-zest-dark-chocolate"
     },
     {
       "_id": "darkchoco-4",
@@ -223,7 +232,8 @@
       "totalFatG": 7,
       "saturatedFatG": 2,
       "transFatG": 0,
-      "id": 10
+      "id": 10,
+      "slug": "velvet-vine-dark-chocolate"
     },
     {
       "_id": "darkchoco-6",
@@ -245,7 +255,8 @@
       "totalFatG": 9,
       "saturatedFatG": 2,
       "transFatG": 0,
-      "id": 11
+      "id": 11,
+      "slug": "mint-fusion-dark-chocolate"
     },
     {
       "_id": "darkchoco-mock-1",
@@ -267,7 +278,8 @@
       "totalFatG": 7,
       "saturatedFatG": 2,
       "transFatG": 0,
-      "id": 12
+      "id": 12,
+      "slug": "70-intense-dark-chocolate"
     }
   ],
   "Milk Chocolates": [
@@ -291,7 +303,8 @@
       "totalFatG": 6,
       "saturatedFatG": 2,
       "transFatG": 0,
-      "id": 13
+      "id": 13,
+      "slug": "rose-pistachio-chocolate"
     },
     {
       "_id": "milkchoco-3",
@@ -313,7 +326,8 @@
       "totalFatG": 8,
       "saturatedFatG": 2,
       "transFatG": 0,
-      "id": 14
+      "id": 14,
+      "slug": "velvet-hazelnut-dark-chocolate"
     },
     {
       "_id": "milkchoco-5",
@@ -335,7 +349,8 @@
       "totalFatG": 5,
       "saturatedFatG": 2,
       "transFatG": 0,
-      "id": 15
+      "id": 15,
+      "slug": "velvet-walnut-dark-chocolate"
     },
     {
       "_id": "milkchoco-mock-1",
@@ -357,10 +372,11 @@
       "totalFatG": 6,
       "saturatedFatG": 3,
       "transFatG": 0,
-      "id": 16
+      "id": 16,
+      "slug": "classic-creamy-milk-chocolate"
     }
   ],
-  "Indian Super Food Fusion": [
+  "Dark Chocolate and Indian Super Food Fusion": [
     {
       "_id": "fusion-7",
       "name": "Khas-Badam Dark Chocolate",
@@ -371,7 +387,7 @@
         "Digestive Health",
         "Gut Friendly"
       ],
-      "category": "Indian Super Food Fusion",
+      "category": "Dark Chocolate and Indian Super Food Fusion",
       "inStock": 100,
       "energyKcal": 140,
       "proteinG": 3,
@@ -381,7 +397,8 @@
       "totalFatG": 5,
       "saturatedFatG": 1,
       "transFatG": 0,
-      "id": 17
+      "id": 17,
+      "slug": "khas-badam-dark-chocolate"
     },
     {
       "_id": "fusion-8",
@@ -393,7 +410,7 @@
         "Relaxation",
         "Sleep Support"
       ],
-      "category": "Indian Super Food Fusion",
+      "category": "Dark Chocolate and Indian Super Food Fusion",
       "inStock": 100,
       "energyKcal": 135,
       "proteinG": 2,
@@ -403,7 +420,8 @@
       "totalFatG": 4,
       "saturatedFatG": 1,
       "transFatG": 0,
-      "id": 18
+      "id": 18,
+      "slug": "cocoa-crunch-chocolate"
     },
     {
       "_id": "fusion-2",
@@ -415,7 +433,7 @@
         "Mood Booster",
         "Stress Relief"
       ],
-      "category": "Indian Super Food Fusion",
+      "category": "Dark Chocolate and Indian Super Food Fusion",
       "inStock": 100,
       "energyKcal": 160,
       "proteinG": 3,
@@ -425,7 +443,8 @@
       "totalFatG": 7,
       "saturatedFatG": 3,
       "transFatG": 0,
-      "id": 19
+      "id": 19,
+      "slug": "orange-zest-dark-chocolate"
     },
     {
       "_id": "fusion-mock-1",
@@ -437,7 +456,7 @@
         "Antioxidants",
         "Superfood"
       ],
-      "category": "Indian Super Food Fusion",
+      "category": "Dark Chocolate and Indian Super Food Fusion",
       "inStock": 50,
       "energyKcal": 155,
       "proteinG": 5,
@@ -447,7 +466,8 @@
       "totalFatG": 7,
       "saturatedFatG": 2,
       "transFatG": 0,
-      "id": 20
+      "id": 20,
+      "slug": "moringa-fusion-bar"
     }
   ]
 }

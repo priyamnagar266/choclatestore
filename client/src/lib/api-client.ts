@@ -11,6 +11,9 @@ export function getApiBase(): string {
 
 export async function apiFetch(path: string, init: RequestInit = {}) {
   const base = getApiBase();
-  const url = base ? `${base}${path}` : path; // path expected to start with /api
+  // Endpoints offloaded to Netlify Functions should stay relative to avoid waking Render
+  const functionHandled = /^(?:\/api\/(?:health|products(?:\/slug)?|testimonials|create-order|verify-payment))/i.test(path);
+  const useBase = base && !functionHandled;
+  const url = useBase ? `${base}${path}` : path; // path expected to start with /api
   return fetch(url, init);
 }

@@ -2,6 +2,7 @@ import mongoose, { Document } from "mongoose";
 import { z } from "zod";
 
 export interface Product extends Document {
+  slug?: string;
   name: string;
   description: string;
   price: number;

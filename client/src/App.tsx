@@ -70,6 +70,12 @@ function Router() {
               <Route path="/about">{() => <AboutUsPage />}</Route>
               <Route path="/checkout">{() => <Checkout />}</Route>
               <Route path="/delivery">{() => <DeliveryInfo />}</Route>
+              <Route path="/products/:slug">{({ slug }) => {
+                const ProductDetailPage = React.lazy(() => import("@/pages/product-detail"));
+                return (
+                  <React.Suspense fallback={<div />}> <ProductDetailPage slug={slug} /> </React.Suspense>
+                );
+              }}</Route>
               <Route path="/products">{() => <ProductsPage />}</Route>
               <Route path="/faq">{() => <FAQPage />}</Route>
               <Route path="/policies">{() => <PoliciesPage />}</Route>
@@ -91,6 +97,17 @@ function Router() {
 
 
 export default function App() {
+  // Gentle backend warm-up: fire-and-forget health ping after initial paint & every 12 mins
+  React.useEffect(()=>{
+    let aborted = false;
+    const ping = () => {
+      try { fetch('/api/health',{ cache:'no-cache' }).catch(()=>{}); } catch {}
+    };
+    // initial slight delay so first paint not delayed
+    const t = setTimeout(ping, 1500);
+    const interval = setInterval(ping, 12 * 60 * 1000); // 12 minutes < 15 min sleep window
+    return ()=>{ aborted = true; clearTimeout(t); clearInterval(interval); };
+  },[]);
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>

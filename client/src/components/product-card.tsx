@@ -1,9 +1,12 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import ProductShare from "./ProductShare";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice, getBenefitBadgeColor } from "@/lib/products";
 import type { Product } from "@shared/schema";
+
+
 import { ProductModal } from "@/components/product-modal";
 
 interface ProductCardProps {
@@ -55,6 +58,7 @@ export default function ProductCard({ product, onAddToCart, onBuyNow, withModal 
           )
         )
       ),
+  // ...existing code...
       React.createElement(
         "div",
         { className: "flex flex-col xs:flex-row justify-between items-stretch xs:items-center gap-2" },

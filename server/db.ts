@@ -1,3 +1,4 @@
+
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
 dotenv.config();
@@ -20,5 +21,7 @@ try {
 		console.log(`[DB] (dev) Mongo URI host: ${host}`);
 	}
 } catch {}
+
 export const client = new MongoClient(uri);
 export const db = client.db(dbName);
+export default db;

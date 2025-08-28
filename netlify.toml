@@ -28,6 +28,29 @@
   to = "/.netlify/functions/verify-payment"
   status = 200
 
+## New serverless function overrides (must come before generic /api proxy)
+[[redirects]]
+  from = "/api/health"
+  to = "/.netlify/functions/health"
+  status = 200
+
+[[redirects]]
+  from = "/api/products/slug/*"
+  to = "/.netlify/functions/products-slug/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/products"
+  to = "/.netlify/functions/products-list"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/testimonials"
+  to = "/.netlify/functions/testimonials"
+  status = 200
+  force = true
+
 ## Proxy API calls to Render backend (updated with deployed host) (after overrides)
 [[redirects]]
   from = "/api/*"

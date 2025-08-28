@@ -2,6 +2,8 @@ import React, { useState, useCallback, useEffect } from "react";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import type { Product } from "@shared/schema";
+
+import ProductShare from "@/components/ProductShare";
 import { formatPrice } from "@/lib/products";
 
 interface ProductModalProps {
@@ -118,14 +120,19 @@ export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSu
           </div>
   <div className="flex flex-col md:w-1/2 overflow-y-auto" ref={scrollContainerRef}>
     <div ref={scrollRef} className="p-6 md:p-8 pb-28 md:pb-8 space-y-6 transition-opacity duration-200">
-              <div>
+              <div className="flex items-center gap-2">
                 <DialogTitle className="text-2xl font-semibold text-primary leading-tight">
-      {currentProduct.name}
+                  {currentProduct.name}
                 </DialogTitle>
-                <DialogDescription className="mt-2 text-sm md:text-base text-muted-foreground leading-relaxed">
-      {currentProduct.description}
-                </DialogDescription>
+                <ProductShare
+                  name={currentProduct.name}
+                  url={typeof window !== 'undefined' ? window.location.origin + '/products/' + (currentProduct.id || currentProduct._id) : ''}
+                  image={currentProduct.image}
+                />
               </div>
+              <DialogDescription className="mt-2 text-sm md:text-base text-muted-foreground leading-relaxed">
+                {currentProduct.description}
+              </DialogDescription>
               <div className="flex items-center gap-4">
                 <span className="text-2xl font-bold text-secondary">
       {formatPrice(currentProduct.price)}

@@ -10,6 +10,10 @@ const usersCollection = db.collection<User>("users");
 const settingsCollection = db.collection<any>('settings');
 
 export const storage = {
+  async getProductBySlug(slug: string): Promise<Product | undefined> {
+    const result = await productsCollection.findOne({ slug });
+    return result || undefined;
+  },
   async getProducts(): Promise<Product[]> {
     return await productsCollection.find().toArray();
   },

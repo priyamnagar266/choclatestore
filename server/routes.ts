@@ -42,6 +42,19 @@ if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Get product by slug
+  app.get("/api/products/slug/:slug", async (req, res) => {
+    try {
+      const slug = req.params.slug;
+      const product = await storage.getProductBySlug(slug);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      res.json(product);
+    } catch (error: any) {
+      res.status(500).json({ message: "Error fetching product: " + error.message });
+    }
+  });
   // Helper: trigger Netlify build hook with retry/backoff (fire-and-forget)
   async function triggerNetlifyBuild(reason: string) {
     const hook = process.env.NETLIFY_BUILD_HOOK_URL;
