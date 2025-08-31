@@ -7,6 +7,7 @@ export interface Product extends Document {
   description: string;
   price: number;
   image: string;
+  images?: string[]; // Optional: for carousel support
   benefits: string[];
   category: string;
   inStock: number;

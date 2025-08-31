@@ -74,7 +74,9 @@ export default function DeliveryInfo() {
     // Merge delivery info into order object and save back to localStorage
     const mergedOrder = {
       ...pendingOrder,
-      deliveryInfo: { ...deliveryInfo }
+      deliveryInfo: { ...deliveryInfo },
+      // Recalculate total defensively in case user manipulated localStorage
+      total: Math.max(0, Number(pendingOrder.subtotal || 0) - Number(pendingOrder.discount || 0) + Number(pendingOrder.deliveryCharges || 0))
     };
     localStorage.setItem("pendingOrder", JSON.stringify(mergedOrder));
     setIsProcessing(false);

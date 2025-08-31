@@ -17,9 +17,16 @@ interface ProductModalProps {
 
 // A self-contained modal for displaying product details
 export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSuggestions = 2 }: ProductModalProps) {
+  // ...existing code...
+  const [imgIdx, setImgIdx] = useState(0);
   const [open, setOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const [currentProduct, setCurrentProduct] = useState<Product>(product);
+  // Move images and showArrows after currentProduct is declared
+  const images: string[] = Array.isArray(currentProduct.images) && currentProduct.images.length > 0 ? currentProduct.images : [currentProduct.image];
+  const showArrows = images.length > 1;
+  // Reset carousel index when product changes
+  useEffect(() => { setImgIdx(0); }, [currentProduct]);
   const scrollRef = React.useRef<HTMLDivElement | null>(null); // inner content
   const scrollContainerRef = React.useRef<HTMLDivElement | null>(null); // outer scrollable column
   const [animKey, setAnimKey] = useState(0); // increment to trigger CSS animation
@@ -110,12 +117,35 @@ export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSu
     <DialogContent className="max-w-5xl w-full p-0 overflow-hidden max-h-[92vh] flex flex-col">
         <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
           <div className="relative w-full md:w-1/2 bg-gray-50 shrink-0 flex items-center justify-center">
-            <div key={animKey} className="w-full h-60 md:h-full md:max-h-[92vh] overflow-hidden">
+            <div key={animKey} className="w-full h-60 md:h-full md:max-h-[92vh] overflow-hidden relative">
               <img
-                src={currentProduct.image}
+                src={images[imgIdx]}
                 alt={currentProduct.name}
                 className="w-full h-full object-cover object-top md:object-center fade-swap"
               />
+              {showArrows && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Previous image"
+                    onClick={e => { e.stopPropagation(); setImgIdx(idx => (idx - 1 + images.length) % images.length); }}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-primary/80 border-2 border-primary rounded-full p-2 shadow text-2xl z-20"
+                    style={{ display: 'block' }}
+                  >&#8592;</button>
+                  <button
+                    type="button"
+                    aria-label="Next image"
+                    onClick={e => { e.stopPropagation(); setImgIdx(idx => (idx + 1) % images.length); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-primary/80 border-2 border-primary rounded-full p-2 shadow text-2xl z-20"
+                    style={{ display: 'block' }}
+                  >&#8594;</button>
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                    {images.map((_, i: number) => (
+                      <span key={i} className={`inline-block w-3 h-3 border-2 border-primary rounded-full ${i === imgIdx ? 'bg-primary' : 'bg-gray-300'}`}></span>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
   <div className="flex flex-col md:w-1/2 overflow-y-auto" ref={scrollContainerRef}>
@@ -162,7 +192,14 @@ export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSu
                   <h4 className="text-sm font-semibold mb-3 text-primary">You might also like</h4>
                   <div className="grid grid-cols-2 gap-3">
                     {suggestions.map(s => (
-                      <button key={(s as any).id || s._id} onClick={()=>{ setCurrentProduct(s); setAnimKey(k=>k+1); const target = scrollContainerRef.current || scrollRef.current; if(target){ try { target.scrollTo({ top: 0, behavior: 'smooth'}); } catch { target.scrollTop = 0; } } recomputeSuggestions(); }} className="group text-left border rounded-md p-2 hover:border-primary/50 focus:outline-none">
+                      <button key={(s as any).id || s._id} onClick={()=>{
+                        setCurrentProduct(s);
+                        setImgIdx(0);
+                        setAnimKey(k=>k+1);
+                        const target = scrollContainerRef.current || scrollRef.current;
+                        if(target){ try { target.scrollTo({ top: 0, behavior: 'smooth'}); } catch { target.scrollTop = 0; } }
+                        recomputeSuggestions();
+                      }} className="group text-left border rounded-md p-2 hover:border-primary/50 focus:outline-none">
                         <img src={s.image} alt={s.name} className="w-full h-24 object-cover rounded mb-2" />
                         <div className="text-xs font-medium line-clamp-2 leading-snug group-hover:text-primary transition-colors">{s.name}</div>
                         <div className="text-[11px] text-muted-foreground">{formatPrice(s.price)}</div>

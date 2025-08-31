@@ -5,10 +5,11 @@ interface BestsellerPopupProps {
   image: string;
   name: string;
   location: string;
+  timeAgo?: string; // optional relative time string
   onClose: () => void;
 }
 
-export default function BestsellerPopup({ image, name, location, onClose }: BestsellerPopupProps) {
+export default function BestsellerPopup({ image, name, location, timeAgo, onClose }: BestsellerPopupProps) {
   return (
     <div
       className="fixed left-2 right-2 bottom-4 z-50 bg-[#14262e] text-white rounded-xl shadow-lg flex items-center gap-3 p-3 min-w-0 max-w-xs mx-auto animate-fade-in-up sm:left-4 sm:right-auto sm:bottom-8 sm:max-w-xs sm:p-4"
@@ -21,7 +22,7 @@ export default function BestsellerPopup({ image, name, location, onClose }: Best
       />
       <div className="flex-1 min-w-0">
         <div className="text-xs sm:text-sm font-body">
-          <span className="font-semibold font-body">{location}</span> purchased
+          <span className="font-semibold font-body">{location}</span> purchased{timeAgo ? ` • ${timeAgo}` : ''}
         </div>
         <div className="font-heading text-sm sm:text-base font-bold text-[#ff3c3c] leading-tight break-words">
           {name}

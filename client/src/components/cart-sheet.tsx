@@ -1,15 +1,21 @@
-import React from "react";
+// import React from "react";
 import { SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Trash2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
+import { KNOWN_PROMOS } from '@/lib/promos';
 import { useAuth } from "@/components/auth-context";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { calculateCartTotal, calculateItemCount, formatPrice } from "@/lib/products";
 
 const CartSheet: React.FC = () => {
-  const { cart, setCart, closeCart } = useCart();
+  const { cart, setCart, closeCart, promoCode, promoMessage, discount, freeShipping, applyPromo, clearPromo, promoToast, setPromoToast } = useCart();
+  // Dropdown state for promo selection
+  const [selectedPromo, setSelectedPromo] = useState<string>(promoCode || '');
+  // Keep dropdown in sync with applied promo
+  useEffect(() => { setSelectedPromo(promoCode || ''); }, [promoCode]);
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -34,7 +40,7 @@ const CartSheet: React.FC = () => {
           <div className="text-6xl text-gray-300 mb-4">🛒</div>
           <h3 className="text-lg font-medium text-gray-600 mb-2">Your cart is empty</h3>
           <p className="text-gray-500 mb-4">Add some delicious energy bars to get started!</p>
-          <Button onClick={closeCart} className="bg-primary hover:bg-green-800">Continue Shopping</Button>
+          <Button onClick={() => { closeCart(); setLocation('/products'); }} className="bg-primary hover:bg-green-800">Continue Shopping</Button>
         </div>
       ) : (
         <>
@@ -94,18 +100,64 @@ const CartSheet: React.FC = () => {
               </div>
             ))}
           </div>
-          <div className="border-t pt-4 mt-4">
+          <div className="border-t pt-4 mt-4 space-y-4">
+            {/* Promo Code Dropdown */}
+            <div className="bg-white rounded-md p-3 border">
+              <form
+                className="flex flex-col gap-2 sm:flex-row sm:items-center"
+                onSubmit={e => { e.preventDefault(); if (selectedPromo) applyPromo(selectedPromo); }}
+              >
+                <select
+                  className="border rounded px-3 py-2 text-sm w-full sm:w-auto"
+                  aria-label="Select promo code"
+                  value={promoCode || selectedPromo || ''}
+                  onChange={e => setSelectedPromo(e.target.value)}
+                  disabled={Object.keys(KNOWN_PROMOS).length === 0}
+                >
+                  <option value="">Select promo code</option>
+                  {Object.entries(KNOWN_PROMOS).map(([code, desc]) => (
+                    <option key={code} value={code}>{code} — {desc}</option>
+                  ))}
+                </select>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    type="submit"
+                    className="flex-1 sm:flex-none"
+                    disabled={!selectedPromo || promoCode === selectedPromo}
+                  >Apply</Button>
+                  {promoCode && (
+                    <Button size="sm" variant="ghost" onClick={clearPromo} type="button" className="flex-1 sm:flex-none">✕</Button>
+                  )}
+                </div>
+              </form>
+              {/* Promo feedback toast */}
+              {promoToast && (
+                <div className={`mt-1 text-xs ${promoToast.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>{promoToast.message}</div>
+              )}
+              {/* Promo message from product or context */}
+              {promoMessage && !promoToast && (
+                <p className="mt-1 text-xs text-blue-600">{promoMessage}</p>
+              )}
+            </div>
             <div className="flex justify-between items-center mb-2">
               <span className="text-gray-700 font-medium">Subtotal</span>
               <span className="font-semibold">{formatPrice(calculateCartTotal(cart))}</span>
             </div>
+            {discount > 0 && (
+              <div className="flex justify-between items-center mb-2 text-sm text-green-700">
+                <span className="font-medium">Discount</span>
+                <span>-{formatPrice(discount)}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center mb-2">
               <span className="text-gray-700 font-medium">Delivery Charges</span>
-              <span className="font-semibold">{formatPrice(50)}</span>
+              <span className="font-semibold">{freeShipping ? 'FREE' : formatPrice(50)}</span>
             </div>
             <div className="flex justify-between items-center text-lg font-bold">
               <span>Total</span>
-              <span>{formatPrice(calculateCartTotal(cart) + 50)}</span>
+              <span>{formatPrice(Math.max(0, calculateCartTotal(cart) - discount + (freeShipping ? 0 : 50)))}</span>
             </div>
             <Button
               onClick={() => {
@@ -123,8 +175,8 @@ const CartSheet: React.FC = () => {
                 }
                 // Calculate totals
                 const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                const deliveryCharges = 50;
-                const total = subtotal + deliveryCharges;
+                const deliveryCharges = freeShipping ? 0 : 50;
+                const total = Math.max(0, subtotal - discount + deliveryCharges);
                 // Merge or create pendingOrder
                 let pendingOrder = {};
                 try {
@@ -135,6 +187,9 @@ const CartSheet: React.FC = () => {
                   ...pendingOrder,
                   products: cartItems,
                   subtotal,
+                  discount,
+                  promoCode,
+                  promoMessage,
                   deliveryCharges,
                   total,
                 };
@@ -146,7 +201,7 @@ const CartSheet: React.FC = () => {
             >
               Proceed to Order Form
             </Button>
-            <Button onClick={clearCart} variant="outline" className="w-full">Clear Cart</Button>
+            <Button onClick={() => { clearCart(); clearPromo(); }} variant="outline" className="w-full">Clear Cart</Button>
           </div>
         </>
       )}

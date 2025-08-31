@@ -1,35 +1,34 @@
 import React from "react";
+import { Share2 } from "lucide-react";
 
 interface ProductShareProps {
 	url: string;
+	name?: string; // optional product name for share metadata
+	image?: string; // optional image URL
+	size?: number; // icon size
+	inline?: boolean; // remove outer spacing if true
+	className?: string;
 }
 
-const ProductShare: React.FC<ProductShareProps> = ({ url }) => {
+const ProductShare: React.FC<ProductShareProps> = ({ url, name, image, size = 18, inline = true, className }) => {
 	const handleShare = async () => {
 		if (navigator.share) {
-			try {
-				await navigator.share({ url });
-			} catch {}
+			try { await navigator.share({ url, title: name, text: name }); } catch {}
 		} else {
-			alert("Sharing not supported");
+			try { await navigator.clipboard.writeText(url); alert('Link copied'); } catch { alert('Share not supported'); }
 		}
 	};
 
 	return (
-		<div className="flex gap-2 ml-2">
 			<button
-				className="rounded-full bg-[#757B87] p-2 hover:bg-[#5a5f6a] transition-colors"
-				title="Share"
-				onClick={handleShare}
-				style={{ outline: "none", border: "none" }}
-			>
-				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-					<circle cx="12" cy="12" r="12" fill="#757B87" />
-					<path d="M16.59 7.58a2 2 0 0 0-2.83 0l-5.18 5.18a2 2 0 0 0 2.83 2.83l.29-.29a.75.75 0 1 1 1.06 1.06l-.29.29a3.5 3.5 0 1 1-4.95-4.95l5.18-5.18a3.5 3.5 0 1 1 4.95 4.95l-.29.29a.75.75 0 1 1-1.06-1.06l.29-.29a2 2 0 0 0 0-2.83z" fill="#fff" />
-				</svg>
-			</button>
-		</div>
+			type="button"
+			onClick={handleShare}
+			aria-label="Share product link"
+				className={`group inline-flex items-center justify-center rounded-full bg-[#757B87] hover:bg-[#5a5f6a] text-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#5a5f6a] focus:ring-offset-2 focus:ring-offset-white h-8 w-8 shadow-sm ${inline ? 'ml-2' : ''} ${className||''}`}
+		>
+			<Share2 className="text-white group-hover:scale-110 transition-transform" size={size} strokeWidth={2} />
+		</button>
 	);
-}
+};
 
 export default ProductShare;

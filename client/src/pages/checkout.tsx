@@ -361,9 +361,10 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
             </div>
           )}
           {/* Amounts */}
-          <div className="mb-6">
+          <div className="mb-6 space-y-1">
             <div className="flex justify-between"><span>Subtotal:</span><span>₹{orderData?.subtotal}</span></div>
-            <div className="flex justify-between"><span>Delivery Charges:</span><span>₹{orderData?.deliveryCharges}</span></div>
+            {orderData?.discount ? <div className="flex justify-between text-green-700"><span>Discount{orderData?.promoCode ? ` (${orderData?.promoCode})` : ''}:</span><span>-₹{orderData.discount}</span></div> : null}
+            <div className="flex justify-between"><span>Delivery Charges:</span><span>{orderData?.deliveryCharges === 0 ? 'FREE' : `₹${orderData?.deliveryCharges}`}</span></div>
             <div className="flex justify-between font-bold text-primary"><span>Total Amount:</span><span>₹{orderData?.total}</span></div>
           </div>
           <div className="space-y-6">
@@ -681,9 +682,10 @@ export default function Checkout() {
                   </div>
                 )}
                 {/* Amounts */}
-                <div className="mb-6">
+                <div className="mb-6 space-y-1">
                   <div className="flex justify-between"><span>Subtotal:</span><span>₹{orderData?.subtotal}</span></div>
-                  <div className="flex justify-between"><span>Delivery Charges:</span><span>₹{orderData?.deliveryCharges}</span></div>
+                  {orderData?.discount ? <div className="flex justify-between text-green-700"><span>Discount{orderData?.promoCode ? ` (${orderData?.promoCode})` : ''}:</span><span>-₹{orderData.discount}</span></div> : null}
+                  <div className="flex justify-between"><span>Delivery Charges:</span><span>{orderData?.deliveryCharges === 0 ? 'FREE' : `₹${orderData?.deliveryCharges}`}</span></div>
                   <div className="flex justify-between font-bold text-primary"><span>Total Amount:</span><span>₹{orderData?.total}</span></div>
                 </div>
                 <div className="space-y-6">

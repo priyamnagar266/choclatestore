@@ -18,6 +18,9 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onAddToCart, onBuyNow, withModal = true, productsAll }: ProductCardProps) {
+  // Carousel state
+  const images: string[] = Array.isArray(product.images) && product.images.length > 0 ? product.images : [product.image];
+
   const card = React.createElement(
     Card as any,
     {
@@ -27,12 +30,16 @@ export default function ProductCard({ product, onAddToCart, onBuyNow, withModal 
     React.createElement(
       CardContent,
       { className: "p-4 sm:p-5" },
-      React.createElement("img", {
-        src: product.image,
-        alt: product.name,
-        loading: "lazy",
-        className: "w-full h-28 xs:h-32 sm:h-40 md:h-48 object-cover rounded-md mb-3 sm:mb-4"
-      }),
+      React.createElement(
+        "div",
+        { className: "relative w-full mb-3 sm:mb-4" },
+        React.createElement("img", {
+          src: images[0],
+          alt: product.name,
+          loading: "lazy",
+          className: "w-full h-28 xs:h-32 sm:h-40 md:h-48 object-cover rounded-md"
+        })
+      ),
       React.createElement(
         "h3",
         { className: "text-sm xs:text-base sm:text-lg font-semibold text-primary mb-1 sm:mb-2 line-clamp-2" },
@@ -71,6 +78,8 @@ export default function ProductCard({ product, onAddToCart, onBuyNow, withModal 
           Button,
           {
             onClick: (e: React.MouseEvent) => {
+              // Prevent parent Link (anchor) navigation when clicking Add to Cart
+              e.preventDefault();
               e.stopPropagation();
               onAddToCart(product);
             },

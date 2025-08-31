@@ -11,3 +11,10 @@ declare global {
     }
   }
 }
+
+// Minimal fallback types for react-transition-group (if @types not installed)
+declare module 'react-transition-group' {
+  import * as React from 'react';
+  export class CSSTransition extends React.Component<any> {}
+  export class SwitchTransition extends React.Component<any> {}
+}

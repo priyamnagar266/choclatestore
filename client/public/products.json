@@ -5,6 +5,11 @@
     "description": "Experience tradition wrapped in indulgence with Cokha Khas-Badam Dark Chocolate. Infused with almonds and poppy seeds, this bar is inspired by timeless flavors that comfort the soul. A blend of culture and cocoa, created for those who enjoy richness with heritage.",
     "price": 128,
     "image": "https://i.postimg.cc/8591zShK/1755841768406.jpg",
+    "images": [
+      "https://i.postimg.cc/8591zShK/1755841768406.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "benefits": [
       "Digestive Health",
       "Gut Friendly"
@@ -19,7 +24,8 @@
     "totalFatG": 5,
     "saturatedFatG": 1,
     "transFatG": 0,
-    "id": 1
+  "id": 1,
+  "promoMessage": "BUY 2 GET 1 FREE | Auto-applied at checkout"
   },
   {
     "_id": "68a7146295b00b76495603c8",
@@ -27,6 +33,11 @@
     "description": "For those who love texture, Cokha Cocoa & Crunch Chocolate delivers the perfect bite. Enriched with mamra almonds and crispy ragi crunch, this wholesome bar combines nutrition with indulgence, making it both guilt-free and irresistible.",
     "price": 132,
     "image": "https://i.postimg.cc/tgbk8ZwD/1755840873957-1.jpg",
+    "images": [
+      "https://i.postimg.cc/tgbk8ZwD/1755840873957-1.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "benefits": [
       "Relaxation",
       "Sleep Support"
@@ -49,6 +60,11 @@
     "description": "Cool, crisp, and indulgent — Cokha Mint Fusion Dark Chocolate combines the freshness of natural mint with the depth of rich cocoa. A perfect after-meal treat or a refreshing pick-me-up for mint lovers.",
     "price": 145,
     "image": "https://i.postimg.cc/jj1c8g60/1755841788325.jpg",
+    "images": [
+      "https://i.postimg.cc/jj1c8g60/1755841788325.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "benefits": [
       "High Protein",
       "Post-Workout"
@@ -71,6 +87,11 @@
     "description": "Packed with chia, flax, and pumpkin seeds for a crunchy, energy-boosting snack.",
     "price": 90,
     "image": "https://i.postimg.cc/Hx1ZY8fr/1755841710687.jpg",
+    "images": [
+      "https://i.postimg.cc/Hx1ZY8fr/1755841710687.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "benefits": [
       "Omega-3",
       "Fiber Rich"
@@ -93,6 +114,11 @@
     "description": "A delicate balance of floral and nutty notes, Cokha Rose Pistachio Chocolate is an elegant fusion of rose petals and roasted pistachios with velvety cocoa. Perfectly fragrant, beautifully textured — a truly royal chocolate experience.",
     "price": 150,
     "image": "https://i.postimg.cc/1tKg8bYp/rosepc.jpg",
+    "images": [
+      "https://i.postimg.cc/1tKg8bYp/rosepc.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "benefits": [
       "Enhanced Focus",
       "Brain Health"
@@ -107,7 +133,8 @@
     "totalFatG": 6,
     "saturatedFatG": 2,
     "transFatG": 0,
-    "id": 5
+  "id": 5,
+  "promoMessage": "Intro Offer: 10% OFF this week"
   },
   {
     "_id": "68a7146295b00b76495603c3",
@@ -115,6 +142,11 @@
     "description": "Dive into smooth luxury with Cokha Velvet Hazelnut Dark Chocolate. Each bite offers the creamy richness of roasted hazelnuts paired with premium dark cocoa. A timeless classic, crafted for nut lovers and true chocolate connoisseurs.",
     "price": 125,
     "image": "https://i.postimg.cc/RFv7p7kL/1755841691528.jpg",
+    "images": [
+      "https://i.postimg.cc/RFv7p7kL/1755841691528.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "benefits": [
       "Sustained Energy",
       "Pre-Workout"
@@ -137,6 +169,11 @@
     "description": "Crunch meets luxury with Cokha Velvet Walnut Dark Chocolate. Made with handpicked walnuts and intense dark cocoa, this bar is a delightful mix of creamy texture and nutty goodness. A wholesome indulgence that feels as nourishing as it tastes.",
     "price": 140,
     "image": "https://i.postimg.cc/L6Pcjfp8/1755841749172.jpg",
+    "images": [
+      "https://i.postimg.cc/L6Pcjfp8/1755841749172.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "benefits": [
       "Antioxidants",
       "Immunity"
@@ -159,6 +196,11 @@
     "description": "A protein-rich bar loaded with roasted almonds and cashews for lasting energy.",
     "price": 95,
     "image": "https://i.postimg.cc/Hx1ZY8fr/1755841710687.jpg",
+    "images": [
+      "https://i.postimg.cc/Hx1ZY8fr/1755841710687.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "benefits": [
       "Protein Boost",
       "Heart Healthy"
@@ -179,6 +221,11 @@
     "_id": "darkchoco-2",
     "name": "Orange Zest Dark Chocolate",
     "image": "https://i.postimg.cc/Hx1ZY8fr/1755841710687.jpg",
+    "images": [
+      "https://i.postimg.cc/Hx1ZY8fr/1755841710687.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "price": 130,
     "description": "Bold intensity of dark cocoa with tangy notes of real orange zest.",
     "benefits": [
@@ -195,12 +242,18 @@
     "totalFatG": 7,
     "saturatedFatG": 3,
     "transFatG": 0,
-    "id": 9
+  "id": 9,
+  "promoMessage": "Limited Time: Free Shipping"
   },
   {
     "_id": "darkchoco-4",
     "name": "Velvet Vine Dark Chocolate",
     "image": "https://i.postimg.cc/8Pf6HXFV/1755841731269.jpg",
+    "images": [
+      "https://i.postimg.cc/8Pf6HXFV/1755841731269.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "price": 135,
     "description": "Blend of fine cocoa and black raisins — antioxidant-rich.",
     "benefits": [
@@ -223,6 +276,11 @@
     "_id": "darkchoco-6",
     "name": "Mint Fusion Dark Chocolate",
     "image": "https://i.postimg.cc/jj1c8g60/1755841788325.jpg",
+    "images": [
+      "https://i.postimg.cc/jj1c8g60/1755841788325.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "price": 145,
     "description": "Natural mint fused with rich dark cocoa.",
     "benefits": [
@@ -247,6 +305,11 @@
     "description": "Pure, rich 70% dark chocolate for the true cocoa lover.",
     "price": 110,
     "image": "https://i.postimg.cc/Hx1ZY8fr/1755841710687.jpg",
+    "images": [
+      "https://i.postimg.cc/Hx1ZY8fr/1755841710687.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "benefits": [
       "Antioxidants",
       "Mood Uplift"
@@ -267,6 +330,11 @@
     "_id": "milkchoco-1",
     "name": "Rose Pistachio Chocolate",
     "image": "https://i.postimg.cc/1tKg8bYp/rosepc.jpg",
+    "images": [
+      "https://i.postimg.cc/1tKg8bYp/rosepc.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "price": 150,
     "description": "Delicate floral and nutty notes blended with cocoa.",
     "benefits": [
@@ -283,12 +351,18 @@
     "totalFatG": 6,
     "saturatedFatG": 2,
     "transFatG": 0,
-    "id": 13
+  "id": 13,
+  "promoMessage": "Festival Deal: Flat ₹25 OFF"
   },
   {
     "_id": "milkchoco-3",
     "name": "Velvet Hazelnut Dark Chocolate",
     "image": "https://i.postimg.cc/RFv7p7kL/1755841691528.jpg",
+    "images": [
+      "https://i.postimg.cc/RFv7p7kL/1755841691528.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "price": 125,
     "description": "Smooth hazelnuts with premium dark cocoa.",
     "benefits": [
@@ -305,12 +379,18 @@
     "totalFatG": 8,
     "saturatedFatG": 2,
     "transFatG": 0,
-    "id": 14
+  "id": 17,
+  "promoMessage": "Combo Offer: Any 3 Fusion Bars @ ₹350"
   },
   {
     "_id": "milkchoco-5",
     "name": "Velvet Walnut Dark Chocolate",
     "image": "https://i.postimg.cc/L6Pcjfp8/1755841749172.jpg",
+    "images": [
+      "https://i.postimg.cc/L6Pcjfp8/1755841749172.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "price": 140,
     "description": "Wholesome walnuts meet creamy cocoa blend.",
     "benefits": [
@@ -335,6 +415,11 @@
     "description": "Smooth and creamy milk chocolate made from the finest cocoa and fresh milk.",
     "price": 105,
     "image": "https://i.postimg.cc/Hx1ZY8fr/1755841710687.jpg",
+    "images": [
+      "https://i.postimg.cc/Hx1ZY8fr/1755841710687.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "benefits": [
       "Calcium",
       "Smooth Texture"
@@ -355,6 +440,11 @@
     "_id": "fusion-7",
     "name": "Khas-Badam Dark Chocolate",
     "image": "https://i.postimg.cc/8591zShK/1755841768406.jpg",
+    "images": [
+      "https://i.postimg.cc/8591zShK/1755841768406.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "price": 128,
     "description": "Infused with almonds and poppy seeds, inspired by Indian heritage.",
     "benefits": [
@@ -377,6 +467,11 @@
     "_id": "fusion-8",
     "name": "Cocoa & Crunch Chocolate",
     "image": "https://i.postimg.cc/tgbk8ZwD/1755840873957-1.jpg",
+    "images": [
+      "https://i.postimg.cc/tgbk8ZwD/1755840873957-1.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "price": 132,
     "description": "Mamra almonds with crispy ragi crunch for a wholesome bite.",
     "benefits": [
@@ -399,6 +494,11 @@
     "_id": "fusion-2",
     "name": "Orange Zest Dark Chocolate",
     "image": "https://i.postimg.cc/Hx1ZY8fr/1755841710687.jpg",
+    "images": [
+      "https://i.postimg.cc/Hx1ZY8fr/1755841710687.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "price": 130,
     "description": "Refreshing dark chocolate with zesty orange peel.",
     "benefits": [
@@ -423,6 +523,11 @@
     "description": "A unique fusion of antioxidant-rich dark chocolate and Indian superfood moringa.",
     "price": 145,
     "image": "https://i.postimg.cc/Hx1ZY8fr/1755841710687.jpg",
+    "images": [
+      "https://i.postimg.cc/Hx1ZY8fr/1755841710687.jpg",
+      "https://i.postimg.cc/0Qs07qxd/1756657439126.jpg",
+      "https://i.postimg.cc/g2jS0dkx/1756657555496.jpg"
+    ],
     "benefits": [
       "Antioxidants",
       "Superfood"
