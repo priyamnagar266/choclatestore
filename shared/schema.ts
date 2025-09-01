@@ -32,6 +32,7 @@ export interface Order extends Document {
   pincode: string;
   items: any[];
   subtotal: number;
+  discount?: number; // currency amount discounted
   deliveryCharges: number;
   total: number;
   status: string;
@@ -92,6 +93,7 @@ export const OrderModel = mongoose.model<Order>("Order", new mongoose.Schema({
   pincode: { type: String, required: true },
   items: { type: [{ type: mongoose.Schema.Types.Mixed }], required: true },
   subtotal: { type: Number, required: true },
+  discount: { type: Number, required: false, default: 0 },
   deliveryCharges: { type: Number, required: true },
   total: { type: Number, required: true },
   // Order status lifecycle: placed -> shipped -> out_for_delivery -> delivered (or cancelled)

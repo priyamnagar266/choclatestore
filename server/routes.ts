@@ -5,6 +5,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import Razorpay from "razorpay";
 import { storage } from "./storage.mongodb";
+import { ObjectId } from 'mongodb';
 import { db } from './db';
 import { insertOrderSchema, insertContactSchema, insertNewsletterSchema, insertUserSchema, TestimonialModel, insertTestimonialSchema, updateTestimonialSchema } from "@shared/schema";
 import bcrypt from "bcryptjs";
@@ -836,6 +837,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (e: any) {
       console.error('[ADMIN PATCH /api/admin/orders/:id/status] error', e);
       res.status(500).json({ message: 'Failed to update status' });
+    }
+  });
+
+  // ADMIN: Single order detail (full for label/PDF)
+  app.get('/api/admin/orders/:id', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const { id } = req.params;
+      const ordersCol = (await import('./db')).db.collection('orders');
+      let raw: any = null;
+      // Try ObjectId lookup first
+      try {
+        const objectId = new ObjectId(id);
+        raw = await ordersCol.findOne({ _id: objectId } as any);
+      } catch {}
+      // Fallback lookups (string id fields some legacy docs may use)
+      if (!raw) raw = await ordersCol.findOne({ id } as any);
+      if (!raw) raw = await ordersCol.findOne({ orderId: id } as any);
+      if (!raw) return res.status(404).json({ message: 'Order not found' });
+      // Best-effort product name/price mapping supporting both ObjectId _id and numeric/string id fields
+      let items = Array.isArray((raw as any).items) ? (raw as any).items : [];
+      try {
+        const productIds = items.map((it:any)=> it.productId).filter(Boolean);
+        if (productIds.length) {
+          const objectIdCandidates: any[] = [];
+          const nonObjectIds: any[] = [];
+          for (const pid of productIds) {
+            if (typeof pid === 'string' && /^[0-9a-fA-F]{24}$/.test(pid)) {
+              try { objectIdCandidates.push(new ObjectId(pid)); continue; } catch {}
+            }
+            // treat as numeric/string legacy id
+            nonObjectIds.push(typeof pid === 'number' ? pid : (isNaN(Number(pid)) ? pid : Number(pid)));
+          }
+          const productsCol = (await import('./db')).db.collection('products');
+          const or: any[] = [];
+          if (objectIdCandidates.length) or.push({ _id: { $in: objectIdCandidates } });
+          if (nonObjectIds.length) or.push({ id: { $in: nonObjectIds } });
+          let prodDocs: any[] = [];
+          if (or.length === 1) {
+            prodDocs = await productsCol.find(or[0] as any).toArray();
+          } else if (or.length > 1) {
+            prodDocs = await productsCol.find({ $or: or } as any).toArray();
+          }
+          const map: Record<string, any> = {};
+          for (const p of prodDocs) {
+            const _idStr = (p as any)._id?.toString?.();
+            if (_idStr) map[_idStr] = p;
+            if ((p as any).id !== undefined) map[String((p as any).id)] = p;
+          }
+          items = items.map((it:any)=>{
+            const key = String(it.productId);
+            const found = map[key];
+            return { ...it, name: found?.name ?? it.name, price: found?.price ?? it.price };
+          });
+        }
+      } catch {}
+      const dto = {
+        id: (raw as any)._id?.toString?.(),
+        customerName: (raw as any).customerName,
+        customerEmail: (raw as any).customerEmail,
+        customerPhone: (raw as any).customerPhone,
+        address: (raw as any).address,
+        city: (raw as any).city,
+        pincode: (raw as any).pincode,
+        status: (raw as any).status || 'placed',
+        subtotal: (raw as any).subtotal,
+  discount: (raw as any).discount || 0,
+        deliveryCharges: (raw as any).deliveryCharges,
+        total: (raw as any).total,
+        paymentStatus: (raw as any).razorpayPaymentId ? 'paid' : 'unpaid',
+        razorpayPaymentId: (raw as any).razorpayPaymentId || null,
+        createdAt: (raw as any).createdAt,
+  items: items.map((it:any)=> ({ productId: it.productId, quantity: it.quantity, name: it.name, price: it.price }))
+      };
+      res.json(dto);
+    } catch (e:any) {
+      console.error('[ADMIN GET /api/admin/orders/:id] error', e);
+      res.status(500).json({ message: 'Failed to load order' });
     }
   });
 

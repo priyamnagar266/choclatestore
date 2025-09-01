@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "@/hooks/use-toast";
 import { AdminLayout } from '@/components/admin-nav';
@@ -31,9 +31,11 @@ interface Product {
 
 interface ProductFormData {
   name: string;
+  slug: string;
   description: string;
   price: number;
-  image: string;
+  image: string; // URL fallback
+  imageFile: File | null; // optional file upload
   benefits: string[];
   category: string;
   inStock: number;
@@ -46,6 +48,7 @@ export default function AdminProducts() {
   const { user } = useAuth();
   const { adminUser } = useAdminAuth();
   const token = adminUser?.token || (user?.role === 'admin' ? user.token : undefined);
+  const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -53,9 +56,11 @@ export default function AdminProducts() {
   const [pendingChanges, setPendingChanges] = useState<Set<number>>(new Set());
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
+    slug: "",
     description: "",
     price: 0,
     image: "",
+    imageFile: null,
     benefits: [],
     category: "",
     inStock: 0,
@@ -68,6 +73,7 @@ export default function AdminProducts() {
     saturatedFatG: undefined,
     transFatG: undefined,
   });
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   // Keep a raw string for benefits so typing doesn't constantly reformat & reset cursor
   const [benefitsRaw, setBenefitsRaw] = useState("");
   const [page, setPage] = useState(1);
@@ -89,17 +95,27 @@ export default function AdminProducts() {
   });
 
   const products = data?.products || [];
+  // Debounce search input -> searchTerm
+  useEffect(()=>{
+    const t = setTimeout(()=>{ setPage(1); setSearchTerm(searchInput.trim()); }, 300);
+    return ()=>clearTimeout(t);
+  }, [searchInput]);
   const totalPages = data ? Math.ceil(data.total / pageSize) : 1;
 
   const buildFormDataPayload = (payload: ProductFormData) => {
     const fd = new FormData();
     fd.append('name', payload.name);
+    if (payload.slug) fd.append('slug', payload.slug);
     fd.append('description', payload.description);
     fd.append('price', String(payload.price));
     fd.append('category', payload.category);
     fd.append('inStock', String(payload.inStock));
     fd.append('benefits', payload.benefits.join(','));
-  if (payload.image) fd.append('image', payload.image);
+    if (payload.imageFile) {
+      fd.append('image', payload.imageFile);
+    } else if (payload.image) {
+      fd.append('image', payload.image);
+    }
     // Append nutrition only if provided
     const nutriKeys: (keyof ProductFormData)[] = ['energyKcal','proteinG','carbohydratesG','totalSugarG','addedSugarG','totalFatG','saturatedFatG','transFatG'];
     for (const k of nutriKeys) {
@@ -118,8 +134,11 @@ export default function AdminProducts() {
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (created) => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      // Mark as pending (needs rebuild for static JSON) if id present
+      if (created?.id) setPendingChanges(prev => new Set([...Array.from(prev), created.id]));
+      toast({ title: 'Product created', description: 'Remember to Apply Changes to trigger rebuild.' });
       setIsDialogOpen(false);
       resetForm();
     }
@@ -179,8 +198,9 @@ export default function AdminProducts() {
   });
 
   const resetForm = () => {
-  setFormData({ name: '', description: '', price: 0, image: '', benefits: [], category: '', inStock: 0 });
-  setBenefitsRaw('');
+    setFormData({ name: '', slug: '', description: '', price: 0, image: '', imageFile: null, benefits: [], category: '', inStock: 0 });
+    setBenefitsRaw('');
+    setSlugManuallyEdited(false);
     setEditingProduct(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -196,10 +216,16 @@ export default function AdminProducts() {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
-  setFormData({ name: product.name, description: product.description, price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, image: product.image, benefits: product.benefits, category: product.category, inStock: product.inStock, energyKcal: product.energyKcal, proteinG: product.proteinG, carbohydratesG: product.carbohydratesG, totalSugarG: product.totalSugarG, addedSugarG: product.addedSugarG, totalFatG: product.totalFatG, saturatedFatG: product.saturatedFatG, transFatG: product.transFatG });
+    setFormData({ name: product.name, slug: (product as any).slug || '', description: product.description, price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, image: product.image, imageFile: null, benefits: product.benefits, category: product.category, inStock: product.inStock, energyKcal: product.energyKcal, proteinG: product.proteinG, carbohydratesG: product.carbohydratesG, totalSugarG: product.totalSugarG, addedSugarG: product.addedSugarG, totalFatG: product.totalFatG, saturatedFatG: product.saturatedFatG, transFatG: product.transFatG });
   setBenefitsRaw(product.benefits?.join(', ') || '');
     setIsDialogOpen(true);
   };
+  // Auto slug generation
+  useEffect(()=>{
+    if (!slugManuallyEdited) {
+      setFormData(f=> ({ ...f, slug: f.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,60) }));
+    }
+  }, [formData.name, slugManuallyEdited]);
 
   const filteredProducts = categoryFilter === 'all' ? products : products.filter(p => p.category === categoryFilter);
 
@@ -242,6 +268,10 @@ export default function AdminProducts() {
                   <Input id="name" value={formData.name} onChange={(e)=>setFormData({...formData,name:e.target.value})} required />
                 </div>
                 <div>
+                  <Label htmlFor="slug">Slug</Label>
+                  <Input id="slug" value={formData.slug} onChange={(e)=>{ setSlugManuallyEdited(true); setFormData({...formData,slug:e.target.value}); }} placeholder="auto-generated" />
+                </div>
+                <div>
                   <Label htmlFor="category">Category</Label>
                   <Select value={formData.category} onValueChange={v => setFormData({ ...formData, category: v })}>
                     <SelectTrigger id="category">
@@ -251,6 +281,9 @@ export default function AdminProducts() {
                       {Array.from(new Set(products.map(p => p.category))).map(cat => (
                         <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                       ))}
+                      {formData.category && !products.some(p=>p.category===formData.category) && (
+                        <SelectItem value={formData.category}>{formData.category} (new)</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -269,18 +302,17 @@ export default function AdminProducts() {
                   <Input id="inStock" type="number" value={formData.inStock} onChange={(e)=>setFormData({...formData,inStock:parseInt(e.target.value)||0})} required />
                 </div>
                 <div>
-                  <Label>Image URL</Label>
+                  <Label>Image</Label>
                   <div className="flex flex-col gap-2">
-                    <Input id="imageUrl" placeholder="Paste image URL" value={formData.image} onChange={e=>setFormData({...formData,image:e.target.value})} />
-                    {/* Preview */}
-                    <div className="mt-2">
-                      {formData.image ? (
-                        <img
-                          src={formData.image}
-                          alt="Preview"
-                          className="w-24 h-24 object-cover rounded border"
-                        />
-                      ) : null}
+                    <Input id="imageUrl" placeholder="Paste image URL (optional if uploading)" value={formData.image} onChange={e=>setFormData({...formData,image:e.target.value})} />
+                    <input type="file" accept="image/*" onChange={e=>{ const file=e.target.files?.[0]||null; setFormData({...formData,imageFile:file}); if(file){ setFormData(f=>({...f,image:''})); } }} />
+                    <div className="mt-2 flex gap-2 items-center">
+                      {formData.image && (
+                        <img src={formData.image} alt="Preview" className="w-16 h-16 object-cover rounded border" />
+                      )}
+                      {formData.imageFile && (
+                        <img src={URL.createObjectURL(formData.imageFile)} alt="Preview" className="w-16 h-16 object-cover rounded border" />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -349,7 +381,7 @@ export default function AdminProducts() {
           <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search products..." value={searchTerm} onChange={(e)=>{setPage(1);setSearchTerm(e.target.value);}} className="pl-8" />
+              <Input placeholder="Search products..." value={searchInput} onChange={(e)=>setSearchInput(e.target.value)} className="pl-8" />
             </div>
             <div className='w-48'>
               <Select value={categoryFilter} onValueChange={(v)=>setCategoryFilter(v)}>
