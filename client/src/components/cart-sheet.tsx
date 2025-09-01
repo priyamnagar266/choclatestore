@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { calculateCartTotal, calculateItemCount, formatPrice } from "@/lib/products";
 
 const CartSheet: React.FC = () => {
-  const { cart, setCart, closeCart, promoCode, promoMessage, discount, freeShipping, applyPromo, clearPromo, promoToast, setPromoToast } = useCart();
+  const { cart, setCart, clearCart, closeCart, promoCode, promoMessage, discount, freeShipping, applyPromo, clearPromo, promoToast, setPromoToast } = useCart();
   // Dropdown state for promo selection
   const [selectedPromo, setSelectedPromo] = useState<string>(promoCode || '');
   // Keep dropdown in sync with applied promo
@@ -27,7 +27,7 @@ const CartSheet: React.FC = () => {
   const removeFromCart = (id: any) => {
     setCart(prev => prev.filter(item => item.id !== id));
   };
-  const clearCart = () => setCart([]);
+  // clearCart now provided by context removes localStorage key too
 
   return (
     <div className="h-full flex flex-col">

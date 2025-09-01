@@ -72,23 +72,12 @@ export default function Home() {
   const resolveCartKey = (u = user) => u ? `cart_${u.id}` : 'cart_guest';
   const queryClient = useQueryClient();
   // Use global cart context
-  const { cart, setCart, showCart, closeCart } = useCart();
+  const { cart, setCart, showCart, closeCart, clearCart } = useCart();
   // Mobile contact form collapse state
   const [mobileFormOpen, setMobileFormOpen] = useState(false);
 
 
-  // Persist cart when user changes (load their specific cart)
-  useEffect(()=>{
-    try {
-      const saved = localStorage.getItem(resolveCartKey());
-      setCart(saved ? JSON.parse(saved) : []);
-    } catch { setCart([]); }
-  }, [user]);
-
-  // Persist cart updates to user-specific key
-  useEffect(()=>{
-    try { localStorage.setItem(resolveCartKey(), JSON.stringify(cart)); } catch {}
-  }, [cart, user]);
+  // Removed duplicate cart persistence (handled centrally in CartContext)
 
   // React to cart removal from other tabs / payment page redirect
   useEffect(() => {
@@ -368,10 +357,6 @@ export default function Home() {
     document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const clearCart = () => {
-    setCart([]);
-    try { localStorage.removeItem(resolveCartKey()); } catch {}
-  };
 
   const updateQuantity = (productId: number, quantity: number) => {
     const newQuantity = Math.max(0, quantity);

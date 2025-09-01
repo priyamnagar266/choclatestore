@@ -7,6 +7,7 @@ interface CartContextType {
   cart: CartItem[];
   setCart: React.Dispatch<React.SetStateAction<CartItem[]>>;
   addToCart: (product: any) => void;
+  clearCart: () => void;
   openCart: () => void;
   closeCart: () => void;
   showCart: boolean;
@@ -18,6 +19,7 @@ interface CartContextType {
   clearPromo: () => void;
   promoToast: { type: 'success'|'error', message: string } | null;
   setPromoToast: React.Dispatch<React.SetStateAction<{ type: 'success'|'error', message: string } | null>>;
+  ready: boolean; // cart hydration ready (after auth ready)
 }
 import { evaluatePromo, PromoResult, KNOWN_PROMOS } from '@/lib/promos';
 
@@ -30,14 +32,11 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const { user } = useAuth();
+  const { user, ready: authReady } = useAuth();
   const resolveCartKey = () => (user ? `cart_${user.id}` : 'cart_guest');
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    try {
-      const savedCart = localStorage.getItem(resolveCartKey());
-      return savedCart ? JSON.parse(savedCart) : [];
-    } catch { return []; }
-  });
+  // Start empty; hydrate after auth ready to avoid reading guest key then switching user
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [ready, setReady] = useState(false);
   const [showCart, setShowCart] = useState(false);
   // Persist promo code in localStorage
   const promoKey = 'cartPromoCode';
@@ -48,20 +47,23 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [discount, setDiscount] = useState<number>(0);
   const [freeShipping, setFreeShipping] = useState<boolean>(false);
 
-  // When user changes, load their cart
+  // Hydrate when auth ready or user changes
   useEffect(() => {
+    if (!authReady) return; // wait for auth to finish hydration
     try {
       const saved = localStorage.getItem(resolveCartKey());
       setCart(saved ? JSON.parse(saved) : []);
     } catch { setCart([]); }
+    setReady(true);
     // eslint-disable-next-line
-  }, [user]);
+  }, [user, authReady]);
 
-  // Save cart to correct key when cart or user changes
+  // Persist cart only after hydration ready
   useEffect(() => {
+    if (!ready) return;
     try { localStorage.setItem(resolveCartKey(), JSON.stringify(cart)); } catch {}
     // eslint-disable-next-line
-  }, [cart, user]);
+  }, [cart, user, ready]);
 
   const addToCart = (product: any) => {
     setCart(prev => {
@@ -84,6 +86,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
       return updatedCart;
     });
+  };
+
+  const clearCart = () => {
+    setCart([]);
+    try {
+      const key = resolveCartKey();
+      localStorage.removeItem(key);
+      // Also remove legacy keys to avoid resurrection
+      localStorage.removeItem('cart_guest');
+      localStorage.removeItem('cart'); // legacy
+    } catch {}
   };
 
   const openCart = () => setShowCart(true);
@@ -141,7 +154,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, [cart.length, cart.map(i=>i.id+':'+i.quantity).join(',')]);
 
   return (
-    <CartContext.Provider value={{ cart, setCart, addToCart, openCart, closeCart, showCart, promoCode, promoMessage, discount, freeShipping, applyPromo, clearPromo, promoToast, setPromoToast }}>
+    <CartContext.Provider value={{ cart, setCart, addToCart, clearCart, openCart, closeCart, showCart, promoCode, promoMessage, discount, freeShipping, applyPromo, clearPromo, promoToast, setPromoToast, ready }}>
       {children}
     </CartContext.Provider>
   );

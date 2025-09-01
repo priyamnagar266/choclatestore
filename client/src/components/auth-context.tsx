@@ -41,11 +41,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(newUser);
       localStorage.setItem("authUser", JSON.stringify(newUser));
     }
-    // On user change, migrate anonymous cart to user-specific key if present
+    // On user change, migrate anonymous cart (guest) to user-specific key if present
     try {
-      const anonCart = localStorage.getItem('cart');
+      let anonCart = localStorage.getItem('cart_guest');
+      // Backward compatibility with older key name
+      if (!anonCart) anonCart = localStorage.getItem('cart');
       if (anonCart) {
         if (newUser.role !== 'admin') localStorage.setItem(`cart_${newUser.id}`, anonCart);
+        localStorage.removeItem('cart_guest');
         localStorage.removeItem('cart');
       }
     } catch {}
