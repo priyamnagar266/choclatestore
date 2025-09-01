@@ -11,9 +11,8 @@ export default function AboutUsPage() {
         <h1 className="text-5xl font-bold mb-2">About Us</h1>
       </div>
       <div className="max-w-6xl mx-auto px-4 py-12 flex flex-col md:flex-row gap-12 items-start">
-        {/* Images column: Owner photo and logo */}
+        {/* Logo only (founder image removed) */}
         <div className="flex flex-col items-center gap-8 w-full md:w-80 mb-8 md:mb-0">
-          <img src="https://www.shutterstock.com/image-photo/happy-middle-aged-business-man-260nw-2516789507.jpg" alt="Payal Jain, Founder" className="w-72 h-72 object-cover rounded-full shadow-lg border-4 border-primary bg-white" />
           <img src="https://i.postimg.cc/NMGvf180/logo.jpg" alt="COKHA Logo" className="w-80 h-80 bg-white shadow-lg border-4 border-primary" />
         </div>
         {/* Text column: About text only */}

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import type { Product } from "@shared/schema";
@@ -129,16 +130,16 @@ export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSu
                     type="button"
                     aria-label="Previous image"
                     onClick={e => { e.stopPropagation(); setImgIdx(idx => (idx - 1 + images.length) % images.length); }}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-primary/80 border-2 border-primary rounded-full p-2 shadow text-2xl z-20"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-transparent hover:bg-black/20 border-0 rounded-full p-2 z-20 transition"
                     style={{ display: 'block' }}
-                  >&#8592;</button>
+                  >{React.createElement(ChevronLeft, { className: 'w-8 h-8 text-white drop-shadow-lg' })}</button>
                   <button
                     type="button"
                     aria-label="Next image"
                     onClick={e => { e.stopPropagation(); setImgIdx(idx => (idx + 1) % images.length); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-primary/80 border-2 border-primary rounded-full p-2 shadow text-2xl z-20"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent hover:bg-black/20 border-0 rounded-full p-2 z-20 transition"
                     style={{ display: 'block' }}
-                  >&#8594;</button>
+                  >{React.createElement(ChevronRight, { className: 'w-8 h-8 text-white drop-shadow-lg' })}</button>
                   <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2 z-20">
                     {images.map((_, i: number) => (
                       <span key={i} className={`inline-block w-3 h-3 border-2 border-primary rounded-full ${i === imgIdx ? 'bg-primary' : 'bg-gray-300'}`}></span>

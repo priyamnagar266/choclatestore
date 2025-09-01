@@ -461,6 +461,20 @@ export default function Home() {
     document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Typewriter effect for hero subtitle
+  const fullSubtitle = 'Bold on nutrition, Big on taste!';
+  const [subtitleText, setSubtitleText] = useState('');
+  useEffect(() => {
+    let i = 0;
+    const speed = 35; // ms per character
+    const interval = setInterval(() => {
+      i++;
+      setSubtitleText(fullSubtitle.slice(0, i));
+      if (i >= fullSubtitle.length) clearInterval(interval);
+    }, speed);
+    return () => clearInterval(interval);
+  }, []);
+
   // Products now render all at once; show a small inline loading state only if still fetching
 
   return (
@@ -502,11 +516,13 @@ export default function Home() {
         <div className="relative z-10 max-w-5xl mx-auto px-6 lg:px-8 h-full flex flex-col justify-center">
           <div className="max-w-2xl">
             <h1 className="text-4xl lg:text-6xl font-bold leading-tight mb-6 drop-shadow-md hero-animate text-white">
-              <span>Immune</span> <span className="text-white">+</span> <span>Mood</span><br />
-              <span>Energy</span> <span>Bar</span>
+              <span className="block">Bold On Nutrition,</span>
+              <span className="block">Big On Taste!</span>
             </h1>
-            <p className="text-lg lg:text-xl mb-8 text-white max-w-xl">
-              Clean energy, cognitive clarity and mood balance in every bar—crafted with real ingredients, never preservatives.
+            <p className="text-lg lg:text-xl mb-8 text-white max-w-xl font-medium tracking-wide leading-snug">
+              <span>Energy Bars,</span><br />
+              <span>Couverture Chocolates</span><br />
+              <span>&amp; Crisps</span>
             </p>
             <div className="flex flex-wrap gap-4">
               <Button onClick={scrollToProducts} variant="cta" className="px-8 py-4 text-lg font-semibold rounded-xl">
