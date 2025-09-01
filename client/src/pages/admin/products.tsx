@@ -26,6 +26,7 @@ interface Product {
   benefits: string[];
   category: string;
   inStock: number;
+  bestseller?: boolean;
   energyKcal?: number; proteinG?: number; carbohydratesG?: number; totalSugarG?: number; addedSugarG?: number; totalFatG?: number; saturatedFatG?: number; transFatG?: number;
 }
 
@@ -39,6 +40,7 @@ interface ProductFormData {
   benefits: string[];
   category: string;
   inStock: number;
+  bestseller?: boolean;
   energyKcal?: number; proteinG?: number; carbohydratesG?: number; totalSugarG?: number; addedSugarG?: number; totalFatG?: number; saturatedFatG?: number; transFatG?: number;
 }
 
@@ -64,6 +66,7 @@ export default function AdminProducts() {
     benefits: [],
     category: "",
     inStock: 0,
+  bestseller: false,
     energyKcal: undefined,
     proteinG: undefined,
     carbohydratesG: undefined,
@@ -110,6 +113,7 @@ export default function AdminProducts() {
     fd.append('price', String(payload.price));
     fd.append('category', payload.category);
     fd.append('inStock', String(payload.inStock));
+  if (payload.bestseller) fd.append('bestseller', String(payload.bestseller));
     fd.append('benefits', payload.benefits.join(','));
     if (payload.imageFile) {
       fd.append('image', payload.imageFile);
@@ -198,7 +202,7 @@ export default function AdminProducts() {
   });
 
   const resetForm = () => {
-    setFormData({ name: '', slug: '', description: '', price: 0, image: '', imageFile: null, benefits: [], category: '', inStock: 0 });
+  setFormData({ name: '', slug: '', description: '', price: 0, image: '', imageFile: null, benefits: [], category: '', inStock: 0, bestseller:false });
     setBenefitsRaw('');
     setSlugManuallyEdited(false);
     setEditingProduct(null);
@@ -216,7 +220,7 @@ export default function AdminProducts() {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
-    setFormData({ name: product.name, slug: (product as any).slug || '', description: product.description, price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, image: product.image, imageFile: null, benefits: product.benefits, category: product.category, inStock: product.inStock, energyKcal: product.energyKcal, proteinG: product.proteinG, carbohydratesG: product.carbohydratesG, totalSugarG: product.totalSugarG, addedSugarG: product.addedSugarG, totalFatG: product.totalFatG, saturatedFatG: product.saturatedFatG, transFatG: product.transFatG });
+  setFormData({ name: product.name, slug: (product as any).slug || '', description: product.description, price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, image: product.image, imageFile: null, benefits: product.benefits, category: product.category, inStock: product.inStock, bestseller: product.bestseller || false, energyKcal: product.energyKcal, proteinG: product.proteinG, carbohydratesG: product.carbohydratesG, totalSugarG: product.totalSugarG, addedSugarG: product.addedSugarG, totalFatG: product.totalFatG, saturatedFatG: product.saturatedFatG, transFatG: product.transFatG });
   setBenefitsRaw(product.benefits?.join(', ') || '');
     setIsDialogOpen(true);
   };
@@ -300,6 +304,10 @@ export default function AdminProducts() {
                 <div>
                   <Label htmlFor="inStock">Stock</Label>
                   <Input id="inStock" type="number" value={formData.inStock} onChange={(e)=>setFormData({...formData,inStock:parseInt(e.target.value)||0})} required />
+                </div>
+                <div className="flex flex-col justify-end">
+                  <Label htmlFor="bestseller" className="mb-1">Bestseller</Label>
+                  <button type="button" onClick={()=> setFormData(f=>({...f,bestseller:!f.bestseller}))} className={`h-10 px-3 rounded border text-sm font-medium ${formData.bestseller ? 'bg-green-600 text-white border-green-600' : 'bg-gray-100 text-gray-700 border-gray-300'}`}>{formData.bestseller ? 'Yes' : 'No'}</button>
                 </div>
                 <div>
                   <Label>Image</Label>
@@ -405,14 +413,15 @@ export default function AdminProducts() {
                 <TableHead>Category</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Stock</TableHead>
+                <TableHead>Bestseller</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={7} className='text-center'>Loading...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className='text-center'>Loading...</TableCell></TableRow>
               ) : filteredProducts.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className='text-center'>No products found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className='text-center'>No products found</TableCell></TableRow>
               ) : (
                 filteredProducts.map(product => (
                   <TableRow key={product.id}>
@@ -422,6 +431,15 @@ export default function AdminProducts() {
                     <TableCell><Badge variant='outline'>{product.category}</Badge></TableCell>
                     <TableCell>{formatPrice(product.price)}</TableCell>
                     <TableCell>{product.inStock}</TableCell>
+                    <TableCell>
+                      <Button variant={product.bestseller ? 'default':'outline'} size='sm' onClick={async ()=>{
+                        try {
+                          await apiFetch(`/api/admin/products/${product.id}/bestseller`, { method:'PATCH', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` }, body: JSON.stringify({ bestseller: !product.bestseller }) });
+                          queryClient.invalidateQueries({ queryKey:['admin-products'] });
+                          toast({ title:'Updated', description:`${product.name} ${!product.bestseller ? 'marked as' : 'removed from'} bestsellers.` });
+                        } catch { toast({ title:'Failed', variant:'destructive'}); }
+                      }}>{product.bestseller ? 'Yes' : 'No'}</Button>
+                    </TableCell>
                     <TableCell>
                       <div className='flex gap-2'>
                         <Button variant='ghost' size='sm' onClick={()=>handleEdit(product)}><Edit className='h-4 w-4' /></Button>

@@ -59,14 +59,14 @@ export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSu
 	pushRow('Saturated Fat (g)', currentProduct.saturatedFatG);
 	pushRow('Trans Fat (g)', currentProduct.transFatG);
 
-	const featureBadges = h('div',{className:'rounded-2xl bg-[#f6f1e6] border border-[#e5dccd] px-6 md:px-8 py-6 shadow-sm'},
-		h('ul',{className:'grid grid-cols-3 sm:grid-cols-5 gap-4 md:gap-8 text-center justify-items-center'},
-			QUALITIES.map(q => h('li',{key:q.key,className:'flex flex-col items-center gap-2'},
-				h('span',{className:'w-14 h-14 rounded-full flex items-center justify-center border-2 border-primary/40'}, h(q.Icon,{className:'w-8 h-8 text-primary'})),
-				h('span',{className:'text-[9px] font-semibold tracking-wide leading-tight max-w-[70px] mx-auto'}, q.label)
-			))
-		)
-	);
+			const featureBadges = h('div',{className:'rounded-2xl bg-[#f6f1e6] border border-[#e5dccd] px-4 md:px-8 py-4 md:py-6 shadow-sm'},
+				h('ul',{className:'flex justify-between gap-2 sm:grid sm:grid-cols-5 sm:gap-8 text-center'},
+					QUALITIES.map(q => h('li',{key:q.key,className:'flex flex-col items-center gap-1'},
+						h('span',{className:'w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center border-2 border-primary/40'}, h(q.Icon,{className:'w-6 h-6 sm:w-8 sm:h-8 text-primary'})),
+						h('span',{className:'text-[8px] sm:text-[9px] font-semibold tracking-wide leading-tight max-w-[68px] sm:max-w-[70px] mx-auto'}, q.label)
+					))
+				)
+			);
 
 	return h(Dialog,{ open, onOpenChange:setOpen },
 		h(DialogTrigger,{ asChild:true }, trigger ?? h(Button,{ variant:'ghost' },'View')),

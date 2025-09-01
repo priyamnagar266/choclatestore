@@ -22,8 +22,16 @@ export default function AdminLogin() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || 'Login failed');
+  let data: any = null;
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('application/json')) {
+    try { data = await res.json(); } catch { data = null; }
+  } else {
+    // Probably an HTML error page (missing backend base URL or 404). Avoid JSON parse crash.
+    const text = await res.text();
+    throw new Error(res.status === 404 ? 'API endpoint not found (check backend URL / deploy redirects).' : `Unexpected response (${res.status}).`);
+  }
+  if (!res.ok) throw new Error(data?.message || 'Login failed');
   if (!data?.token) throw new Error('Missing token in response');
   if (data.role !== 'admin') throw new Error('Not an admin user');
   // Persist

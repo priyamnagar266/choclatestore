@@ -11,6 +11,7 @@ export interface Product extends Document {
   benefits: string[];
   category: string;
   inStock: number;
+  bestseller?: boolean; // admin-curated bestseller flag
   // Optional nutritional information per serving
   energyKcal?: number;
   proteinG?: number;
@@ -81,6 +82,7 @@ export const ProductModel = mongoose.model<Product>("Product", new mongoose.Sche
   benefits: { type: [String], required: true },
   category: { type: String, required: true },
   inStock: { type: Number, required: true, default: 100 },
+  bestseller: { type: Boolean, default: false },
 }));
 
 export const OrderModel = mongoose.model<Order>("Order", new mongoose.Schema({

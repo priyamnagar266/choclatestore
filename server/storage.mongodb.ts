@@ -26,7 +26,7 @@ export const storage = {
     const existingIds = await productsCollection.find({}, { projection: { id: 1 } as any }).toArray();
     const maxId = existingIds.length ? Math.max(...existingIds.map((p: any) => p.id || 0)) : 0;
     const nextId = maxId + 1;
-  const doc = { id: nextId, benefits: [], inStock: 0, ...data };
+  const doc = { id: nextId, benefits: [], inStock: 0, bestseller: false, ...data };
   console.log('[storage.createProduct] inserting', doc);
     await productsCollection.insertOne(doc as any);
     return doc as any;
@@ -51,7 +51,7 @@ export const storage = {
     }
     const total = await productsCollection.countDocuments(query);
     const skip = (page - 1) * pageSize;
-    const docs = await productsCollection.find(query).sort({ id: 1 }).skip(skip).limit(pageSize).toArray();
+  const docs = await productsCollection.find(query).sort({ id: 1 }).skip(skip).limit(pageSize).toArray();
     return { products: docs as any, total, page, pageSize };
   },
   async createOrder(order: any): Promise<Order> {

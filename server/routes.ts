@@ -714,6 +714,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ADMIN: Toggle bestseller flag
+  app.patch('/api/admin/products/:id/bestseller', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const id = parseInt(req.params.id,10);
+      if (Number.isNaN(id)) return res.status(400).json({ message:'Invalid id'});
+      const { bestseller } = z.object({ bestseller: z.coerce.boolean() }).parse(req.body || {});
+      const updated = await storage.updateProduct(id, { bestseller, updatedAt: new Date() });
+      if (!updated) return res.status(404).json({ message:'Product not found'});
+      const globalAny: any = global as any; if (globalAny.__productCache) globalAny.__productCache.ts = 0;
+      triggerNetlifyBuild('product-bestseller-toggle');
+      res.json({ success:true, product: updated });
+    } catch(e:any){
+      res.status(400).json({ message:e.message });
+    }
+  });
+
   // Manual rebuild trigger (admin only)
   app.post('/api/admin/trigger-rebuild', authenticateJWT, async (req, res) => {
     // @ts-ignore

@@ -1,4 +1,5 @@
 // Removed react-router-dom Link, use Wouter navigation instead
+import React from 'react';
 import { useAuth } from "@/components/auth-context";
 import { Helmet } from 'react-helmet-async';
 // Import media assets so they are processed by Vite during build (fixes deployment path issues)
@@ -130,8 +131,9 @@ export default function Home() {
   // Expose products array globally for modal suggestion reuse (lightweight, read-only)
   useEffect(()=>{ (window as any).__ALL_PRODUCTS = products; try { window.dispatchEvent(new CustomEvent('products-ready')); } catch {} }, [products]);
 
-  // Limit homepage display to first 4 products (bestsellers placeholder)
-  const bestsellers = products.slice(0, 4);
+  // Determine bestsellers (admin curated). Fallback to first 4 if none flagged.
+  const flagged = products.filter((p: any)=> p.bestseller);
+  const bestsellers = (flagged.length ? flagged : products).slice(0,4);
 
   // Bestseller popup state (must be after bestsellers definition)
   const [popupIdx, setPopupIdx] = useState(0);
