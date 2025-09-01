@@ -1,250 +1,127 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import type { Product } from "@shared/schema";
-
-import ProductShare from "@/components/ProductShare";
-import { formatPrice } from "@/lib/products";
+import React from 'react';
+import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight, Leaf, Sprout, Star, Flag, CircleSlash } from 'lucide-react';
+import ProductShare from '@/components/ProductShare';
+import { formatPrice } from '@/lib/products';
+import type { Product } from '@shared/schema';
 
 interface ProductModalProps {
-  product: Product;
-  trigger?: React.ReactNode; // custom trigger (e.g., wrapping card)
-  onAddToCart: (product: Product) => void;
-  // Optional full product list for suggestions (avoid refetch); if absent we try window.__ALL_PRODUCTS
-  productsAll?: Product[];
-  maxSuggestions?: number;
+	product: Product;
+	trigger?: React.ReactNode;
+	onAddToCart: (p: Product) => void;
+	productsAll?: Product[];
+	maxSuggestions?: number;
 }
 
-// A self-contained modal for displaying product details
-export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSuggestions = 2 }: ProductModalProps) {
-  // ...existing code...
-  const [imgIdx, setImgIdx] = useState(0);
-  const [open, setOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<Product[]>([]);
-  const [currentProduct, setCurrentProduct] = useState<Product>(product);
-  // Move images and showArrows after currentProduct is declared
-  const images: string[] = Array.isArray(currentProduct.images) && currentProduct.images.length > 0 ? currentProduct.images : [currentProduct.image];
-  const showArrows = images.length > 1;
-  // Reset carousel index when product changes
-  useEffect(() => { setImgIdx(0); }, [currentProduct]);
-  const scrollRef = React.useRef<HTMLDivElement | null>(null); // inner content
-  const scrollContainerRef = React.useRef<HTMLDivElement | null>(null); // outer scrollable column
-  const [animKey, setAnimKey] = useState(0); // increment to trigger CSS animation
+const QUALITIES = [
+	{ key: 'vegan', label: 'VEGAN FRIENDLY', Icon: Leaf },
+	{ key: 'natural', label: 'NATURAL INGREDIENTS', Icon: Sprout },
+	{ key: 'quality', label: 'FINEST QUALITY', Icon: Star },
+	{ key: 'india', label: 'MADE IN INDIA', Icon: Flag },
+	{ key: 'nopreservatives', label: 'NO PRESERVATIVES', Icon: CircleSlash },
+];
 
-  // Sync current product if prop changes while closed
-  useEffect(()=>{ if(!open) setCurrentProduct(product); }, [product, open]);
+export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSuggestions = 2 }: ProductModalProps){
+	const [open, setOpen] = React.useState(false);
+	const [currentProduct, setCurrentProduct] = React.useState<Product>(product);
+	const [imgIdx, setImgIdx] = React.useState(0);
+	const [suggestions, setSuggestions] = React.useState<Product[]>([]);
+	const images: string[] = Array.isArray(currentProduct.images) && currentProduct.images.length>0 ? currentProduct.images : [currentProduct.image];
+	const showArrows = images.length>1;
+	const recompute = React.useCallback(()=>{
+		try {
+			const globalList: any = (window as any).__ALL_PRODUCTS;
+			const list: Product[] | undefined = (productsAll && productsAll.length>0 ? productsAll : globalList);
+			if(!Array.isArray(list)) { setSuggestions([]); return; }
+			const cid = (currentProduct as any).id || (currentProduct as any)._id;
+			const same = list.filter(p => ((p as any).id || (p as any)._id) !== cid && p.category === currentProduct.category);
+			const others = list.filter(p => ((p as any).id || (p as any)._id) !== cid && p.category !== currentProduct.category);
+			const combined = [...same, ...others];
+			const finalList = combined.length ? combined : list.filter(p => ((p as any).id || (p as any)._id) !== cid);
+			setSuggestions(finalList.slice(0, maxSuggestions));
+		} catch { setSuggestions([]); }
+	}, [currentProduct, productsAll, maxSuggestions]);
+	React.useEffect(()=>{ if(open) recompute(); },[open, recompute]);
+	React.useEffect(()=>{ setImgIdx(0); },[currentProduct]);
+	React.useEffect(()=>{ if(!open) setCurrentProduct(product); },[product, open]);
+	React.useEffect(()=>{ if(!open) return; window.history.pushState({ pm:true }, ''); const onPop=()=>setOpen(false); window.addEventListener('popstate', onPop); return ()=>{ window.removeEventListener('popstate', onPop); if(window.history.state?.pm){ try{ window.history.back(); }catch{} } }; },[open]);
+	const hasNutrition = [currentProduct.energyKcal,currentProduct.proteinG,currentProduct.carbohydratesG,currentProduct.totalSugarG,currentProduct.addedSugarG,currentProduct.totalFatG,currentProduct.saturatedFatG,currentProduct.transFatG].some(v=> v!=null && !isNaN(Number(v as any)));
+	const h = React.createElement;
+	const nutritionRows: React.ReactNode[] = [];
+	function pushRow(label:string, val:any){ if(val!=null && !isNaN(Number(val))) nutritionRows.push(h(TableRow,{ key:label, label, value:Number(val) })); }
+	pushRow('Energy (Kcal)', currentProduct.energyKcal);
+	pushRow('Protein (g)', currentProduct.proteinG);
+	pushRow('Carbohydrates (g)', currentProduct.carbohydratesG);
+	pushRow('Total Sugar (g)', currentProduct.totalSugarG);
+	pushRow('Added Sugar (g)', currentProduct.addedSugarG);
+	pushRow('Total Fat (g)', currentProduct.totalFatG);
+	pushRow('Saturated Fat (g)', currentProduct.saturatedFatG);
+	pushRow('Trans Fat (g)', currentProduct.transFatG);
 
-  const hasNutrition = [
-    currentProduct.energyKcal,
-    currentProduct.proteinG,
-    currentProduct.carbohydratesG,
-    currentProduct.totalSugarG,
-    currentProduct.addedSugarG,
-    currentProduct.totalFatG,
-    currentProduct.saturatedFatG,
-    currentProduct.transFatG,
-  ].some(v => v !== undefined && v !== null && (typeof v !== 'string' || v !== '') && !isNaN(Number(v)));
+	const featureBadges = h('div',{className:'rounded-2xl bg-[#f6f1e6] border border-[#e5dccd] px-6 md:px-8 py-6 shadow-sm'},
+		h('ul',{className:'grid grid-cols-3 sm:grid-cols-5 gap-4 md:gap-8 text-center justify-items-center'},
+			QUALITIES.map(q => h('li',{key:q.key,className:'flex flex-col items-center gap-2'},
+				h('span',{className:'w-14 h-14 rounded-full flex items-center justify-center border-2 border-primary/40'}, h(q.Icon,{className:'w-8 h-8 text-primary'})),
+				h('span',{className:'text-[9px] font-semibold tracking-wide leading-tight max-w-[70px] mx-auto'}, q.label)
+			))
+		)
+	);
 
-  // Handle browser history for modal
-  useEffect(() => {
-    if (!open) return;
-    // Push a new state when modal opens
-    window.history.pushState({ modal: true }, "");
-    const onPopState = (e: PopStateEvent) => {
-      setOpen(false);
-    };
-    window.addEventListener("popstate", onPopState);
-    return () => {
-      window.removeEventListener("popstate", onPopState);
-      // If modal is closed by other means, go back in history if state was pushed
-      if (window.history.state && window.history.state.modal) {
-        window.history.back();
-      }
-    };
-  }, [open]);
-
-  const handleOpenChange = useCallback((nextOpen: boolean) => {
-    setOpen(nextOpen);
-  }, []);
-
-  // Helper to recalc suggestions
-  const recomputeSuggestions = useCallback(()=>{
-    try {
-      // If productsAll is an empty array (captured before products loaded), fall back to global each time
-      const globalList: any = (window as any).__ALL_PRODUCTS;
-      const list: any = (productsAll && productsAll.length > 0 ? productsAll : globalList);
-      if(!Array.isArray(list) || !currentProduct) { setSuggestions([]); return; }
-      const currentId = (currentProduct as any).id ?? (currentProduct as any)._id;
-      const same = list.filter((p: any)=> ((p.id ?? p._id) !== currentId) && p.category === currentProduct.category);
-      const others = list.filter((p: any)=> ((p.id ?? p._id) !== currentId) && p.category !== currentProduct.category);
-      const combined = [...same, ...others];
-      const finalList = combined.length ? combined : list.filter((p: any)=> (p.id ?? p._id) !== currentId);
-      const next = finalList.slice(0, maxSuggestions);
-      setSuggestions(next);
-      try { console.log('[ProductModal] recomputeSuggestions', { listLen: list.length, same: same.length, others: others.length, chosen: next.map((p: any)=>p.name) }); } catch {}
-      if(next.length === 0) {
-        // Retry once shortly after in case products weren't ready at first pass
-    setTimeout(()=>{
-          try {
-      const retryList: any = (productsAll && productsAll.length > 0 ? productsAll : (window as any).__ALL_PRODUCTS);
-            if(!Array.isArray(retryList)) return;
-            const retry = retryList.filter((p: any)=> (p.id ?? p._id) !== currentId).slice(0, maxSuggestions);
-            if(retry.length) { setSuggestions(retry); console.log('[ProductModal] retry produced suggestions', retry.map((p:any)=>p.name)); }
-          } catch {}
-        }, 60);
-      }
-    } catch (e) { setSuggestions([]); try { console.warn('[ProductModal] suggestion error', e); } catch {} }
-  },[productsAll, currentProduct, maxSuggestions]);
-
-  // Recompute when modal opens or product changes
-  useEffect(()=>{ if(open) recomputeSuggestions(); },[open, recomputeSuggestions]);
-  // Listen for global products-ready event (when products load after modal opened quickly)
-  useEffect(()=>{
-    const handler = ()=> { if(open) recomputeSuggestions(); };
-    window.addEventListener('products-ready', handler);
-    return ()=> window.removeEventListener('products-ready', handler);
-  },[open, recomputeSuggestions]);
-
-  return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button variant="ghost" className="p-0 h-auto w-auto text-left">
-            View
-          </Button>
-        )}
-      </DialogTrigger>
-    <DialogContent className="max-w-5xl w-full p-0 overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-          <div className="relative w-full md:w-1/2 bg-gray-50 shrink-0 flex items-center justify-center">
-            <div key={animKey} className="w-full h-60 md:h-full md:max-h-[92vh] overflow-hidden relative">
-              <img
-                src={images[imgIdx]}
-                alt={currentProduct.name}
-                className="w-full h-full object-cover object-top md:object-center fade-swap"
-              />
-              {showArrows && (
-                <>
-                  <button
-                    type="button"
-                    aria-label="Previous image"
-                    onClick={e => { e.stopPropagation(); setImgIdx(idx => (idx - 1 + images.length) % images.length); }}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-transparent hover:bg-black/20 border-0 rounded-full p-2 z-20 transition"
-                    style={{ display: 'block' }}
-                  >{React.createElement(ChevronLeft, { className: 'w-8 h-8 text-white drop-shadow-lg' })}</button>
-                  <button
-                    type="button"
-                    aria-label="Next image"
-                    onClick={e => { e.stopPropagation(); setImgIdx(idx => (idx + 1) % images.length); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent hover:bg-black/20 border-0 rounded-full p-2 z-20 transition"
-                    style={{ display: 'block' }}
-                  >{React.createElement(ChevronRight, { className: 'w-8 h-8 text-white drop-shadow-lg' })}</button>
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-                    {images.map((_, i: number) => (
-                      <span key={i} className={`inline-block w-3 h-3 border-2 border-primary rounded-full ${i === imgIdx ? 'bg-primary' : 'bg-gray-300'}`}></span>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-  <div className="flex flex-col md:w-1/2 overflow-y-auto" ref={scrollContainerRef}>
-    <div ref={scrollRef} className="p-6 md:p-8 pb-28 md:pb-8 space-y-6 transition-opacity duration-200">
-              <div className="flex items-center gap-2">
-                <DialogTitle className="text-2xl font-semibold text-primary leading-tight">
-                  {currentProduct.name}
-                </DialogTitle>
-                <ProductShare
-                  name={currentProduct.name}
-                  url={typeof window !== 'undefined' ? window.location.origin + '/products/' + (currentProduct.id || currentProduct._id) : ''}
-                  image={currentProduct.image}
-                />
-              </div>
-              <DialogDescription className="mt-2 text-sm md:text-base text-muted-foreground leading-relaxed">
-                {currentProduct.description}
-              </DialogDescription>
-              <div className="flex items-center gap-4">
-                <span className="text-2xl font-bold text-secondary">
-      {formatPrice(currentProduct.price)}
-                </span>
-              </div>
-              {hasNutrition && (
-                <div className="mt-4">
-                  <h4 className="text-sm font-semibold mb-2 text-primary">Nutritional Information (per serving)</h4>
-                  <div className="overflow-x-auto border rounded-md">
-                    <table className="w-full text-xs md:text-sm">
-                      <tbody>
-        {currentProduct.energyKcal !== undefined && (typeof currentProduct.energyKcal !== 'string' || currentProduct.energyKcal !== '') && !isNaN(Number(currentProduct.energyKcal)) && <TableRow label="Energy (Kcal)" value={Number(currentProduct.energyKcal)} />}
-        {currentProduct.proteinG !== undefined && (typeof currentProduct.proteinG !== 'string' || currentProduct.proteinG !== '') && !isNaN(Number(currentProduct.proteinG)) && <TableRow label="Protein (g)" value={Number(currentProduct.proteinG)} />}
-        {currentProduct.carbohydratesG !== undefined && (typeof currentProduct.carbohydratesG !== 'string' || currentProduct.carbohydratesG !== '') && !isNaN(Number(currentProduct.carbohydratesG)) && <TableRow label="Carbohydrates (g)" value={Number(currentProduct.carbohydratesG)} />}
-        {currentProduct.totalSugarG !== undefined && (typeof currentProduct.totalSugarG !== 'string' || currentProduct.totalSugarG !== '') && !isNaN(Number(currentProduct.totalSugarG)) && <TableRow label="Total Sugar (g)" value={Number(currentProduct.totalSugarG)} />}
-        {currentProduct.addedSugarG !== undefined && (typeof currentProduct.addedSugarG !== 'string' || currentProduct.addedSugarG !== '') && !isNaN(Number(currentProduct.addedSugarG)) && <TableRow label="Added Sugar (g)" value={Number(currentProduct.addedSugarG)} />}
-        {currentProduct.totalFatG !== undefined && (typeof currentProduct.totalFatG !== 'string' || currentProduct.totalFatG !== '') && !isNaN(Number(currentProduct.totalFatG)) && <TableRow label="Total Fat (g)" value={Number(currentProduct.totalFatG)} />}
-        {currentProduct.saturatedFatG !== undefined && (typeof currentProduct.saturatedFatG !== 'string' || currentProduct.saturatedFatG !== '') && !isNaN(Number(currentProduct.saturatedFatG)) && <TableRow label="Saturated Fat (g)" value={Number(currentProduct.saturatedFatG)} />}
-        {currentProduct.transFatG !== undefined && (typeof currentProduct.transFatG !== 'string' || currentProduct.transFatG !== '') && !isNaN(Number(currentProduct.transFatG)) && <TableRow label="Trans Fat (g)" value={Number(currentProduct.transFatG)} />}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-              {suggestions.length > 0 && (
-                <div className="mt-6">
-                  <h4 className="text-sm font-semibold mb-3 text-primary">You might also like</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    {suggestions.map(s => (
-                      <button key={(s as any).id || s._id} onClick={()=>{
-                        setCurrentProduct(s);
-                        setImgIdx(0);
-                        setAnimKey(k=>k+1);
-                        const target = scrollContainerRef.current || scrollRef.current;
-                        if(target){ try { target.scrollTo({ top: 0, behavior: 'smooth'}); } catch { target.scrollTop = 0; } }
-                        recomputeSuggestions();
-                      }} className="group text-left border rounded-md p-2 hover:border-primary/50 focus:outline-none">
-                        <img src={s.image} alt={s.name} className="w-full h-24 object-cover rounded mb-2" />
-                        <div className="text-xs font-medium line-clamp-2 leading-snug group-hover:text-primary transition-colors">{s.name}</div>
-                        <div className="text-[11px] text-muted-foreground">{formatPrice(s.price)}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {suggestions.length === 0 && ((productsAll || (window as any).__ALL_PRODUCTS)?.length > 1) && (
-                <div className="mt-6 text-xs text-muted-foreground border rounded-md p-3">
-                  (Suggestions loading...)
-                </div>
-              )}
-            </div>
-            <div className="sticky bottom-0 bg-white/95 backdrop-blur border-t px-4 md:px-8 py-4 mt-auto">
-              <Button
-                onClick={() => onAddToCart(currentProduct)}
-                disabled={currentProduct.inStock === 0}
-                className="w-full bg-primary hover:bg-green-800 text-white"
-              >
-                {currentProduct.inStock === 0 ? "Out of Stock" : "Add to Cart"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+	return h(Dialog,{ open, onOpenChange:setOpen },
+		h(DialogTrigger,{ asChild:true }, trigger ?? h(Button,{ variant:'ghost' },'View')),
+		h(DialogContent,{ className:'max-w-5xl w-full p-0 overflow-hidden max-h-[92vh] flex flex-col' },
+			h('div',{className:'flex flex-col md:flex-row flex-1 overflow-hidden'},
+				h('div',{className:'relative w-full md:w-1/2 bg-gray-50 shrink-0 flex items-center justify-center'},
+					h('div',{className:'w-full h-60 md:h-full md:max-h-[92vh] overflow-hidden relative'},
+						h('img',{ src: images[imgIdx], alt: currentProduct.name, className:'w-full h-full object-cover object-top md:object-center' }),
+						showArrows && [
+							h('button',{ key:'prev', type:'button', 'aria-label':'Previous image', onClick:(e:any)=>{ e.stopPropagation(); setImgIdx(i=>(i-1+images.length)%images.length); }, className:'absolute left-2 top-1/2 -translate-y-1/2 bg-transparent hover:bg-black/20 border-0 rounded-full p-2 z-20' }, h(ChevronLeft,{className:'w-8 h-8 text-white drop-shadow-lg'})),
+							h('button',{ key:'next', type:'button', 'aria-label':'Next image', onClick:(e:any)=>{ e.stopPropagation(); setImgIdx(i=>(i+1)%images.length); }, className:'absolute right-2 top-1/2 -translate-y-1/2 bg-transparent hover:bg-black/20 border-0 rounded-full p-2 z-20' }, h(ChevronRight,{className:'w-8 h-8 text-white drop-shadow-lg'})),
+							h('div',{ key:'dots', className:'absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2 z-20' }, images.map((_,i)=> h('span',{ key:i, className:`inline-block w-3 h-3 border-2 border-primary rounded-full ${i===imgIdx?'bg-primary':'bg-gray-300'}` })))
+						]
+					)
+				),
+				h('div',{className:'flex flex-col md:w-1/2 overflow-y-auto'},
+					h('div',{className:'p-6 md:p-8 pb-32 md:pb-8 space-y-6'},
+						h('div',{className:'flex items-center gap-2'},
+							h(DialogTitle,{ className:'text-2xl font-semibold text-primary leading-tight' }, currentProduct.name),
+							h(ProductShare,{ name:currentProduct.name, url: typeof window!=='undefined' ? window.location.origin + '/products/' + (currentProduct.slug || (currentProduct as any).id || (currentProduct as any)._id) : '', image: currentProduct.image })
+						),
+						h(DialogDescription,{ className:'mt-2 text-sm md:text-base text-muted-foreground leading-relaxed' }, currentProduct.description),
+						h('div',{className:'flex items-center gap-4'}, h('span',{className:'text-2xl font-bold text-secondary'}, formatPrice(currentProduct.price))),
+						featureBadges,
+						hasNutrition && h('div',{},
+							h('h4',{className:'text-sm font-semibold mb-2 text-primary'},'Nutritional Information (per serving)'),
+							h('div',{className:'overflow-x-auto border rounded-md'},
+								h('table',{className:'w-full text-xs md:text-sm'}, h('tbody',{}, nutritionRows ))
+							)
+						),
+						suggestions.length>0 && h('div',{},
+							h('h4',{className:'text-sm font-semibold mb-3 text-primary'},'You might also like'),
+							h('div',{className:'grid grid-cols-2 gap-3'},
+								suggestions.map(s => h('button',{ key:(s as any).id || (s as any)._id, onClick:()=>{ setCurrentProduct(s); setImgIdx(0); recompute(); try{ (document.querySelector('#pm-scroll') as HTMLElement)?.scrollTo({ top:0, behavior:'smooth'}); }catch{} }, className:'group text-left border rounded-md p-2 hover:border-primary/50 focus:outline-none bg-white/70 hover:bg-white transition-colors' },
+									h('img',{ src:s.image, alt:s.name, className:'w-full h-24 object-cover rounded mb-2'}),
+									h('div',{className:'text-xs font-medium line-clamp-2 leading-snug group-hover:text-primary transition-colors'}, s.name),
+									h('div',{className:'text-[11px] text-muted-foreground'}, formatPrice(s.price))
+								))
+							)
+						)
+					),
+					h('div',{className:'sticky bottom-0 bg-white/95 backdrop-blur border-t px-4 md:px-8 py-4 mt-auto'},
+						h(Button,{ onClick:()=> onAddToCart(currentProduct), disabled: currentProduct.inStock===0, className:'w-full bg-primary hover:bg-green-800 text-white' }, currentProduct.inStock===0 ? 'Out of Stock' : 'Add to Cart')
+					)
+				)
+			)
+		)
+	);
 }
 
 interface TableRowProps { label: string; value: number; }
-function TableRow({ label, value }: TableRowProps) {
-  return React.createElement(
-    "tr",
-    { className: "even:bg-neutral/40" },
-    React.createElement(
-      "td",
-      { className: "py-1.5 px-3 font-medium text-primary whitespace-nowrap" },
-      label
-    ),
-    React.createElement(
-      "td",
-      { className: "py-1.5 px-3 text-right tabular-nums" },
-      value
-    )
-  );
+function TableRow({ label, value }: TableRowProps){
+	return React.createElement('tr',{className:'even:bg-neutral/40'},
+		React.createElement('td',{className:'py-1.5 px-3 font-medium text-primary whitespace-nowrap'}, label),
+		React.createElement('td',{className:'py-1.5 px-3 text-right tabular-nums'}, value)
+	);
 }
+
