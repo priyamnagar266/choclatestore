@@ -232,6 +232,7 @@ export default function AdminProducts() {
   }, [formData.name, slugManuallyEdited]);
 
   const filteredProducts = categoryFilter === 'all' ? products : products.filter(p => p.category === categoryFilter);
+  const bestsellerCount = products.filter(p=>p.bestseller).length;
 
   return (
     <AdminLayout>
@@ -432,13 +433,31 @@ export default function AdminProducts() {
                     <TableCell>{formatPrice(product.price)}</TableCell>
                     <TableCell>{product.inStock}</TableCell>
                     <TableCell>
-                      <Button variant={product.bestseller ? 'default':'outline'} size='sm' onClick={async ()=>{
-                        try {
-                          await apiFetch(`/api/admin/products/${product.id}/bestseller`, { method:'PATCH', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` }, body: JSON.stringify({ bestseller: !product.bestseller }) });
-                          queryClient.invalidateQueries({ queryKey:['admin-products'] });
-                          toast({ title:'Updated', description:`${product.name} ${!product.bestseller ? 'marked as' : 'removed from'} bestsellers.` });
-                        } catch { toast({ title:'Failed', variant:'destructive'}); }
-                      }}>{product.bestseller ? 'Yes' : 'No'}</Button>
+                      <Button
+                        variant={product.bestseller ? 'default':'outline'}
+                        size='sm'
+                        disabled={bestsellerCount >= 4 && !product.bestseller}
+                        onClick={async ()=>{
+                          try {
+                            const desired = !product.bestseller;
+                            const res = await apiFetch(`/api/admin/products/${product.id}/bestseller`, {
+                              method:'PATCH',
+                              headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
+                              body: JSON.stringify({ bestseller: desired })
+                            });
+                            if (!res.ok) {
+                              let msg = 'Failed to update bestseller';
+                              try { const j = await res.json(); if (j?.message) msg = j.message; } catch {}
+                              toast({ title:'Error', description: msg, variant:'destructive' });
+                              return;
+                            }
+                            queryClient.invalidateQueries({ queryKey:['admin-products'] });
+                            // Mark as pending so admin must Apply Changes to deploy
+                            setPendingChanges(prev => new Set([...Array.from(prev), product.id]));
+                            toast({ title:'Updated', description:`${product.name} ${desired ? 'marked as' : 'removed from'} bestsellers (pending deploy).` });
+                          } catch { toast({ title:'Failed', variant:'destructive'}); }
+                        }}
+                      >{product.bestseller ? 'Yes' : 'No'}</Button>
                     </TableCell>
                     <TableCell>
                       <div className='flex gap-2'>

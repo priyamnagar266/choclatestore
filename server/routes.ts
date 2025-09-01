@@ -723,11 +723,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id,10);
       if (Number.isNaN(id)) return res.status(400).json({ message:'Invalid id'});
       const { bestseller } = z.object({ bestseller: z.coerce.boolean() }).parse(req.body || {});
+      // Enforce maximum of 4 bestsellers at a time (only when turning on)
+      const existing = await storage.getProduct(id);
+      if (bestseller && !existing?.bestseller) {
+        const currentCount = await db.collection('products').countDocuments({ bestseller: true } as any);
+        if (currentCount >= 4) {
+          return res.status(400).json({ message: 'Maximum of 4 bestsellers already selected.' });
+        }
+      }
       const updated = await storage.updateProduct(id, { bestseller, updatedAt: new Date() });
       if (!updated) return res.status(404).json({ message:'Product not found'});
       const globalAny: any = global as any; if (globalAny.__productCache) globalAny.__productCache.ts = 0;
-      triggerNetlifyBuild('product-bestseller-toggle');
-      res.json({ success:true, product: updated });
+      // Do NOT trigger build immediately; changes will be deployed when admin clicks Apply Changes
+      res.json({ success:true, product: updated, deferredDeploy: true });
     } catch(e:any){
       res.status(400).json({ message:e.message });
     }
