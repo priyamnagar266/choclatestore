@@ -104,6 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     totalFatG: z.coerce.number().nonnegative().optional(),
     saturatedFatG: z.coerce.number().nonnegative().optional(),
     transFatG: z.coerce.number().nonnegative().optional(),
+  bestseller: z.coerce.boolean().optional().default(false),
   });
   const productUpdateSchema = productCreateSchema.partial().refine(obj => Object.keys(obj).length > 0, { message: 'No fields supplied for update' });
 

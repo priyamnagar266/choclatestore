@@ -112,8 +112,8 @@ export default function AdminProducts() {
     fd.append('description', payload.description);
     fd.append('price', String(payload.price));
     fd.append('category', payload.category);
-    fd.append('inStock', String(payload.inStock));
-  if (payload.bestseller) fd.append('bestseller', String(payload.bestseller));
+  fd.append('inStock', String(payload.inStock));
+  if (typeof payload.bestseller === 'boolean') fd.append('bestseller', String(payload.bestseller));
     fd.append('benefits', payload.benefits.join(','));
     if (payload.imageFile) {
       fd.append('image', payload.imageFile);
