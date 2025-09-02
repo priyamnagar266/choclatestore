@@ -1032,6 +1032,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public: Track orders by email (no auth). Accepts JSON { email } OR query param ?email=.
+  app.post('/api/orders/track', async (req, res) => {
+    try {
+      let email = (req.body && (req.body.email || req.body.customerEmail)) || (req.query && (req.query as any).email);
+      if (typeof email !== 'string') return res.status(400).json({ message: 'Email required' });
+      email = email.trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return res.status(400).json({ message: 'Invalid email' });
+      // Fetch orders by customerEmail only; do not leak other fields
+      const ordersCol = db.collection('orders');
+      const raw = await ordersCol.find({ customerEmail: email }).sort({ createdAt: -1 }).limit(25).toArray();
+      if (!raw.length) return res.json({ orders: [] });
+      // Product enrichment (names, images) minimal
+      let productMap: Record<string, any> = {};
+      try {
+        const products = await storage.getProducts();
+        for (const p of products as any[]) {
+          if (p.id !== undefined) productMap[String(p.id)] = p;
+          if (p._id) productMap[String(p._id)] = p;
+        }
+      } catch {}
+      const orders = raw.map((o:any)=>({
+        orderId: o._id?.toString?.() || o.id || o.orderId,
+        status: o.status || 'placed',
+        createdAt: o.createdAt ? new Date(o.createdAt).toISOString() : null,
+        total: o.total,
+        items: Array.isArray(o.items) ? o.items.slice(0,5).map((it:any)=>{
+          const prod = productMap[String(it.productId)] || productMap[String(parseInt(it.productId))];
+          return { productId: it.productId, quantity: it.quantity, name: prod?.name, image: prod?.image };
+        }) : [],
+        eta: (()=>{ // naive ETA: placed + 5 days
+          try { if(o.createdAt){ const d=new Date(o.createdAt); d.setDate(d.getDate()+5); return d.toISOString(); } } catch{}
+          return null;
+        })()
+      }));
+      res.json({ orders });
+    } catch(e:any){
+      console.error('[POST /api/orders/track] error', e);
+      res.status(500).json({ message:'Failed to track orders' });
+    }
+  });
+
   // Fetch orders by specific userId (self or admin)
   app.get('/api/orders/user/:id', authenticateJWT, async (req, res) => {
     // @ts-ignore

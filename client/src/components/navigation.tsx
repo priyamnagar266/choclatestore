@@ -104,8 +104,18 @@ export default function Navigation() {
   ) : React.createElement(
     'div',
     { className: 'flex items-center space-x-4' },
-    React.createElement('a', { href: '/login', className: 'text-primary hover:underline' }, 'Login'),
-    React.createElement('a', { href: '/signup', className: 'text-primary hover:underline' }, 'Sign Up')
+    React.createElement('a', { href: '/track-order', className: 'text-gray-700 hover:text-primary transition-colors font-medium' }, 'Track Order'),
+    React.createElement(
+      Button,
+      { onClick: ()=> setLocation('/login'), className: 'flex items-center gap-2 bg-primary text-white hover:bg-green-800 h-10 px-4 rounded-lg shadow-sm', 'aria-label':'Login' as any },
+      React.createElement(UserIcon,{className:'h-4 w-4'}),
+      'Log In'
+    ),
+    React.createElement(
+      Button,
+      { onClick: ()=> setLocation('/signup'), variant:'outline' as any, className: 'h-10 px-4 rounded-lg border-primary/40 hover:bg-primary/10 font-medium', 'aria-label':'Sign Up' as any },
+      'Sign Up'
+    )
   );
 
   const desktopSection = React.createElement(
@@ -156,20 +166,16 @@ export default function Navigation() {
           },
           className: 'text-left text-lg text-gray-700 hover:text-primary transition-colors py-1'
         }, item.label)),
+        !user ? React.createElement('button', {
+          onClick: () => { setLocation('/track-order'); setMobileNavOpen(false); },
+          className: 'text-left text-lg text-gray-700 hover:text-primary transition-colors py-1'
+        }, 'Track Order') : null,
         user ? React.createElement('button', {
           onClick: () => { setLocation('/orders'); setMobileNavOpen(false); },
           className: 'text-left text-lg text-gray-700 hover:text-primary transition-colors py-1'
         }, 'Order History') : null
       ),
-      React.createElement(
-        Button,
-        {
-          onClick: () => { openCart(); setMobileNavOpen(false); },
-          className: 'bg-primary text-white hover:bg-green-800 mt-6'
-        },
-        React.createElement(ShoppingCart, { className: 'mr-2 h-4 w-4' }),
-        `Cart (${cartItemCount})`
-      ),
+  // Cart button removed from mobile menu (was here previously)
       user ? React.createElement(Button, {
         variant: 'outline' as any,
         className: 'mt-6',
@@ -177,8 +183,8 @@ export default function Navigation() {
       }, 'Logout') : React.createElement(
         'div',
         { className: 'flex flex-col mt-6 space-y-2' },
-        React.createElement('a', { href: '/login', className: 'text-primary hover:underline', onClick: () => setMobileNavOpen(false) }, 'Login'),
-        React.createElement('a', { href: '/signup', className: 'text-primary hover:underline', onClick: () => setMobileNavOpen(false) }, 'Sign Up')
+  React.createElement(Button, { onClick: ()=>{ setLocation('/login'); setMobileNavOpen(false); }, className:'flex items-center gap-2 bg-primary text-white hover:bg-green-800 h-11 px-4 rounded-lg justify-center' }, React.createElement(UserIcon,{className:'h-5 w-5'}), 'Log In'),
+  React.createElement(Button, { onClick: ()=>{ setLocation('/signup'); setMobileNavOpen(false); }, variant:'outline' as any, className:'h-11 px-4 rounded-lg border-primary/40 hover:bg-primary/10 font-medium' }, 'Sign Up')
       )
     )
   );
@@ -214,7 +220,12 @@ export default function Navigation() {
     React.createElement(
       'div',
       { className: 'flex items-center' },
-  React.createElement(Button, { variant: 'ghost' as any, size: 'sm' as any, onClick: (e: any) => { e.stopPropagation(); openCart(); }, className: 'relative' },
+      React.createElement(Button, { 
+        variant: 'ghost' as any, 
+        size: 'sm' as any, 
+        onClick: (e: any) => { e.stopPropagation(); openCart(); }, 
+        className: 'relative'
+      },
         React.createElement(ShoppingCart, { className: 'h-6 w-6' }),
         cartBadge(cartItemCount, 'rounded-full px-1.5 py-0.5')
       )

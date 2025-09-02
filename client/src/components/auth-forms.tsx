@@ -67,6 +67,7 @@ export function SignupForm({ onSuccess }: { onSuccess?: (user: any) => void }) {
           {loading ? "Signing up..." : "Sign Up"}
         </button>
       </form>
+      <p className="mt-6 text-center text-sm text-gray-700">Already have an account?<a href="/login" className="ml-1 font-semibold text-purple-700 hover:underline focus:outline-none focus:ring-2 focus:ring-purple-500 rounded">Login</a></p>
     </div>
   );
 }
@@ -131,6 +132,7 @@ export function LoginForm({ onSuccess }: { onSuccess?: (user: any) => void }) {
           {loading ? "Logging in..." : "Login"}
         </button>
       </form>
+      <p className="mt-6 text-center text-sm text-gray-700">Don't have an account?<a href="/signup" className="ml-1 font-semibold text-purple-700 hover:underline focus:outline-none focus:ring-2 focus:ring-purple-500 rounded">Signup</a></p>
     </div>
   );
 }

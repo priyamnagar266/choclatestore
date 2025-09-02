@@ -17,6 +17,7 @@ const DeliveryInfo = React.lazy(() => import("@/pages/delivery"));
 const NotFound = React.lazy(() => import("@/pages/not-found"));
 const ProductsPage = React.lazy(() => import("@/pages/products"));
 const FAQPage = React.lazy(() => import("@/pages/faq"));
+const TrackOrderPage = React.lazy(() => import("@/pages/track-order"));
 const LoginFormLazy = React.lazy(async () => ({ default: (await import("@/components/auth-forms")).LoginForm }));
 const SignupFormLazy = React.lazy(async () => ({ default: (await import("@/components/auth-forms")).SignupForm }));
 const UserDashboard = React.lazy(() => import("@/pages/dashboard"));
@@ -81,6 +82,7 @@ function Router() {
               <Route path="/policies">{() => <PoliciesPage />}</Route>
               <Route path="/login">{() => <LoginFormLazy />}</Route>
               <Route path="/signup">{() => <SignupFormLazy />}</Route>
+              <Route path="/track-order">{() => <TrackOrderPage />}</Route>
               <Route path="/dashboard">{() => <UserDashboard />}</Route>
               <Route path="/order-history">{() => <OrderHistory />}</Route>
               <Route path="/orders">{() => <OrderHistory />}</Route>
