@@ -105,6 +105,15 @@ const ProductDetailPage: React.FC<Props> = ({ slug }) => {
 		// Variant selection (must be before early returns so hook order is stable)
 		const variants: any[] = Array.isArray((product as any)?.variants) ? (product as any)?.variants : [];
 		React.useEffect(()=>{ if(selectedVariantLabel && !variants.find(v=> v.label === selectedVariantLabel)) setSelectedVariantLabel(null); }, [variants, selectedVariantLabel]);
+		// Default variant selection: prefer 30g else first variant when product loads
+		React.useEffect(()=>{
+			if(!product) return;
+			const list: any[] = Array.isArray((product as any).variants)? (product as any).variants : [];
+			if(!list.length) return;
+			if(selectedVariantLabel && list.find(v=>v.label===selectedVariantLabel)) return; // already valid
+			const pref = list.find(v=> (v.label||'').toLowerCase()==='30g') || list[0];
+			setSelectedVariantLabel(pref.label);
+		},[product, variants]);
 
 		// Carousel state
 		const [imgIdx, setImgIdx] = React.useState(0);

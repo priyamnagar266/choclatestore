@@ -73,7 +73,7 @@ export default function Home() {
   const resolveCartKey = (u = user) => u ? `cart_${u.id}` : 'cart_guest';
   const queryClient = useQueryClient();
   // Use global cart context
-  const { cart, setCart, showCart, closeCart, clearCart } = useCart();
+  const { cart, setCart, showCart, closeCart, clearCart, addToCart: contextAddToCart } = useCart();
   // Mobile contact form collapse state
   const [mobileFormOpen, setMobileFormOpen] = useState(false);
 
@@ -97,7 +97,8 @@ export default function Home() {
   }, [user]);
   
   // Order form state
-  const [orderQuantities, setOrderQuantities] = useState<Record<number, number>>({});
+  // Use string keys because cart item ids (and product composite keys with variants) are strings
+  const [orderQuantities, setOrderQuantities] = useState<Record<string, number>>({});
 
   // Direct products fetch (no localStorage caching; always server data)
   const { data: products = [] } = useQuery<Product[]>({
@@ -299,36 +300,13 @@ export default function Home() {
     },
   });
 
-  // Cart functions
-  const addToCart = (product: Product) => {
-    setCart(prev => {
-      const existingItem = prev.find(item => item.id === product.id);
-      let updatedCart;
-      if (existingItem) {
-        updatedCart = prev.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      } else {
-        updatedCart = [...prev, {
-          id: product.id,
-          name: product.name,
-          price: (product as any).salePrice != null && (product as any).salePrice < product.price ? (product as any).salePrice : product.price,
-          quantity: 1,
-          image: product.image,
-        }];
-      }
-      try { localStorage.setItem(resolveCartKey(), JSON.stringify(updatedCart)); } catch {}
-      return updatedCart;
-    });
-    toast({
-      title: "Added to cart!",
-      description: `${product.name} has been added to your cart.`,
-    });
+  // Cart function (delegate to global context logic which supports variants)
+  const addToCart = (p: any) => {
+    contextAddToCart(p);
+    toast({ title: 'Added to cart!', description: `${p.name}${p.variantLabel ? ' ('+p.variantLabel+')':''} has been added to your cart.` });
   };
 
-  const removeFromCart = (productId: number) => {
+  const removeFromCart = (productId: string) => {
     setCart(prev => {
       const updatedCart = prev.filter(item => item.id !== productId);
       try { localStorage.setItem(resolveCartKey(), JSON.stringify(updatedCart)); } catch {}
@@ -336,7 +314,7 @@ export default function Home() {
     });
   };
 
-  const updateCartItemQuantity = (productId: number, quantity: number) => {
+  const updateCartItemQuantity = (productId: string, quantity: number) => {
     if (quantity === 0) {
       removeFromCart(productId);
       return;
@@ -354,9 +332,9 @@ export default function Home() {
 
   const syncCartToOrder = () => {
     // Sync cart items to order quantities
-    const newOrderQuantities: Record<number, number> = {};
+  const newOrderQuantities: Record<string, number> = {};
     cart.forEach(item => {
-      newOrderQuantities[item.id] = item.quantity;
+  newOrderQuantities[String(item.id)] = item.quantity;
     });
     setOrderQuantities(newOrderQuantities);
     
@@ -365,7 +343,7 @@ export default function Home() {
   };
 
 
-  const updateQuantity = (productId: number, quantity: number) => {
+  const updateQuantity = (productId: string, quantity: number) => {
     const newQuantity = Math.max(0, quantity);
     
     // Update order quantities
@@ -375,7 +353,7 @@ export default function Home() {
     }));
     
     // Sync back to cart
-    const product = products.find(p => p.id === productId);
+  const product = products.find(p => String(p.id) === String(productId));
     if (product && newQuantity > 0) {
       setCart(prev => {
         const existingItem = prev.find(item => item.id === productId);
@@ -387,7 +365,7 @@ export default function Home() {
           );
         } else {
           return [...prev, {
-            id: product.id,
+            id: product.id as any,
             name: product.name,
             price: product.price,
             quantity: newQuantity,
@@ -397,7 +375,7 @@ export default function Home() {
       });
     } else if (newQuantity === 0) {
       // Remove from cart if quantity is 0
-      setCart(prev => prev.filter(item => item.id !== productId));
+  setCart(prev => prev.filter(item => item.id !== productId));
     }
   };
 
@@ -405,7 +383,7 @@ export default function Home() {
     return Object.entries(orderQuantities)
       .filter(([, quantity]) => quantity > 0)
       .map(([productId, quantity]) => {
-        const product = products.find(p => p.id === parseInt(productId));
+  const product = products.find(p => String(p.id) === String(productId));
         return product ? {
           id: product.id,
           name: product.name,

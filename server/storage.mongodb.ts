@@ -235,7 +235,13 @@ export const storage = {
       paymentStatus: (o as any).razorpayPaymentId ? 'paid' : 'unpaid',
       razorpayPaymentId: (o as any).razorpayPaymentId || null,
       createdAt: (o as any).createdAt,
-      items: Array.isArray((o as any).items) ? (o as any).items.map((it: any) => ({ productId: it.productId, quantity: it.quantity })) : []
+      items: Array.isArray((o as any).items) ? (o as any).items.map((it: any) => ({
+        productId: it.productId,
+        quantity: it.quantity,
+        variantLabel: it.variantLabel,
+        name: it.name,
+        price: it.price
+      })) : []
     }));
     return { orders, total, page, pageSize };
   },

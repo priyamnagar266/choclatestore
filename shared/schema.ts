@@ -39,7 +39,7 @@ export interface Order extends Document {
   address: string;
   city: string;
   pincode: string;
-  items: any[];
+  items: { productId: string; quantity: number; variantLabel?: string; name?: string; price?: number; }[]; // variantLabel & name optional for richer labels
   subtotal: number;
   discount?: number; // currency amount discounted
   deliveryCharges: number;
@@ -157,7 +157,10 @@ export const insertOrderSchema = z.object({
   pincode: z.string(),
   items: z.array(z.object({
     productId: z.string(),
-    quantity: z.number().positive(),
+  quantity: z.number().positive(),
+  variantLabel: z.string().optional(),
+  name: z.string().optional(),
+  price: z.number().positive().optional(),
   })),
   subtotal: z.number().positive(),
   deliveryCharges: z.number().nonnegative(),

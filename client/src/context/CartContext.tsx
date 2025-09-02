@@ -67,31 +67,99 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const addToCart = (product: any) => {
     setCart(prev => {
-      // Distinguish items by variant label if present
-      const variantLabel = product.tempSelectedVariant?.label || product.selectedVariantLabel || null;
-      const keyMatch = (item: any) => item.id === product.id && item.variantLabel === variantLabel;
-      const existingItem = prev.find(keyMatch);
-      let updatedCart;
-      if (existingItem) {
-        updatedCart = prev.map(item => keyMatch(item) ? { ...item, quantity: item.quantity + 1 } : item);
-      } else {
-        // Determine effective price (variant overrides base)
-        let price = (product.salePrice != null && product.salePrice < product.price) ? product.salePrice : product.price;
-        if (variantLabel && Array.isArray(product.variants)) {
-          const v = product.variants.find((v: any)=> v.label === variantLabel);
-            if (v) price = (v.salePrice != null && v.salePrice < v.price) ? v.salePrice : v.price;
+      // Stable product identity across data sources
+      const productKey = product.id ?? product._id ?? product.slug ?? (product.name || 'unknown');
+      // Robust variant resolution (explicit selection first)
+      let variantLabel: string | null = null;
+      try {
+        const normalize = (s: any) => typeof s === 'string' ? s.trim().toLowerCase() : '';
+        // 1. Direct explicit field
+        if (product.variantLabel) variantLabel = product.variantLabel;
+        // 2. tempSelectedVariant object
+        if (!variantLabel && product.tempSelectedVariant?.label) variantLabel = product.tempSelectedVariant.label;
+        // 3. selectedVariantLabel even if variants array missing
+        if (!variantLabel && product.selectedVariantLabel) variantLabel = product.selectedVariantLabel;
+        // 4. Attempt tolerant lookup inside variants (case / whitespace insensitive)
+        if (!variantLabel && product.selectedVariantLabel && Array.isArray(product.variants)) {
+          const target = normalize(product.selectedVariantLabel);
+          const found = product.variants.find((v: any)=> normalize(v.label) === target);
+          if (found?.label) variantLabel = found.label;
         }
-        updatedCart = [...prev, {
-          id: product.id,
-          name: product.name + (variantLabel ? ` (${variantLabel})` : ''),
-          price,
-          quantity: 1,
-          image: product.image,
-          variantLabel: variantLabel || undefined,
-        } as any];
+      } catch { /* ignore */ }
+      if (!variantLabel) {
+        // fallback to legacy props if any
+        variantLabel = product.tempSelectedVariant?.label || product.selectedVariantLabel || null;
       }
-      return updatedCart;
+      // SAFEGUARD: if product has variants but caller didn't attach a label, auto-pick preferred (30g else first)
+      if (!variantLabel && Array.isArray(product.variants) && product.variants.length > 0) {
+        const preferred = product.variants.find((v: any) => (v.label || '').toLowerCase() === '30g') || product.variants[0];
+        if (preferred?.label) variantLabel = preferred.label;
+      }
+      // SECONDARY SAFEGUARD: if product object itself has no variants but a global enriched list does, try to enrich
+      if (!variantLabel && (!Array.isArray(product.variants) || product.variants.length === 0)) {
+        try {
+          const globalList: any[] | undefined = (window as any).__ALL_PRODUCTS;
+          if (Array.isArray(globalList)) {
+            const match = globalList.find(p => (p.id || p._id || p.slug) === (product.id || product._id || product.slug));
+            if (match && Array.isArray((match as any).variants) && (match as any).variants.length) {
+              const vars: any[] = (match as any).variants;
+              const pref = vars.find(v => (v.label || '').toLowerCase() === '30g') || vars[0];
+              if (pref?.label) {
+                variantLabel = pref.label;
+                // Merge variants onto product so price logic below can use them
+                product = { ...product, variants: vars };
+              }
+            }
+          }
+        } catch {}
+      }
+      const itemKey = variantLabel ? `${productKey}::${variantLabel}` : String(productKey);
+      try {
+        console.info('[CART:add] productKey', productKey, 'variantLabel', variantLabel, 'itemKey', itemKey, {
+          selectedVariantLabel: product.selectedVariantLabel,
+          explicitVariantLabelField: product.variantLabel,
+            tempSelectedVariant: product.tempSelectedVariant ? { l: product.tempSelectedVariant.label, p: product.tempSelectedVariant.price, s: product.tempSelectedVariant.salePrice } : null,
+          variantsSnapshot: Array.isArray(product.variants) ? product.variants.map((v:any)=>({ l:v.label, p:v.price, s:v.salePrice })) : 'no-array'
+        });
+        if (!variantLabel && (product.selectedVariantLabel || product.tempSelectedVariant)) {
+          console.warn('[CART:add WARN] Expected variant label but resolution failed. Falling back to base product.');
+        }
+      } catch {}
+      const keyMatch = (item: any) => item.id === itemKey;
+      const existingItem = prev.find(keyMatch);
+      if (existingItem) return prev.map(item => keyMatch(item) ? { ...item, quantity: item.quantity + 1 } : item);
+      // Compute effective price from variant if any
+  // Start with precomputed variant price if provided
+  let price = (variantLabel && product.effectiveVariantPrice!=null) ? product.effectiveVariantPrice : (product.salePrice != null && product.salePrice < product.price) ? product.salePrice : product.price;
+      if (variantLabel) {
+        if (Array.isArray(product.variants)) {
+          const v = product.variants.find((v: any)=> v.label === variantLabel);
+          if (v) price = (v.salePrice != null && v.salePrice < v.price) ? v.salePrice : v.price;
+        } else if (product.tempSelectedVariant && product.tempSelectedVariant.label === variantLabel) {
+          const v = product.tempSelectedVariant;
+            price = (v.salePrice != null && v.salePrice < v.price) ? v.salePrice : v.price;
+        }
+      }
+      return [...prev, {
+        id: itemKey,
+        baseProductId: productKey,
+        name: product.name + (variantLabel ? ` (${variantLabel})` : ''),
+        price,
+        quantity: 1,
+        image: product.image,
+        variantLabel: variantLabel || undefined,
+      } as any];
     });
+    // Defer logging until after state update
+    setTimeout(()=>{
+      try {
+        const key = product.id ?? product._id ?? product.slug ?? (product.name || 'unknown');
+        const storageKey = resolveCartKey();
+        const raw = localStorage.getItem(storageKey);
+        const parsed = raw ? JSON.parse(raw) : null;
+        console.info('[CART:post-add] storageSnapshot', { storageKey, parsed });
+      } catch {}
+    },0);
   };
 
   const clearCart = () => {

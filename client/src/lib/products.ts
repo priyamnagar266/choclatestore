@@ -1,5 +1,6 @@
 export interface CartItem {
-  id: number;
+  id: string; // composite id (productKey or productKey::variantLabel)
+  baseProductId?: string; // original product id without variant suffix
   name: string;
   price: number;
   quantity: number;

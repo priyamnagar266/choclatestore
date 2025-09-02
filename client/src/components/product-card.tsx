@@ -109,10 +109,18 @@ export default function ProductCard({ product, onAddToCart, onBuyNow, withModal 
           Button,
           {
             onClick: (e: React.MouseEvent) => {
-              // Prevent parent Link (anchor) navigation when clicking Add to Cart
               e.preventDefault();
               e.stopPropagation();
-              onAddToCart(product);
+              const variantsArr: any[] = Array.isArray((product as any).variants)? (product as any).variants : [];
+              let enriched: any = product;
+              if (variantsArr.length) {
+                const pref = variantsArr.find(v=> (v.label||'').toLowerCase()==='30g') || variantsArr[0];
+                if (pref) {
+                  const eff = (pref.salePrice!=null && pref.salePrice < pref.price) ? pref.salePrice : pref.price;
+                  enriched = { ...product, tempSelectedVariant: pref, selectedVariantLabel: pref.label, variantLabel: pref.label, effectiveVariantPrice: eff, variants: variantsArr };
+                }
+              }
+              onAddToCart(enriched);
             },
             className: "bg-primary text-white hover:bg-green-800 transition-colors h-8 w-full xs:w-auto px-2 sm:px-3 text-xs sm:text-sm",
             disabled: product.inStock === 0

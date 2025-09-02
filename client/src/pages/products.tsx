@@ -1,5 +1,4 @@
 import React from "react";
-import { Link } from "wouter";
 import ProductCard from "@/components/product-card";
 
 import { useCart } from "@/context/CartContext";
@@ -15,8 +14,17 @@ const ProductsPage = () => {
   const [productsByCategory, setProductsByCategory] = React.useState<any>({});
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  const { cart, addToCart, showCart, closeCart, openCart } = useCart();
+  const { cart, addToCart: contextAddToCart, showCart, closeCart, openCart } = useCart();
   const { toast } = useToast();
+  const handleAdd = (p: any) => {
+    contextAddToCart(p);
+    toast({ title: 'Added to cart!', description: `${p.name}${p.variantLabel?` (${p.variantLabel})`:''} has been added to your cart.` });
+  };
+
+  // Flatten all products (for modal suggestions) BEFORE any early returns to keep hook order stable
+  const allProducts = React.useMemo(() => (
+    Object.values(productsByCategory).flat() as any[]
+  ), [productsByCategory]);
 
   React.useEffect(() => {
     fetch('/productsByCategory.json')
@@ -59,43 +67,12 @@ const ProductsPage = () => {
                 {category}
               </h2>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {(products as any[]).map((product: any, i: number) => {
-              if (product.slug) {
-                return (
-                  <Link
-                    key={product.id}
-                    to={`/products/${product.slug}`}
-                    className="transition-transform hover:scale-[1.03] hover:shadow-2xl rounded-xl bg-white/90 border border-gray-100 p-2 md:p-3 block"
-                    style={{ animationDelay: `${i * 60}ms` }}
-                  >
-                    <ProductCard product={product} onAddToCart={() => {
-                      addToCart(product);
-                      toast({
-                        title: "Added to cart!",
-                        description: `${product.name} has been added to your cart.`,
-                      });
-                    }} withModal={false} />
-                  </Link>
-                );
-              } else {
-                return (
-                  <div
-                    key={product.id}
-                    className="transition-transform rounded-xl bg-white/90 border border-gray-100 p-2 md:p-3 block opacity-50 cursor-not-allowed"
-                    style={{ animationDelay: `${i * 60}ms` }}
-                  >
-                    <ProductCard product={product} onAddToCart={() => {
-                      addToCart(product);
-                      toast({
-                        title: "Added to cart!",
-                        description: `${product.name} has been added to your cart.`,
-                      });
-                    }} withModal={false} />
-                  </div>
-                );
-              }
-            })}
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
+            {(products as any[]).map((product: any, i: number) => (
+              <div key={product.id} style={{ animationDelay: `${i * 60}ms` }}>
+                <ProductCard product={product} onAddToCart={handleAdd} productsAll={allProducts} />
+              </div>
+            ))}
           </div>
         </section>
       ))}

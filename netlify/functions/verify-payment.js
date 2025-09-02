@@ -11,8 +11,29 @@ async function maybeCreateOrder(orderData, razorpayPaymentId) {
     const { getDb } = await import('./lib/db.js');
     const db = await getDb();
     const orders = db.collection('orders');
+    // Normalize items: some flows may pass products instead of items
+    let items = [];
+    if (Array.isArray(orderData.items)) items = orderData.items;
+    else if (Array.isArray(orderData.products)) {
+      items = orderData.products.map(p => ({
+        productId: String(p.productId || p.id || ''),
+        quantity: Number(p.quantity) || 1,
+        variantLabel: p.variantLabel || (p.name && /\(([^)]+)\)$/.test(p.name) ? p.name.match(/\(([^)]+)\)$/)[1] : undefined),
+        name: p.name,
+        price: p.price
+      }));
+    }
+    // Ensure each item retains effective price & name; don't overwrite if already present
+    items = items.map(it => ({
+      productId: it.productId,
+      quantity: it.quantity,
+      variantLabel: it.variantLabel,
+      name: it.name,
+      price: it.price
+    }));
     const doc = {
       ...orderData,
+      items,
       razorpayPaymentId,
       status: orderData.status || 'placed',
       createdAt: new Date(),

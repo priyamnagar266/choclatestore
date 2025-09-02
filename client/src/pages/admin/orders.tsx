@@ -39,7 +39,7 @@ import { useAdminAuth } from '@/components/admin-auth';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 
-interface OrderRow { id: string; total: number; subtotal?: number; discount?: number; deliveryCharges?: number; status: string; paymentStatus: string; createdAt: string; customerName?: string; customerEmail?: string; items: { productId: string; quantity: number; name?: string; price?: number }[]; }
+interface OrderRow { id: string; total: number; subtotal?: number; discount?: number; deliveryCharges?: number; status: string; paymentStatus: string; createdAt: string; customerName?: string; customerEmail?: string; items: { productId: string; quantity: number; variantLabel?: string; name?: string; price?: number }[]; }
 
 export default function AdminOrders(){
   const { user } = useAuth();
@@ -170,7 +170,32 @@ export default function AdminOrders(){
     y+=6; doc.line(left, y, left+contentWidth, y); y+=4; doc.setFont('helvetica','normal');
     let alt=false;
     for(let i=0;i<(o.items||[]).length;i++){
-      let it = o.items[i]; it = await resolveProduct(it); const name = it.name || `Unknown (${it.productId})`;
+      let it = o.items[i]; it = await resolveProduct(it);
+      let baseName = it.name || `Unknown (${it.productId})`;
+      // Derive/infer variant label if missing
+      let vLabel = it.variantLabel;
+      if (!vLabel) {
+        // Try to parse from existing name suffix
+        const m = baseName.match(/\(([^)]+)\)$/);
+        if (m) vLabel = m[1];
+      }
+      // Infer by comparing prices for same product id across items (if multiple variants of same product present)
+      if (!vLabel) {
+        const siblings = (o.items||[]).filter((s:any)=> String(s.productId) === String(it.productId));
+        if (siblings.length > 1) {
+          // Sort distinct prices ascending, map first->'30g', second->'60g' heuristic if labels absent
+          const distinctPrices = Array.from(new Set(siblings.map((s:any)=> s.price).filter((p:any)=> p!=null))).sort((a:any,b:any)=>a-b);
+          if (distinctPrices.length > 1) {
+            const idx = distinctPrices.indexOf(it.price);
+            if (idx === 0) vLabel = '30g'; else if (idx === 1) vLabel = '60g';
+          }
+        }
+      }
+      if (vLabel) {
+        const alreadyHas = /\([^()]*\)$/.test(baseName) && baseName.toLowerCase().includes(vLabel.toLowerCase());
+        if (!alreadyHas) baseName += ` (${vLabel})`;
+      }
+      const name = baseName;
       const price = (it.price!==undefined? it.price:0)||0; const lineTotal = price*(it.quantity||0);
         const nameWrap = doc.splitTextToSize(name, (col.qty - col.name) - 8);
         const rowBaseIncrement = isA6?13:16;

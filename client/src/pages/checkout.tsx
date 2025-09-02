@@ -105,8 +105,11 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
         // Fix: Ensure items array is correctly mapped to productId and quantity
         const items = Array.isArray(orderDataWithoutId.products)
           ? orderDataWithoutId.products.map((p: any) => ({
-              productId: p.id?.toString() || p.productId?.toString() || '',
-              quantity: p.quantity
+              productId: (p.baseProductId || p.productId || (typeof p.id === 'string' ? p.id.split('::')[0] : p.id))?.toString() || '',
+              quantity: p.quantity,
+              variantLabel: p.variantLabel || (p.name && /\(([^)]+)\)$/.test(p.name) ? p.name.match(/\(([^)]+)\)$/)?.[1] : undefined),
+              name: p.name,
+              price: p.price
             }))
           : [];
         let authUserId: string | undefined;

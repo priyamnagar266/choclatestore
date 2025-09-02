@@ -56,7 +56,7 @@ const CartSheet: React.FC = () => {
                   className="w-20 h-20 object-cover rounded-md flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0 space-y-1">
-                  <h4 className="font-medium text-gray-900 text-sm sm:text-base leading-snug line-clamp-2">
+                  <h4 className="font-medium text-gray-900 text-sm sm:text-base leading-snug">
                     {item.name}
                   </h4>
                   <div className="flex items-center gap-3 flex-wrap">
@@ -185,6 +185,7 @@ const CartSheet: React.FC = () => {
                 } catch {}
                 const newPendingOrder = {
                   ...pendingOrder,
+                  // cartItems already contain variantLabel and name with variant appended
                   products: cartItems,
                   subtotal,
                   discount,

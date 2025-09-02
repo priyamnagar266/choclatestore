@@ -321,6 +321,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const incoming = { ...req.body };
   if (!incoming.userId || incoming.userId === '') incoming.userId = userId;
   const orderData = insertOrderSchema.parse(incoming);
+  // Normalize each item to ensure optional variant fields are retained
+  if (Array.isArray(orderData.items)) {
+    orderData.items = orderData.items.map((it:any)=>({
+      productId: it.productId,
+      quantity: it.quantity,
+      variantLabel: it.variantLabel,
+      name: it.name,
+      price: it.price
+    }));
+  }
 
       // Create order in storage
       const order = await storage.createOrder(orderData);
@@ -973,8 +983,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           items = items.map((it:any)=>{
             const key = String(it.productId);
-            const found = map[key];
-            return { ...it, name: found?.name ?? it.name, price: found?.price ?? it.price };
+            const found: any = map[key];
+            // Preserve original fields (including variantLabel, price) unless missing
+            let name = it.name;
+            if (!name && found?.name) name = found.name;
+            let price = it.price; // price saved at order creation (variant-effective) should win
+            if (price === undefined || price === null) {
+              // Attempt variant-specific resolution if variantLabel present
+              if (it.variantLabel && Array.isArray(found?.variants)) {
+                const v = found.variants.find((v:any)=> (v?.label||'').toLowerCase() === it.variantLabel.toLowerCase());
+                if (v) price = v.salePrice ?? v.price ?? price;
+              }
+              // Fallback to product sale/base price if still missing
+              if (price === undefined || price === null) price = found?.salePrice ?? found?.price ?? price;
+            }
+            // Infer variantLabel from name suffix if still missing
+            let variantLabel = it.variantLabel;
+            if (!variantLabel && typeof name === 'string') {
+              const m = name.match(/\(([^)]+)\)$/);
+              if (m) variantLabel = m[1];
+            }
+            return { ...it, name, price };
           });
         }
       } catch {}
@@ -994,7 +1023,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         paymentStatus: (raw as any).razorpayPaymentId ? 'paid' : 'unpaid',
         razorpayPaymentId: (raw as any).razorpayPaymentId || null,
         createdAt: (raw as any).createdAt,
-  items: items.map((it:any)=> ({ productId: it.productId, quantity: it.quantity, name: it.name, price: it.price }))
+  items: items.map((it:any)=> ({
+    productId: it.productId,
+    quantity: it.quantity,
+    variantLabel: it.variantLabel,
+    name: it.name,
+    price: it.price
+  }))
       };
       res.json(dto);
     } catch (e:any) {
