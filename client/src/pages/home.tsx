@@ -101,9 +101,17 @@ export default function Home() {
 
   // Direct products fetch (no localStorage caching; always server data)
   const { data: products = [] } = useQuery<Product[]>({
-    queryKey: ['static-products'],
+    queryKey: ['products-live'],
     queryFn: async () => {
-      // Attempt manifest-based hashed file for better cache busting
+      // 1. Try live API first (ensures immediate reflection of bestseller/sale changes)
+      try {
+        const res = await apiFetch('/api/products', { headers: { 'Cache-Control': 'no-cache' } });
+        if (res.ok) {
+          const live = await res.json();
+          if (Array.isArray(live) && live.length) return live;
+        }
+      } catch {}
+      // 2. Fallback: hashed static manifest
       try {
         const manifestRes = await fetch('/products-manifest.json', { cache: 'no-cache' });
         if (manifestRes.ok) {
@@ -114,17 +122,14 @@ export default function Home() {
           }
         }
       } catch {}
-      // Fallback legacy static file
+      // 3. Legacy static file
       try {
         const r = await fetch('/products.json', { cache: 'no-cache' });
         if (r.ok) return await r.json();
       } catch {}
-      // Final fallback: API
-      const res = await apiFetch('/api/products');
-      if (!res.ok) throw new Error('Failed to fetch products');
-      return res.json();
+      return [] as Product[];
     },
-    staleTime: 60_000,
+    staleTime: 30_000,
     refetchOnWindowFocus: false,
   });
 
@@ -309,7 +314,7 @@ export default function Home() {
         updatedCart = [...prev, {
           id: product.id,
           name: product.name,
-          price: product.price,
+          price: (product as any).salePrice != null && (product as any).salePrice < product.price ? (product as any).salePrice : product.price,
           quantity: 1,
           image: product.image,
         }];

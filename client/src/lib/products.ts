@@ -4,6 +4,7 @@ export interface CartItem {
   price: number;
   quantity: number;
   image: string;
+  variantLabel?: string; // optional variant reference
 }
 
 export interface CartState {

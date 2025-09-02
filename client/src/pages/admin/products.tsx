@@ -22,11 +22,13 @@ interface Product {
   name: string;
   description: string;
   price: number | string; // backend may return string (e.g. from numeric/decimal)
+  salePrice?: number;
   image: string;
   benefits: string[];
   category: string;
   inStock: number;
   bestseller?: boolean;
+  variants?: { label: string; price: number; salePrice?: number; inStock?: number; }[];
   energyKcal?: number; proteinG?: number; carbohydratesG?: number; totalSugarG?: number; addedSugarG?: number; totalFatG?: number; saturatedFatG?: number; transFatG?: number;
 }
 
@@ -35,12 +37,14 @@ interface ProductFormData {
   slug: string;
   description: string;
   price: number;
+  salePrice?: number;
   image: string; // URL fallback
   imageFile: File | null; // optional file upload
   benefits: string[];
   category: string;
   inStock: number;
   bestseller?: boolean;
+  variants?: { label: string; price: number; salePrice?: number; inStock?: number; }[];
   energyKcal?: number; proteinG?: number; carbohydratesG?: number; totalSugarG?: number; addedSugarG?: number; totalFatG?: number; saturatedFatG?: number; transFatG?: number;
 }
 
@@ -61,12 +65,14 @@ export default function AdminProducts() {
     slug: "",
     description: "",
     price: 0,
+  salePrice: undefined,
     image: "",
     imageFile: null,
     benefits: [],
     category: "",
     inStock: 0,
   bestseller: false,
+  variants: [],
     energyKcal: undefined,
     proteinG: undefined,
     carbohydratesG: undefined,
@@ -79,6 +85,29 @@ export default function AdminProducts() {
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   // Keep a raw string for benefits so typing doesn't constantly reformat & reset cursor
   const [benefitsRaw, setBenefitsRaw] = useState("");
+  // Fixed weight variant fields (30g & 60g)
+  const [v30Price, setV30Price] = useState<string>('');
+  const [v30Sale, setV30Sale] = useState<string>('');
+  const [v60Price, setV60Price] = useState<string>('');
+  const [v60Sale, setV60Sale] = useState<string>('');
+  // Recalculate base product price/salePrice automatically from variants (lowest prices)
+  useEffect(()=>{
+    const prices: number[] = [];
+    const saleCandidates: number[] = [];
+    const p30 = parseFloat(v30Price);
+    const p60 = parseFloat(v60Price);
+    if(!Number.isNaN(p30) && p30>0) prices.push(p30);
+    if(!Number.isNaN(p60) && p60>0) prices.push(p60);
+    const s30 = parseFloat(v30Sale);
+    if(!Number.isNaN(s30) && s30>0 && !Number.isNaN(p30) && s30 < p30) saleCandidates.push(s30);
+    const s60 = parseFloat(v60Sale);
+    if(!Number.isNaN(s60) && s60>0 && !Number.isNaN(p60) && s60 < p60) saleCandidates.push(s60);
+    setFormData(f=> ({
+      ...f,
+      price: prices.length ? Math.min(...prices) : 0,
+      salePrice: saleCandidates.length ? Math.min(...saleCandidates) : undefined,
+    }));
+  }, [v30Price,v30Sale,v60Price,v60Sale]);
   const [page, setPage] = useState(1);
   const pageSize = 20;
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -111,10 +140,30 @@ export default function AdminProducts() {
     if (payload.slug) fd.append('slug', payload.slug);
     fd.append('description', payload.description);
     fd.append('price', String(payload.price));
+  if (payload.salePrice != null && !Number.isNaN(payload.salePrice)) fd.append('salePrice', String(payload.salePrice)); else fd.append('salePrice','');
     fd.append('category', payload.category);
   fd.append('inStock', String(payload.inStock));
   if (typeof payload.bestseller === 'boolean') fd.append('bestseller', String(payload.bestseller));
     fd.append('benefits', payload.benefits.join(','));
+    // Build variants array from fixed weight fields (overrides free-form variants if provided)
+    const fixedVariants: any[] = [];
+    const p30 = parseFloat(v30Price);
+    if (!Number.isNaN(p30) && p30 > 0) {
+      const s30 = parseFloat(v30Sale);
+      fixedVariants.push({ label: '30g', price: p30, ...( !Number.isNaN(s30) && s30>0 ? { salePrice: s30 }: {} ) });
+    }
+    const p60 = parseFloat(v60Price);
+    if (!Number.isNaN(p60) && p60 > 0) {
+      const s60 = parseFloat(v60Sale);
+      fixedVariants.push({ label: '60g', price: p60, ...( !Number.isNaN(s60) && s60>0 ? { salePrice: s60 }: {} ) });
+    }
+    if (fixedVariants.length) {
+      fd.append('variants', JSON.stringify(fixedVariants));
+    } else if (payload.variants && payload.variants.length) {
+      fd.append('variants', JSON.stringify(payload.variants));
+    } else {
+      fd.append('variants', '');
+    }
     if (payload.imageFile) {
       fd.append('image', payload.imageFile);
     } else if (payload.image) {
@@ -202,8 +251,9 @@ export default function AdminProducts() {
   });
 
   const resetForm = () => {
-  setFormData({ name: '', slug: '', description: '', price: 0, image: '', imageFile: null, benefits: [], category: '', inStock: 0, bestseller:false });
+  setFormData({ name: '', slug: '', description: '', price: 0, salePrice: undefined, image: '', imageFile: null, benefits: [], category: '', inStock: 0, bestseller:false, variants: [] });
     setBenefitsRaw('');
+    setV30Price(''); setV30Sale(''); setV60Price(''); setV60Sale('');
     setSlugManuallyEdited(false);
     setEditingProduct(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -220,8 +270,15 @@ export default function AdminProducts() {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
-  setFormData({ name: product.name, slug: (product as any).slug || '', description: product.description, price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, image: product.image, imageFile: null, benefits: product.benefits, category: product.category, inStock: product.inStock, bestseller: product.bestseller || false, energyKcal: product.energyKcal, proteinG: product.proteinG, carbohydratesG: product.carbohydratesG, totalSugarG: product.totalSugarG, addedSugarG: product.addedSugarG, totalFatG: product.totalFatG, saturatedFatG: product.saturatedFatG, transFatG: product.transFatG });
+  setFormData({ name: product.name, slug: (product as any).slug || '', description: product.description, price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, salePrice: (product as any).salePrice != null ? Number((product as any).salePrice) : undefined, image: product.image, imageFile: null, benefits: product.benefits, category: product.category, inStock: product.inStock, bestseller: product.bestseller || false, variants: product.variants || [], energyKcal: product.energyKcal, proteinG: product.proteinG, carbohydratesG: product.carbohydratesG, totalSugarG: product.totalSugarG, addedSugarG: product.addedSugarG, totalFatG: product.totalFatG, saturatedFatG: product.saturatedFatG, transFatG: product.transFatG });
   setBenefitsRaw(product.benefits?.join(', ') || '');
+    // Prefill fixed weight fields if variants exist
+    const v30 = (product.variants || []).find(v=> v.label.toLowerCase() === '30g');
+    const v60 = (product.variants || []).find(v=> v.label.toLowerCase() === '60g');
+    setV30Price(v30 ? String(v30.price) : '');
+    setV30Sale(v30 && v30.salePrice != null ? String(v30.salePrice) : '');
+    setV60Price(v60 ? String(v60.price) : '');
+    setV60Sale(v60 && v60.salePrice != null ? String(v60.salePrice) : '');
     setIsDialogOpen(true);
   };
   // Auto slug generation
@@ -299,12 +356,39 @@ export default function AdminProducts() {
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="price">Price</Label>
-                  <Input id="price" type="number" step="0.01" value={formData.price} onChange={(e)=>setFormData({...formData,price:parseFloat(e.target.value)||0})} required />
-                </div>
-                <div>
                   <Label htmlFor="inStock">Stock</Label>
                   <Input id="inStock" type="number" value={formData.inStock} onChange={(e)=>setFormData({...formData,inStock:parseInt(e.target.value)||0})} required />
+                </div>
+                <div className="col-span-2 flex flex-col justify-end text-[11px] text-muted-foreground">
+                  <div>Base Price & Sale Price auto-set from lowest variant values.</div>
+                  {formData.price>0 && (
+                    <div className="mt-1 flex gap-2 items-center">
+                      <span className="font-medium">Base: {formatPrice(formData.price)}</span>
+                      {formData.salePrice!=null && formData.salePrice < formData.price && (
+                        <span className="text-green-600 font-medium">Sale: {formatPrice(formData.salePrice)}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="col-span-3 grid grid-cols-2 gap-4 border rounded-md p-3">
+                  <div className="col-span-2 font-semibold text-xs text-muted-foreground tracking-wide">Weight Variants (30g & 60g)</div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">30g Price</Label>
+                    <Input type="number" step="0.01" value={v30Price} onChange={e=> setV30Price(e.target.value)} placeholder="e.g. 50" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">30g Sale Price</Label>
+                    <Input type="number" step="0.01" value={v30Sale} onChange={e=> setV30Sale(e.target.value)} placeholder="Optional" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">60g Price</Label>
+                    <Input type="number" step="0.01" value={v60Price} onChange={e=> setV60Price(e.target.value)} placeholder="e.g. 90" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">60g Sale Price</Label>
+                    <Input type="number" step="0.01" value={v60Sale} onChange={e=> setV60Sale(e.target.value)} placeholder="Optional" />
+                  </div>
+                  <p className="col-span-2 text-[10px] text-muted-foreground">Leave price blank to omit that weight. Sale price must be less than its price.</p>
                 </div>
                 <div className="flex flex-col justify-end">
                   <Label htmlFor="bestseller" className="mb-1">Bestseller</Label>
@@ -413,6 +497,8 @@ export default function AdminProducts() {
                 <TableHead>Name</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Price</TableHead>
+                <TableHead>Sale</TableHead>
+                <TableHead>Variants</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead>Bestseller</TableHead>
                 <TableHead>Actions</TableHead>
@@ -431,6 +517,29 @@ export default function AdminProducts() {
                     <TableCell>{product.name}</TableCell>
                     <TableCell><Badge variant='outline'>{product.category}</Badge></TableCell>
                     <TableCell>{formatPrice(product.price)}</TableCell>
+                    <TableCell>{(product as any).salePrice ? (
+                      <div className='flex flex-col text-xs'>
+                        <span className='font-semibold text-green-700'>{formatPrice((product as any).salePrice as any)}</span>
+                        {((product as any).salePrice < product.price) && <span className='text-[10px] text-gray-400 line-through'>{formatPrice(product.price)}</span>}
+                        {typeof (product as any).salePrice === 'number' && (product as any).salePrice < product.price && (
+                          <span className='text-[10px] font-medium text-red-600'>
+                            -{(() => { const sp = Number((product as any).salePrice); const p = Number(product.price); if(!p || p<=0) return 0; return Math.round((1 - (sp / p)) * 100); })()}%
+                          </span>
+                        )}
+                      </div>
+                    ) : <span className='text-muted-foreground text-xs'>—</span>}</TableCell>
+                    <TableCell className='text-xs'>
+                      {product.variants && product.variants.length ? (
+                        <div className='flex flex-col gap-0.5 max-w-[140px]'>
+                          {product.variants.slice(0,3).map(v => (
+                            <span key={v.label} className='truncate'>
+                              {v.label}: {formatPrice(v.salePrice!=null && v.salePrice < v.price ? v.salePrice : v.price)}
+                            </span>
+                          ))}
+                          {product.variants.length > 3 && <span className='text-[10px] text-muted-foreground'>+{product.variants.length-3} more</span>}
+                        </div>
+                      ) : <span className='text-muted-foreground'>—</span>}
+                    </TableCell>
                     <TableCell>{product.inStock}</TableCell>
                     <TableCell>
                       <Button

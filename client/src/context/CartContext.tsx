@@ -67,22 +67,28 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const addToCart = (product: any) => {
     setCart(prev => {
-      const existingItem = prev.find(item => item.id === product.id);
+      // Distinguish items by variant label if present
+      const variantLabel = product.tempSelectedVariant?.label || product.selectedVariantLabel || null;
+      const keyMatch = (item: any) => item.id === product.id && item.variantLabel === variantLabel;
+      const existingItem = prev.find(keyMatch);
       let updatedCart;
       if (existingItem) {
-        updatedCart = prev.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+        updatedCart = prev.map(item => keyMatch(item) ? { ...item, quantity: item.quantity + 1 } : item);
       } else {
+        // Determine effective price (variant overrides base)
+        let price = (product.salePrice != null && product.salePrice < product.price) ? product.salePrice : product.price;
+        if (variantLabel && Array.isArray(product.variants)) {
+          const v = product.variants.find((v: any)=> v.label === variantLabel);
+            if (v) price = (v.salePrice != null && v.salePrice < v.price) ? v.salePrice : v.price;
+        }
         updatedCart = [...prev, {
           id: product.id,
-          name: product.name,
-          price: product.price,
+          name: product.name + (variantLabel ? ` (${variantLabel})` : ''),
+          price,
           quantity: 1,
           image: product.image,
-        }];
+          variantLabel: variantLabel || undefined,
+        } as any];
       }
       return updatedCart;
     });

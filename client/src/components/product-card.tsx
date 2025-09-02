@@ -20,6 +20,27 @@ interface ProductCardProps {
 export default function ProductCard({ product, onAddToCart, onBuyNow, withModal = true, productsAll }: ProductCardProps) {
   // Carousel state
   const images: string[] = Array.isArray(product.images) && product.images.length > 0 ? product.images : [product.image];
+  // Determine effective base price / sale considering variants (show min variant price for card teaser)
+  const variants: any[] = Array.isArray((product as any).variants) ? (product as any).variants : [];
+  let basePrice = product.price as number;
+  let salePrice: number | undefined = (product as any).salePrice;
+  if (variants.length) {
+    // pick cheapest variant (by salePrice if available else price)
+    const priced = variants.map(v => ({
+      price: v.price,
+      sale: (v.salePrice != null && v.salePrice < v.price) ? v.salePrice : undefined
+    }));
+    const cheapest = priced.reduce((min, cur) => {
+      const curEff = cur.sale ?? cur.price;
+      const minEff = min.sale ?? min.price;
+      return curEff < minEff ? cur : min;
+    }, priced[0]);
+    basePrice = cheapest.price;
+    salePrice = cheapest.sale;
+  }
+  const discountPct = typeof salePrice === 'number' && salePrice < basePrice && basePrice > 0
+    ? Math.round((1 - (salePrice / basePrice)) * 100)
+    : null;
 
   const card = React.createElement(
     Card as any,
@@ -38,7 +59,13 @@ export default function ProductCard({ product, onAddToCart, onBuyNow, withModal 
           alt: product.name,
           loading: "lazy",
           className: "w-full h-28 xs:h-32 sm:h-40 md:h-48 object-cover rounded-md"
-        })
+        }),
+        product.bestseller ? React.createElement('span', {
+          className: 'absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-[9px] xs:text-[10px] font-bold px-2 py-1 rounded shadow border border-yellow-500'
+        }, 'Bestseller') : null,
+        discountPct ? React.createElement('span', {
+          className: 'absolute top-2 left-2 bg-red-600 text-white text-[10px] xs:text-[11px] font-bold tracking-wide px-2 py-1 rounded-md shadow'
+        }, `-${discountPct}%`) : null
       ),
       React.createElement(
         "h3",
@@ -69,10 +96,14 @@ export default function ProductCard({ product, onAddToCart, onBuyNow, withModal 
       React.createElement(
         "div",
         { className: "flex flex-col xs:flex-row justify-between items-stretch xs:items-center gap-2" },
-        React.createElement(
-          "span",
-          { className: "text-[10px] xs:text-xs sm:text-sm font-semibold text-secondary xs:mr-2" },
-          formatPrice(product.price)
+        salePrice && salePrice < basePrice ? React.createElement(
+          'div', { className: 'flex flex-row items-center gap-2' },
+          React.createElement('span', { className: 'text-[12px] xs:text-sm sm:text-base font-bold text-secondary' }, formatPrice(salePrice)),
+          React.createElement('span', { className: 'text-[10px] xs:text-xs sm:text-sm line-through text-gray-400' }, formatPrice(basePrice))
+        ) : React.createElement(
+          'span',
+          { className: 'text-[10px] xs:text-xs sm:text-sm font-semibold text-secondary xs:mr-2' },
+          formatPrice(basePrice)
         ),
         React.createElement(
           Button,

@@ -27,7 +27,7 @@
     "id": 1,
     "promoMessage": "BUY 2 GET 1 FREE | Auto-applied at checkout",
     "slug": "khas-badam-dark-chocolate",
-    "updatedAt": "2025-09-02T10:28:44.948Z",
+    "updatedAt": "2025-09-02T09:48:10.869Z",
     "bestseller": true,
     "salePrice": 50,
     "variants": [
@@ -70,8 +70,8 @@
     "transFatG": 0,
     "id": 2,
     "slug": "cocoa-crunch-chocolate",
-    "bestseller": false,
-    "updatedAt": "2025-09-02T10:28:40.866Z",
+    "bestseller": true,
+    "updatedAt": "2025-09-02T09:54:41.645Z",
     "salePrice": 61,
     "variants": [
       {
@@ -113,8 +113,8 @@
     "transFatG": 0,
     "id": 3,
     "slug": "mint-fusion-dark-chocolate",
-    "bestseller": false,
-    "updatedAt": "2025-09-02T10:28:41.747Z",
+    "bestseller": true,
+    "updatedAt": "2025-09-02T09:55:23.854Z",
     "salePrice": 72,
     "variants": [
       {
@@ -156,8 +156,8 @@
     "transFatG": 0,
     "id": 4,
     "slug": "super-seeds-crunch-bar",
-    "bestseller": false,
-    "updatedAt": "2025-09-02T10:28:42.476Z",
+    "bestseller": true,
+    "updatedAt": "2025-09-02T09:58:56.817Z",
     "salePrice": 45,
     "variants": [
       {
@@ -243,8 +243,8 @@
     "transFatG": 0,
     "id": 6,
     "slug": "velvet-hazelnut-dark-chocolate",
-    "bestseller": true,
-    "updatedAt": "2025-09-02T10:28:50.002Z",
+    "bestseller": false,
+    "updatedAt": "2025-09-02T10:01:33.848Z",
     "salePrice": 60,
     "variants": [
       {
@@ -330,7 +330,7 @@
     "id": 8,
     "slug": "almond-power-bar",
     "bestseller": false,
-    "updatedAt": "2025-09-02T10:28:38.731Z",
+    "updatedAt": "2025-09-01T16:11:49.534Z",
     "variants": [
       {
         "label": "30g",
@@ -340,8 +340,7 @@
         "label": "60g",
         "price": 171
       }
-    ],
-    "salePrice": 80
+    ]
   },
   {
     "_id": "darkchoco-2",
@@ -380,10 +379,7 @@
         "label": "60g",
         "price": 130
       }
-    ],
-    "bestseller": false,
-    "salePrice": 70,
-    "updatedAt": "2025-09-02T10:28:37.893Z"
+    ]
   },
   {
     "_id": "darkchoco-4",
@@ -490,8 +486,8 @@
     "transFatG": 0,
     "id": 12,
     "slug": "70-intense-dark-chocolate",
-    "bestseller": true,
-    "updatedAt": "2025-09-02T10:28:53.203Z",
+    "bestseller": false,
+    "updatedAt": "2025-09-01T16:13:35.917Z",
     "variants": [
       {
         "label": "30g",
@@ -731,9 +727,7 @@
         "label": "60g",
         "price": 132
       }
-    ],
-    "bestseller": true,
-    "updatedAt": "2025-09-02T10:28:56.828Z"
+    ]
   },
   {
     "_id": "fusion-2",

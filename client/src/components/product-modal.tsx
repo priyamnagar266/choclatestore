@@ -25,6 +25,7 @@ const QUALITIES = [
 export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSuggestions = 2 }: ProductModalProps){
 	const [open, setOpen] = React.useState(false);
 	const [currentProduct, setCurrentProduct] = React.useState<Product>(product);
+	const [selectedVariantLabel, setSelectedVariantLabel] = React.useState<string | null>(null);
 	const [imgIdx, setImgIdx] = React.useState(0);
 	const [suggestions, setSuggestions] = React.useState<Product[]>([]);
 	const images: string[] = Array.isArray(currentProduct.images) && currentProduct.images.length>0 ? currentProduct.images : [currentProduct.image];
@@ -45,6 +46,8 @@ export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSu
 	React.useEffect(()=>{ if(open) recompute(); },[open, recompute]);
 	React.useEffect(()=>{ setImgIdx(0); },[currentProduct]);
 	React.useEffect(()=>{ if(!open) setCurrentProduct(product); },[product, open]);
+	// Reset variant on product change
+	React.useEffect(()=>{ setSelectedVariantLabel(null); },[currentProduct]);
 	React.useEffect(()=>{ if(!open) return; window.history.pushState({ pm:true }, ''); const onPop=()=>setOpen(false); window.addEventListener('popstate', onPop); return ()=>{ window.removeEventListener('popstate', onPop); if(window.history.state?.pm){ try{ window.history.back(); }catch{} } }; },[open]);
 	const hasNutrition = [currentProduct.energyKcal,currentProduct.proteinG,currentProduct.carbohydratesG,currentProduct.totalSugarG,currentProduct.addedSugarG,currentProduct.totalFatG,currentProduct.saturatedFatG,currentProduct.transFatG].some(v=> v!=null && !isNaN(Number(v as any)));
 	const h = React.createElement;
@@ -89,7 +92,43 @@ export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSu
 							h(ProductShare,{ name:currentProduct.name, url: typeof window!=='undefined' ? window.location.origin + '/products/' + (currentProduct.slug || (currentProduct as any).id || (currentProduct as any)._id) : '', image: currentProduct.image })
 						),
 						h(DialogDescription,{ className:'mt-2 text-sm md:text-base text-muted-foreground leading-relaxed' }, currentProduct.description),
-						h('div',{className:'flex items-center gap-4'}, h('span',{className:'text-2xl font-bold text-secondary'}, formatPrice(currentProduct.price))),
+						// Pricing block (variant aware): show effective sale if any
+						h('div',{className:'flex flex-col gap-3'},[
+							h('div',{className:'flex items-center gap-4'},(()=>{
+								const variants: any[] = Array.isArray((currentProduct as any).variants) ? (currentProduct as any).variants : [];
+								let basePrice = currentProduct.price;
+								let baseSale: number | undefined = (currentProduct as any).salePrice;
+								if (variants.length && selectedVariantLabel) {
+									const v = variants.find(v=> v.label === selectedVariantLabel);
+									if (v) { basePrice = v.price; baseSale = v.salePrice; }
+								}
+								if (baseSale != null && baseSale < basePrice) {
+									return [
+										h('span',{ key:'sale', className:'text-2xl font-bold text-secondary' }, formatPrice(baseSale)),
+										h('span',{ key:'orig', className:'text-lg font-semibold line-through text-gray-400/90' }, formatPrice(basePrice))
+									];
+								}
+								return h('span',{className:'text-2xl font-bold text-secondary'}, formatPrice(basePrice));
+							})()),
+							// Variant selector buttons
+							(()=>{
+								const variants: any[] = Array.isArray((currentProduct as any).variants) ? (currentProduct as any).variants : [];
+								if (!variants.length) return null;
+								return h('div',{className:'flex flex-wrap gap-2'}, variants.map(v => {
+									const active = selectedVariantLabel === v.label;
+									return h('button',{
+										key:v.label,
+										type:'button',
+										onClick:()=> setSelectedVariantLabel(v.label),
+										className:`px-3 py-1 rounded border text-sm ${active ? 'bg-primary text-white border-primary' : 'bg-white hover:bg-primary/5 border-gray-300'}`
+									}, [
+										v.label,
+										' ',
+										(v.salePrice != null && v.salePrice < v.price) ? h('span',{className:'text-xs font-semibold'}, formatPrice(v.salePrice)) : h('span',{className:'text-xs text-muted-foreground'}, formatPrice(v.price))
+									]);
+								}));
+							})()
+						]) ,
 						featureBadges,
 						hasNutrition && h('div',{},
 							h('h4',{className:'text-sm font-semibold mb-2 text-primary'},'Nutritional Information (per serving)'),

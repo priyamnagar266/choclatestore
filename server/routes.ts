@@ -88,6 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     name: z.string().min(1),
     description: z.string().min(1),
     price: z.coerce.number().nonnegative(),
+  salePrice: z.coerce.number().nonnegative().optional(),
     image: z.string().optional().default(''),
     benefits: z.preprocess(val => {
       if (Array.isArray(val)) return val;
@@ -96,6 +97,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }, z.array(z.string()).default([])),
     category: z.string().min(1),
     inStock: z.coerce.number().int().nonnegative().default(0),
+    // Variants: accept JSON string, array of objects, or empty
+    variants: z.preprocess(val => {
+      if (val == null || val === '' ) return [];
+      if (typeof val === 'string') {
+        try { const parsed = JSON.parse(val); if (Array.isArray(parsed)) return parsed; } catch {}
+        // Fallback simple DSL: label:price[:salePrice] comma separated
+        try {
+          const parts = (val as string).split(',').map(p=>p.trim()).filter(Boolean);
+          const arr = parts.map(p => {
+            const seg = p.split(':').map(s=>s.trim());
+            const [label, priceStr, saleStr] = seg;
+            const price = Number(priceStr);
+            const salePrice = saleStr!=null && saleStr!=='' ? Number(saleStr) : undefined;
+            return { label, price, salePrice };
+          }).filter(v=> v.label && !Number.isNaN(v.price));
+          return arr;
+        } catch { return []; }
+      }
+      if (Array.isArray(val)) return val;
+      return [];
+    }, z.array(z.object({
+      label: z.string().min(1),
+      price: z.coerce.number().nonnegative(),
+      salePrice: z.coerce.number().nonnegative().optional(),
+      inStock: z.coerce.number().int().nonnegative().optional(),
+    })).optional().default([])),
     energyKcal: z.coerce.number().nonnegative().optional(),
     proteinG: z.coerce.number().nonnegative().optional(),
     carbohydratesG: z.coerce.number().nonnegative().optional(),
@@ -653,7 +680,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log('[ADMIN CREATE] raw multipart fields', base);
       if (req.file) base.image = '/uploads/' + req.file.filename;
       try {
+        // Interpret blank salePrice as undefined
+        if (base.salePrice === '' || base.salePrice === null) delete base.salePrice;
         const parsed = productCreateSchema.parse(base);
+        if (parsed.salePrice != null && parsed.salePrice >= parsed.price) {
+          return res.status(400).json({ message: 'Sale price must be less than price' });
+        }
+        if (Array.isArray(parsed.variants)) {
+          for (const v of parsed.variants) {
+            if (v.salePrice != null && v.salePrice >= v.price) {
+              return res.status(400).json({ message: `Variant ${v.label} salePrice must be less than price` });
+            }
+          }
+        }
         const payload: any = { ...parsed, createdAt: new Date(), updatedAt: new Date() };
         const product = await storage.createProduct(payload);
   // Invalidate cache
@@ -680,8 +719,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateRaw: any = { ...body };
       if (req.file) updateRaw.image = '/uploads/' + req.file.filename;
       try {
+        const unset: any = {};
+        if (updateRaw.salePrice === '' || updateRaw.salePrice === null) { // allow clearing sale price
+          unset.salePrice = '';
+          delete updateRaw.salePrice;
+        }
         const parsedUpdate = productUpdateSchema.parse(updateRaw);
+        if (parsedUpdate.salePrice != null && parsedUpdate.price != null && parsedUpdate.salePrice >= parsedUpdate.price) {
+          return res.status(400).json({ message: 'Sale price must be less than price' });
+        }
+        if (Array.isArray(parsedUpdate.variants)) {
+          for (const v of parsedUpdate.variants) {
+            if (v.salePrice != null && v.salePrice >= v.price) {
+              return res.status(400).json({ message: `Variant ${v.label} salePrice must be less than price` });
+            }
+          }
+        }
         const update: any = { ...parsedUpdate, updatedAt: new Date() };
+        if (Object.keys(unset).length) {
+          await (await import('./db')).db.collection('products').updateOne({ id } as any, { $set: update, $unset: { salePrice: '' } });
+        }
         const ok = await storage.updateProduct(id, update);
         if (!ok) return res.status(404).json({ message: 'Product not found' });
         // Fresh DB read to ensure we return canonical doc

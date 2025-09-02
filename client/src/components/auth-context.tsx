@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import * as React from "react";
+const { createContext, useContext } = React;
 
 export type AuthUser = {
   // Support string or number ids (Mongo _id strings vs numeric ids)
@@ -19,10 +20,15 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [ready, setReady] = useState(false);
+  // Defensive: if React namespace failed to load (edge bundler issue), short-circuit to avoid hard crash
+  if (!(React as any)?.useState) {
+    console.error('[AuthProvider] React hooks unavailable');
+    return children as any;
+  }
+  const [user, setUser] = React.useState<AuthUser | null>(null);
+  const [ready, setReady] = React.useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     try {
       const stored = localStorage.getItem("authUser");
       if (stored) {
@@ -60,11 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Optionally keep cart per user; do not delete user-specific carts
   }
 
-  return (
-    <AuthContext.Provider value={{ user, login, logout, ready }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ user, login, logout, ready }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
