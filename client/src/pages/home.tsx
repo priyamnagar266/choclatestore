@@ -451,10 +451,9 @@ export default function Home() {
   <div className="min-h-screen bg-white">
     {showPopup && popupProduct && (
       <BestsellerPopup
-  image={popupProduct.image || "/logo.jpg"}
+        image={popupProduct.image || "/logo.jpg"}
         name={popupProduct.name}
-        location={popupLocation}
-        timeAgo={"just now"}
+        ctaText="Try it now"
         onClose={() => setShowPopup(false)}
       />
     )}

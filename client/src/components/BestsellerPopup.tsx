@@ -4,12 +4,14 @@ import React from "react";
 interface BestsellerPopupProps {
   image: string;
   name: string;
-  location: string;
-  timeAgo?: string; // optional relative time string
+  // Deprecated props kept optional for backward compatibility (ignored now)
+  location?: string;
+  timeAgo?: string;
+  ctaText?: string; // customizable CTA line (default: "Try it now")
   onClose: () => void;
 }
 
-export default function BestsellerPopup({ image, name, location, timeAgo, onClose }: BestsellerPopupProps) {
+export default function BestsellerPopup({ image, name, ctaText = 'Try it now', onClose }: BestsellerPopupProps) {
   return (
     <div
       className="fixed left-2 right-2 bottom-4 z-50 bg-[#14262e] text-white rounded-xl shadow-lg flex items-center gap-3 p-3 min-w-0 max-w-xs mx-auto animate-fade-in-up sm:left-4 sm:right-auto sm:bottom-8 sm:max-w-xs sm:p-4"
@@ -25,7 +27,7 @@ export default function BestsellerPopup({ image, name, location, timeAgo, onClos
           {name}
         </div>
         <div className="text-xs sm:text-sm font-body text-white/90 mt-0.5 tracking-wide">
-          Try this now
+          {ctaText}
         </div>
       </div>
       <button
