@@ -220,7 +220,7 @@ const ProductDetailPage: React.FC<Props> = ({ slug }) => {
 		) : null,
 		h('div',{className:'pt-2 sticky bottom-0 bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/70 border-t border-gray-200 pb-4'},
 			h('button',{
-				onClick:()=>{ addToCart(product); toast({ title: 'Added to cart!', description: product.name + ' has been added to your cart.' }); openCart(); },
+				onClick:()=>{ addToCart(product); toast({ title: 'Added to cart!', description: product.name + ' has been added to your cart.' }); },
 				disabled:product.inStock===0,
 				className:'w-full bg-primary hover:bg-green-800 text-white font-semibold py-4 rounded-xl text-lg transition disabled:opacity-60 disabled:cursor-not-allowed'
 			}, product.inStock===0? 'Out of Stock':'Add to Cart')
@@ -314,7 +314,7 @@ const ProductDetailPage: React.FC<Props> = ({ slug }) => {
 		// fixed add to cart
 		h('div',{className:'fixed bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur border-t border-gray-200 px-4 pt-3 pb-5'},
 			h('button',{
-				onClick:()=>{ addToCart(product); toast({ title: 'Added to cart!', description: product.name + ' has been added to your cart.' }); openCart(); },
+				onClick:()=>{ addToCart(product); toast({ title: 'Added to cart!', description: product.name + ' has been added to your cart.' }); },
 				disabled:product.inStock===0,
 				className:'w-full bg-primary hover:bg-green-800 text-white font-semibold py-4 rounded-xl text-lg transition disabled:opacity-60 disabled:cursor-not-allowed'
 			}, product.inStock===0? 'Out of Stock':'Add to Cart')
