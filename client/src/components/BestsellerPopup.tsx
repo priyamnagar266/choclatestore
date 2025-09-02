@@ -21,11 +21,11 @@ export default function BestsellerPopup({ image, name, location, timeAgo, onClos
         className="w-12 h-12 rounded-full object-cover border-2 border-white bg-white sm:w-14 sm:h-14"
       />
       <div className="flex-1 min-w-0">
-        <div className="text-xs sm:text-sm font-body">
-          <span className="font-semibold font-body">{location}</span> purchased{timeAgo ? ` • ${timeAgo}` : ''}
-        </div>
         <div className="font-heading text-sm sm:text-base font-bold text-[#ff3c3c] leading-tight break-words">
           {name}
+        </div>
+        <div className="text-xs sm:text-sm font-body text-white/90 mt-0.5 tracking-wide">
+          Try this now
         </div>
       </div>
       <button
