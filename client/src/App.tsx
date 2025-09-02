@@ -99,16 +99,21 @@ function Router() {
 
 
 export default function App() {
-  // Gentle backend warm-up: fire-and-forget health ping after initial paint & every 12 mins
+  // Gentle backend warm-up + prefetch critical read endpoints (products & testimonials).
   React.useEffect(()=>{
-    let aborted = false;
-    const ping = () => {
-      try { fetch('/api/health',{ cache:'no-cache' }).catch(()=>{}); } catch {}
-    };
-    // initial slight delay so first paint not delayed
-    const t = setTimeout(ping, 1500);
-    const interval = setInterval(ping, 12 * 60 * 1000); // 12 minutes < 15 min sleep window
-    return ()=>{ aborted = true; clearTimeout(t); clearInterval(interval); };
+    const prodKey = ['/api/products'];
+    const testiKey = ['/api/testimonials'];
+    // Prefetch only in browser & non-admin routes (since admin pages have separate data needs)
+    try {
+      queryClient.prefetchQuery({ queryKey: prodKey });
+      queryClient.prefetchQuery({ queryKey: testiKey });
+    } catch {}
+    const production = typeof window !== 'undefined' && !/localhost|127\.0\.0\.1/.test(window.location.hostname);
+    if (!production) return; // avoid noisy pings in local dev
+    const ping = () => { try { fetch('/api/health',{ cache:'no-cache' }).catch(()=>{}); } catch {} };
+    const t = setTimeout(ping, 1200); // slight delay after first paint
+    const interval = setInterval(ping, 11 * 60 * 1000); // every 11 minutes (< common 15m sleep)
+    return ()=>{ clearTimeout(t); clearInterval(interval); };
   },[]);
   return (
     <QueryClientProvider client={queryClient}>
