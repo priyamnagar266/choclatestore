@@ -101,38 +101,58 @@ export default function Home() {
   const [orderQuantities, setOrderQuantities] = useState<Record<string, number>>({});
 
   // Direct products fetch (no localStorage caching; always server data)
-  const { data: products = [] } = useQuery<Product[]>({
+  const { data: products = [], isLoading: productsLoading, isFetching: productsFetching } = useQuery<Product[]>({
     queryKey: ['products-live'],
     queryFn: async () => {
-      // 1. Try live API first (ensures immediate reflection of bestseller/sale changes)
-      try {
-        const res = await apiFetch('/api/products', { headers: { 'Cache-Control': 'no-cache' } });
-        if (res.ok) {
-          const live = await res.json();
-          if (Array.isArray(live) && live.length) return live;
-        }
-      } catch {}
-      // 2. Fallback: hashed static manifest
+      // Fast path: static hashed manifest
       try {
         const manifestRes = await fetch('/products-manifest.json', { cache: 'no-cache' });
         if (manifestRes.ok) {
           const manifest = await manifestRes.json();
-          if (manifest?.current) {
-            const hashed = await fetch('/' + manifest.current, { cache: 'no-cache' });
-            if (hashed.ok) return await hashed.json();
-          }
+            if (manifest?.current) {
+              const hashed = await fetch('/' + manifest.current, { cache: 'no-cache' });
+              if (hashed.ok) {
+                const staticData = await hashed.json();
+                if (Array.isArray(staticData) && staticData.length) return staticData;
+              }
+            }
         }
       } catch {}
-      // 3. Legacy static file
+      // Legacy static
       try {
         const r = await fetch('/products.json', { cache: 'no-cache' });
-        if (r.ok) return await r.json();
+        if (r.ok) { const legacy = await r.json(); if(Array.isArray(legacy) && legacy.length) return legacy; }
+      } catch {}
+      // Slow path: live API (may cold-start backend). Use timeout safeguard.
+      try {
+        const controller = new AbortController();
+        const t = setTimeout(()=> controller.abort(), 2500);
+        const res = await apiFetch('/api/products', { headers: { 'Cache-Control': 'no-cache' }, signal: controller.signal });
+        clearTimeout(t);
+        if(res.ok){ const live = await res.json(); if(Array.isArray(live)) return live; }
       } catch {}
       return [] as Product[];
     },
-    staleTime: 30_000,
+    staleTime: 60_000,
     refetchOnWindowFocus: false,
   });
+
+  // Background refresh from live API to update after static render (does not block initial paint)
+  useEffect(()=>{
+    let cancelled = false;
+    (async()=>{
+      try {
+        const res = await apiFetch('/api/products', { headers:{ 'Cache-Control':'no-cache' } });
+        if(res.ok){
+          const live = await res.json();
+          if(!cancelled && Array.isArray(live) && live.length){
+            queryClient.setQueryData(['products-live'], live);
+          }
+        }
+      } catch{}
+    })();
+    return ()=>{ cancelled = true; };
+  }, [queryClient]);
 
   // Expose products array globally for modal suggestion reuse (lightweight, read-only)
   useEffect(()=>{ (window as any).__ALL_PRODUCTS = products; try { window.dispatchEvent(new CustomEvent('products-ready')); } catch {} }, [products]);
@@ -447,414 +467,79 @@ export default function Home() {
 
   // Products now render all at once; show a small inline loading state only if still fetching
 
-  return (
-  <div className="min-h-screen bg-white">
-    {showPopup && popupProduct && (
-      <BestsellerPopup
-        image={popupProduct.image || "/logo.jpg"}
-        name={popupProduct.name}
-        ctaText="Try it now"
-        onClose={() => setShowPopup(false)}
-      />
-    )}
-      <Helmet>
-        <title>Buy Premium Functional Chocolates Online | Cokha</title>
-        <meta name="description" content="Shop handcrafted functional chocolates enriched with natural ingredients for mood, energy, focus and wellness." />
-        <meta name="keywords" content="functional chocolates,premium chocolates,handcrafted chocolate,energy bar,mood boosting chocolate,healthy dark chocolate,buy chocolates online" />
-        <link rel="canonical" href="https://your-domain.com/" />
-      </Helmet>
-  {/* Navigation is now handled by Layout */}
-      
-      {/* Hero Section (Video Background) */}
-      <section id="home" className="relative h-[70vh] min-h-[560px] w-full overflow-hidden anim-fade-in" data-anim>
-        {/* Video background */}
-        <video
-          className="absolute inset-0 w-full h-full object-cover"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          src={productVideo}
-        >
-          Your browser does not support the video tag.
-        </video>
-        {/* Translucent green overlay (lighter so video is visible) */}
-        <div className="absolute inset-0 bg-primary/55 backdrop-brightness-95" />
-        {/* Content */}
-        <div className="relative z-10 max-w-5xl mx-auto px-6 lg:px-8 h-full flex flex-col justify-center">
-          <div className="max-w-2xl">
-            <h1 className="text-4xl lg:text-6xl font-bold leading-tight mb-6 drop-shadow-md hero-animate text-white">
-              <span className="block">Bold On Nutrition,</span>
-              <span className="block">Big On Taste!</span>
-            </h1>
-            <p className="text-lg lg:text-xl mb-8 text-white max-w-xl font-medium tracking-wide leading-snug">
-              <span>Energy Bars,</span><br />
-              <span>Couverture Chocolates</span><br />
-              <span>&amp; Crisps</span>
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Button onClick={scrollToProducts} variant="cta" className="px-8 py-4 text-lg font-semibold rounded-xl">
-                Shop Now
-              </Button>
-              {/* Removed View Benefits button per request */}
-            </div>
-          </div>
-        </div>
-        {/* Subtle gradient fade bottom */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background/60 to-transparent" />
-      </section>
-
-      {/* Marquee USP Bar */}
-      <div className="marquee-wrapper bg-primary text-white py-3 border-y border-primary/30">
-        <div className="relative">
-          <div className="marquee-track gap-16 px-8 font-semibold tracking-wide text-sm md:text-base">
-            {Array.from({length:2}).map((_,i)=>(
-              <div key={i} className="flex gap-16">
-                <span>100% ORGANIC</span>
-                <span>SUGAR FREE</span>
-                <span>NO PRESERVATIVES</span>
-                <span>HAND CRAFTED</span>
-                <span>ARTISAN ENERGY BARS</span>
-              </div>
-            ))}
-          </div>
-          <div className="marquee-fade bg-gradient-to-r from-primary via-transparent to-primary opacity-20" />
-        </div>
-      </div>
-
-      {/* Products Section */}
-  <section id="products" className="py-20 bg-neutral anim-fade-up" data-anim>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-primary">Our Bestsellers</h2>
-            <p className="text-gray-600 mt-2">Customer favorites crafted for performance and taste</p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
-            {bestsellers.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={addToCart}
-                productsAll={products}
-              />
-            ))}
-            {bestsellers.length === 0 && (
-              <div className="col-span-full text-center text-sm text-muted-foreground py-8">No products available.</div>
-            )}
-          </div>
-
-          {products.length > 4 && (
-            <div className="mt-12 text-center">
-              <Button
-                onClick={() => setLocation('/products')}
-                variant="cta"
-                className="px-8 py-4 text-lg font-semibold rounded-xl"
-              >
-                View All Products
-              </Button>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Video Section */}
-  <section className="py-20 bg-primary text-white anim-fade-up" data-anim>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4">See How We Craft Excellence</h2>
-            <p className="text-xl opacity-90 max-w-3xl mx-auto">
-              Watch our artisans carefully blend ancient Indian superfoods with rich cocoa to create energy bars that nourish your mind and body.
-            </p>
-          </div>
-          <div className="max-w-4xl mx-auto">
-            <div className="relative bg-black rounded-xl overflow-hidden shadow-2xl">
-                <div className="aspect-video bg-gray-900 flex items-center justify-center relative">
-                <video 
-                  src={heroVideo}
-                  autoPlay
-                  muted
-                  playsInline
-                  loop
-                  preload="auto"
-                  poster="https://i.postimg.cc/cLZtLg16/Gemini-Generated-Image-wv9jaswv9jaswv9j.png"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded">
-
-                </div>
-                </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-  <section className="py-20 bg-white anim-fade-up" data-anim>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-primary mb-4">What Our Customers Say</h2>
-            <p className="text-xl text-gray-600">Real experiences from people who've transformed their energy and focus</p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {(testimonials || fallbackTestimonials).map((testimonial, index) => (
-              <Card key={index} className="bg-neutral p-8">
-                <CardContent className="p-0">
-                  <div className="flex items-center mb-4">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    ))}
-                  </div>
-                  <p className="text-gray-600 mb-6 italic">"{testimonial.text}"</p>
-                  <div className="flex items-center">
-                    <div className="w-12 h-12 rounded-full bg-white border border-neutral-300 flex items-center justify-center font-semibold mr-4 text-lg text-amber-500 shadow-sm select-none">
-                      {testimonial.name.charAt(0)}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-primary">{testimonial.name}</div>
-                      <div className="text-gray-500 text-sm">{testimonial.role}</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* About Us Section */}
-  <section id="aboutus" className="py-20 bg-neutral anim-fade-up" data-anim>
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center gap-12">
-          <div className="flex-1 text-left md:text-justify">
-            <h2 className="text-4xl font-bold text-primary mb-4">About Us</h2>
-            <p className="text-xl text-gray-600 mb-6">Cokha Energy Foods is dedicated to crafting premium energy bars using ancient Indian superfoods and rich cocoa. Our mission is to fuel your mind, elevate your mood, and energize your life naturally. We believe in honest nutrition, authentic flavors, and wellness for everyone.</p>
-            <div className="mt-8">
-              <Button
-                variant="cta"
-                className="px-8 py-4 text-lg font-semibold rounded-xl shadow-md hover:bg-[#e58800] transition-colors"
-                onClick={() => setLocation('/about')}
-              >
-                Learn About Us More
-              </Button>
-            </div>
-          </div>
-          <div className="flex-1 flex justify-center">
-            <img src="https://i.postimg.cc/nLv7Jfq6/image.png" />
-          </div>
-        </div>
-      </section>
-
-
-      {/* Contact Section */}
-  <section id="contact" className="py-20 bg-white anim-fade-up" data-anim>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-primary mb-4">Get in Touch</h2>
-
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
-            {/* Contact Information Card */}
-            <Card className="bg-white h-full flex flex-col">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-2xl text-primary">Contact Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-start space-x-4">
-                  <div className="bg-primary text-white p-3 rounded-md"><MapPin className="h-5 w-5" /></div>
-                  <div>
-                    <h4 className="font-semibold text-primary">Address</h4>
-                    <p className="text-gray-600 text-sm leading-relaxed">
-                      Rajasic Foods   <br />
-                      Nimbahera, Rajasthan<br />
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="bg-primary text-white p-3 rounded-md"><Phone className="h-5 w-5" /></div>
-                  <div>
-                    <h4 className="font-semibold text-primary">Phone</h4>
-                    <p className="text-gray-600 text-sm leading-relaxed">+91 78019 01855</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="bg-primary text-white p-3 rounded-md"><Mail className="h-5 w-5" /></div>
-                  <div>
-                    <h4 className="font-semibold text-primary">Email</h4>
-                    <p className="text-gray-600 text-sm leading-relaxed">info@rajasicfoods.com<br />orders@rajasicfoods.com</p>
-                  </div>
-                </div>
-               
-                <div className="p-4 whatsapp-gradient rounded-lg shadow-sm">
-                  <div className="flex items-center mb-3">
-                    <MessageCircle className="h-6 w-6 mr-3 text-whatsapp-foreground" />
-                    <div>
-                      <h4 className="font-semibold">WhatsApp Support</h4>
-                      <p className="text-whatsapp-foreground/85 text-xs">Get instant answers to your questions</p>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => window.open('https://wa.me/917801901855', '_blank')}
-                    className="w-full whatsapp-gradient-inset-btn text-whatsapp-foreground h-9 text-sm border border-whatsapp-foreground/30 hover:border-whatsapp-foreground/50 transition-colors font-medium"
-                  >
-                    <MessageCircle className="mr-2 h-4 w-4" /> Chat with Us on WhatsApp
-                  </Button>
-                </div>
-                <div className="p-4 brand-gradient rounded-lg shadow-sm">
-                  <div className="flex items-center mb-3">
-                    <Instagram className="h-6 w-6 mr-3 text-cta" />
-                    <div>
-                      <h4 className="font-semibold">Instagram</h4>
-                      <p className="text-primary-foreground/90 text-xs">Follow & DM us for updates</p>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => window.open('https://www.instagram.com/foodsrajasic/?hl=en', '_blank')}
-                    className="w-full brand-gradient-inset-btn text-primary-foreground h-9 text-sm border border-primary/25 hover:border-primary/40 transition-colors"
-                  >
-                    <Instagram className="mr-2 h-4 w-4" /> Visit @foodsrajasic
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Contact Form Card */}
-            <div className="lg:col-span-2 flex flex-col">
-              {/* Mobile collapsible header */}
-              <button
-                type="button"
-                onClick={() => setMobileFormOpen(o => !o)}
-                className="md:hidden w-full bg-primary text-primary-foreground tracking-[0.35em] text-xs py-4 rounded-t-md flex items-center justify-center gap-2 shadow-sm"
-                aria-expanded={mobileFormOpen}
-                aria-controls="contact-form-mobile"
-              >
-                SEND US A MESSAGE
-                <span className={`transition-transform duration-300 ${mobileFormOpen ? 'rotate-180' : ''}`}>▾</span>
-              </button>
-              {/* Form card (always visible on md+, conditional on mobile) */}
-              <div
-                id="contact-form-mobile"
-                className={`${mobileFormOpen ? 'block' : 'hidden'} md:block`}
-              >
-                <Card className="bg-white rounded-t-none md:rounded-md border-t-0 md:border-t h-full flex flex-col">
-                  <CardHeader>
-                    <CardTitle className="text-2xl text-primary md:text-left text-center">Send us a Message</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Form {...contactForm}>
-                      <form onSubmit={contactForm.handleSubmit((data) => createContactMutation.mutate(data))} className="space-y-6">
-                        <div className="grid md:grid-cols-2 gap-6">
-                          <FormField
-                            control={contactForm.control}
-                            name="firstName"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>First Name *</FormLabel>
-                                <FormControl>
-                                  <Input {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={contactForm.control}
-                            name="lastName"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Last Name *</FormLabel>
-                                <FormControl>
-                                  <Input {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                        <FormField
-                          control={contactForm.control}
-                          name="email"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Email Address *</FormLabel>
-                              <FormControl>
-                                <Input type="email" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={contactForm.control}
-                          name="subject"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Subject *</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select a subject" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="product-inquiry">Product Inquiry</SelectItem>
-                                  <SelectItem value="order-support">Order Support</SelectItem>
-                                  <SelectItem value="nutritional-advice">Nutritional Advice</SelectItem>
-                                  <SelectItem value="wholesale">Wholesale/Bulk Orders</SelectItem>
-                                  <SelectItem value="partnership">Partnership Opportunities</SelectItem>
-                                  <SelectItem value="other">Other</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={contactForm.control}
-                          name="message"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Message *</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  placeholder="Tell us how we can help you..."
-                                  className="min-h-[120px]"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <Button
-                          type="submit"
-                          disabled={createContactMutation.isPending}
-                          className="w-full bg-primary text-white hover:bg-green-800"
-                        >
-                          {createContactMutation.isPending ? 'Sending...' : 'Send Message'}
-                        </Button>
-                      </form>
-                    </Form>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-  {/* Footer and FloatingButtons are now handled by the shared Layout component for consistent dark style and no duplication */}
-      
-      {/* Shopping Cart Modal */}
-      <Sheet open={showCart} onOpenChange={open => { if (!open) closeCart(); }}>
-        <SheetContent side="right" className="w-full sm:max-w-lg">
-          <CartSheet />
-        </SheetContent>
-      </Sheet>
-    </div>
-  );
+  return React.createElement('div', { className: 'min-h-screen bg-white' }, [
+    showPopup && popupProduct && React.createElement(BestsellerPopup, {
+      key: 'popup',
+      image: popupProduct.image || '/logo.jpg',
+      name: popupProduct.name,
+      ctaText: 'Try it now',
+      onClose: () => setShowPopup(false)
+    }),
+    React.createElement(Helmet, { key: 'helmet' }, [
+      React.createElement('title', { key: 't' }, 'Buy Premium Functional Chocolates Online | Cokha'),
+      React.createElement('meta', { key: 'd', name: 'description', content: 'Shop handcrafted functional chocolates enriched with natural ingredients for mood, energy, focus and wellness.' }),
+      React.createElement('meta', { key: 'k', name: 'keywords', content: 'functional chocolates,premium chocolates,handcrafted chocolate,energy bar,mood boosting chocolate,healthy dark chocolate,buy chocolates online' }),
+      React.createElement('link', { key: 'c', rel: 'canonical', href: 'https://your-domain.com/' })
+    ]),
+    React.createElement('section', { key: 'hero', id: 'home', className: 'relative h-[70vh] min-h-[560px] w-full overflow-hidden anim-fade-in', 'data-anim': true }, [
+      React.createElement('video', { key: 'v', className: 'absolute inset-0 w-full h-full object-cover', autoPlay: true, loop: true, muted: true, playsInline: true, preload: 'auto', src: productVideo }, 'Your browser does not support the video tag.'),
+      React.createElement('div', { key: 'ov', className: 'absolute inset-0 bg-primary/55 backdrop-brightness-95' }),
+      React.createElement('div', { key: 'hc', className: 'relative z-10 max-w-5xl mx-auto px-6 lg:px-8 h-full flex flex-col justify-center' }, [
+        React.createElement('div', { key: 'inner', className: 'max-w-2xl' }, [
+          React.createElement('h1', { key: 'h1', className: 'text-4xl lg:text-6xl font-bold leading-tight mb-6 drop-shadow-md hero-animate text-white' }, [
+            React.createElement('span', { key: 's1', className: 'block' }, 'Bold On Nutrition,'),
+            React.createElement('span', { key: 's2', className: 'block' }, 'Big On Taste!')
+          ]),
+          React.createElement('p', { key: 'p', className: 'text-lg lg:text-xl mb-8 text-white max-w-xl font-medium tracking-wide leading-snug' }, [
+            React.createElement('span', { key: 'sp1' }, 'Energy Bars,'), React.createElement('br', { key: 'br1' }),
+            React.createElement('span', { key: 'sp2' }, 'Couverture Chocolates'), React.createElement('br', { key: 'br2' }),
+            React.createElement('span', { key: 'sp3', dangerouslySetInnerHTML: { __html: '&amp; Crisps' } })
+          ]),
+          React.createElement('div', { key: 'cta', className: 'flex flex-wrap gap-4' }, [
+            React.createElement(Button, { key: 'shop', onClick: scrollToProducts, variant: 'cta', className: 'px-8 py-4 text-lg font-semibold rounded-xl' }, 'Shop Now')
+          ])
+        ])
+      ]),
+      React.createElement('div', { key: 'fade', className: 'pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background/60 to-transparent' })
+    ]),
+    React.createElement('div', { key: 'marquee', className: 'marquee-wrapper bg-primary text-white py-3 border-y border-primary/30' }, [
+      React.createElement('div', { key: 'rel', className: 'relative' }, [
+        React.createElement('div', { key: 'track', className: 'marquee-track gap-16 px-8 font-semibold tracking-wide text-sm md:text-base' },
+          Array.from({ length: 2 }).map((_, i) => React.createElement('div', { key: i, className: 'flex gap-16' }, [
+            React.createElement('span', { key: 'm1' }, '100% ORGANIC'),
+            React.createElement('span', { key: 'm2' }, 'SUGAR FREE'),
+            React.createElement('span', { key: 'm3' }, 'NO PRESERVATIVES'),
+            React.createElement('span', { key: 'm4' }, 'HAND CRAFTED'),
+            React.createElement('span', { key: 'm5' }, 'ARTISAN ENERGY BARS')
+          ]))
+        ),
+        React.createElement('div', { key: 'fade2', className: 'marquee-fade bg-gradient-to-r from-primary via-transparent to-primary opacity-20' })
+      ])
+    ]),
+    React.createElement('section', { key: 'products-section', id: 'products', className: 'py-20 bg-neutral anim-fade-up', 'data-anim': true }, [
+      React.createElement('div', { key: 'wrap', className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8' }, [
+        React.createElement('div', { key: 'head', className: 'text-center mb-12' }, [
+          React.createElement('h2', { key: 'h2', className: 'text-4xl font-bold text-primary' }, 'Our Bestsellers'),
+          React.createElement('p', { key: 'ph', className: 'text-gray-600 mt-2' }, 'Customer favorites crafted for performance and taste')
+        ]),
+        React.createElement('div', { key: 'grid', className: 'grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 lg:gap-8' }, [
+          ...(bestsellers.length > 0 ? bestsellers.map(p => React.createElement(ProductCard, { key: p.id, product: p, onAddToCart: addToCart, productsAll: products })) : []),
+          ...(bestsellers.length === 0 && (productsLoading || productsFetching)
+            ? Array.from({ length: 4 }).map((_, i) => React.createElement('div', { key: 'sk' + i, className: 'h-48 sm:h-56 bg-gray-100 rounded-lg animate-pulse col-span-1' }))
+            : []),
+          ...(bestsellers.length === 0 && !productsLoading && !productsFetching ? [React.createElement('div', { key: 'empty', className: 'col-span-full text-center text-sm text-muted-foreground py-8' }, 'No products available.')] : [])
+        ]),
+        products.length > 4 && React.createElement('div', { key: 'more', className: 'mt-12 text-center' }, [
+          React.createElement(Button, { key: 'btn', onClick: () => setLocation('/products'), variant: 'cta', className: 'px-8 py-4 text-lg font-semibold rounded-xl' }, 'View All Products')
+        ])
+      ])
+    ]),
+    React.createElement(Sheet, { key: 'sheet', open: showCart, onOpenChange: (open: boolean) => { if (!open) closeCart(); } }, [
+      React.createElement(SheetContent, { key: 'sheetc', side: 'right', className: 'w-full sm:max-w-lg' }, [
+        React.createElement(CartSheet, { key: 'cart' })
+      ])
+    ])
+  ]);
 }
 
 function scrollToSection(sectionId: string) {

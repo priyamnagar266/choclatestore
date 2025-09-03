@@ -3,19 +3,16 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-export default defineConfig({
-  plugins: [
-    react(),
-    runtimeErrorOverlay(),
-    ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
-      ? [
-          await import("@replit/vite-plugin-cartographer").then((m) =>
-            m.cartographer(),
-          ),
-        ]
-      : []),
-  ],
+export default defineConfig(() => {
+  const extraDevPlugins: any[] = [];
+  // Removed top-level await to keep config sync-friendly for some CI/build environments (Render)
+  // Replit-specific cartographer plugin omitted in non-Replit deployments.
+  return {
+    plugins: [
+      react(),
+      runtimeErrorOverlay(),
+      ...extraDevPlugins,
+    ],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
@@ -38,4 +35,5 @@ export default defineConfig({
       '/api': 'http://localhost:5000',
     },
   },
+};
 });

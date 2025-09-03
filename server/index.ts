@@ -45,6 +45,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// Lightweight health endpoint for Render/uptime checks
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({ status: 'ok' });
+});
+
 (async () => {
   // Ensure MongoDB connection before registering routes
   try {
