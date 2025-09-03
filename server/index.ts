@@ -103,12 +103,27 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
+  const basePort = parseInt(process.env.PORT || '5000', 10);
+  let attempt = 0;
+  function tryListen(p:number){
+    server.listen({ port: p, host: '0.0.0.0', reusePort: true }, () => {
+      if (p !== basePort) log(`serving on fallback port ${p} (base ${basePort} was in use)`); else log(`serving on port ${p}`);
+    });
+  }
+  server.on('error',(err:any)=>{
+    if(err && err.code==='EADDRINUSE'){
+      attempt++;
+      const next = basePort + attempt;
+      if(attempt<5){
+        console.warn(`[PORT] ${basePort} in use, trying ${next}...`);
+        setTimeout(()=> tryListen(next), 300);
+      } else {
+        console.error(`[PORT] Failed to bind after ${attempt} attempts. Last error:`, err);
+        process.exitCode = 1;
+      }
+    } else {
+      console.error('[SERVER ERROR]', err);
+    }
   });
+  tryListen(basePort);
 })();

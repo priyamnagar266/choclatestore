@@ -184,7 +184,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setPromoCode(result.code);
     setPromoMessage(result.message);
     setDiscount(result.valid ? result.discount : 0);
-    setFreeShipping(!!result.freeShipping);
+  // Do not allow promo to directly grant free shipping now (removed FREESHIP code)
+  setFreeShipping(false);
     try { localStorage.setItem(promoKey, result.code); } catch {}
     setPromoToast(result.valid ? { type: 'success', message: result.message } : { type: 'error', message: result.message });
   };
@@ -226,6 +227,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     if (promoCode) applyPromo(promoCode);
     // eslint-disable-next-line
   }, [cart.length, cart.map(i=>i.id+':'+i.quantity).join(',')]);
+
+  // Free shipping threshold logic (>= ₹400 subtotal after discount)
+  useEffect(()=>{
+    const subtotal = cart.reduce((s,i)=> s + i.price * i.quantity, 0);
+    const qualifies = (subtotal - discount) >= 400; // after discount
+    setFreeShipping(qualifies);
+  }, [cart, discount]);
 
   return (
     <CartContext.Provider value={{ cart, setCart, addToCart, clearCart, openCart, closeCart, showCart, promoCode, promoMessage, discount, freeShipping, applyPromo, clearPromo, promoToast, setPromoToast, ready }}>

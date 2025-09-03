@@ -13,7 +13,6 @@ export interface PromoResult {
 
 export const KNOWN_PROMOS: Record<string, string> = {
   WELCOME10: 'Get 10% off on your first order',
-  FREESHIP: 'Free shipping on any order',
   B2G1: 'Buy 2 Get 1 Free (cheapest free)',
   FLAT25: 'Flat ₹25 OFF on orders above ₹250'
 };
@@ -29,9 +28,6 @@ export function evaluatePromo(codeRaw: string, cart: CartItem[]): PromoResult {
     case 'WELCOME10': {
       const discount = Math.round(subtotal * 0.10);
       return { code, valid: true, message: '10% discount applied', discount };
-    }
-    case 'FREESHIP': {
-      return { code, valid: true, message: 'Free shipping applied', discount: 0, freeShipping: true };
     }
     case 'B2G1': {
       // Expand cart to array of {price, name, cartIdx, unitIdx}

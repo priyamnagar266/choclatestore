@@ -1,7 +1,7 @@
 // import React from "react";
 import { SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Minus, Plus, Trash2 } from "lucide-react";
+import { Minus, Plus, Trash2, Truck } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import { KNOWN_PROMOS } from '@/lib/promos';
@@ -116,7 +116,38 @@ const CartSheet: React.FC = () => {
             ))}
           </div>
           <div className="border-t pt-3 mt-2 space-y-3 sm:space-y-4">
-            {/* Always visible promo row */}
+            {/* Free shipping progress (moved above promo code) */}
+            {(() => {
+              if (cart.length === 0) return null;
+              const subtotal = calculateCartTotal(cart);
+              const threshold = 400;
+              const effective = subtotal - discount;
+              const progress = Math.min(100, Math.round((effective / threshold) * 100));
+              const remaining = Math.max(0, threshold - effective);
+              return (
+                <div className="space-y-1">
+                  <div className="relative h-3 w-full bg-gray-200 rounded-full overflow-visible">
+                    <div className={`h-3 rounded-full transition-all duration-300 ${freeShipping ? 'bg-green-600' : 'bg-primary'}`} style={{ width: progress + '%' }} />
+                    <div
+                      className="absolute -top-2 z-10 flex items-center justify-center h-7 w-7 rounded-full shadow-sm ring-1 ring-black/10 pointer-events-none"
+                      style={{ left: `calc(${progress}% - 14px)`, background:'#f6f1e6' }}
+                      aria-hidden="true"
+                    >
+                      <Truck
+                        className={`h-4 w-4 transition-colors duration-300 ${freeShipping ? 'text-green-700' : 'text-primary'}`}
+                        strokeWidth={2}
+                        color="currentColor"
+                        fill="#f6f1e6"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] sm:text-xs text-gray-600 m-0 font-medium">
+                    {freeShipping ? 'You unlocked Free Shipping!' : `Add ${formatPrice(remaining)} more to unlock Free Shipping`}
+                  </p>
+                </div>
+              );
+            })()}
+            {/* Promo code row */}
             {cart.length > 0 && (
               <form
                 onSubmit={e => { e.preventDefault(); if (selectedPromo) applyPromo(selectedPromo); }}
@@ -214,7 +245,7 @@ const CartSheet: React.FC = () => {
               </div>
             )}
             {/* Always-visible mini summary */}
-            <div className="space-y-2">
+              <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-gray-700 text-xs sm:text-sm font-medium">Subtotal</span>
                 <span className="font-semibold text-xs sm:text-sm">{formatPrice(calculateCartTotal(cart))}</span>
