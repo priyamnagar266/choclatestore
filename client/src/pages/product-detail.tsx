@@ -105,15 +105,11 @@ const ProductDetailPage: React.FC<Props> = ({ slug }) => {
 		// Variant selection (must be before early returns so hook order is stable)
 		const variants: any[] = Array.isArray((product as any)?.variants) ? (product as any)?.variants : [];
 		React.useEffect(()=>{ if(selectedVariantLabel && !variants.find(v=> v.label === selectedVariantLabel)) setSelectedVariantLabel(null); }, [variants, selectedVariantLabel]);
-		// Default variant selection: prefer 30g else first variant when product loads
-		React.useEffect(()=>{
-			if(!product) return;
-			const list: any[] = Array.isArray((product as any).variants)? (product as any).variants : [];
-			if(!list.length) return;
-			if(selectedVariantLabel && list.find(v=>v.label===selectedVariantLabel)) return; // already valid
-			const pref = list.find(v=> (v.label||'').toLowerCase()==='30g') || list[0];
-			setSelectedVariantLabel(pref.label);
-		},[product, variants]);
+		// Immediate default variant (no flicker) prefer 30g else first
+		const defaultVariantLabel = React.useMemo(()=>{
+			if(!product) return null; const list: any[] = Array.isArray((product as any).variants)? (product as any).variants : []; if(!list.length) return null; const pref = list.find(v=> (v.label||'').toLowerCase()==='30g') || list[0]; return pref?.label || null;
+		}, [product, variants]);
+		const effectiveVariantLabel = selectedVariantLabel || defaultVariantLabel;
 
 		// Carousel state
 		const [imgIdx, setImgIdx] = React.useState(0);
@@ -206,7 +202,7 @@ const ProductDetailPage: React.FC<Props> = ({ slug }) => {
 
 	// Resolve effective price based on selected variant or base
 	function resolvePrice(base: Product){
-		if(selectedVariantLabel){ const v = variants.find(v=> v.label===selectedVariantLabel); if(v){ const effSale = (v.salePrice!=null && v.salePrice < v.price) ? v.salePrice : undefined; return { price: v.price, sale: effSale }; } }
+		if(effectiveVariantLabel){ const v = variants.find(v=> v.label===effectiveVariantLabel); if(v){ const effSale = (v.salePrice!=null && v.salePrice < v.price) ? v.salePrice : undefined; return { price: v.price, sale: effSale }; } }
 		// If no selection & variants exist, keep base product prices (already lowest from admin auto logic)
 		const sale = (base.salePrice!=null && base.salePrice < base.price) ? base.salePrice : undefined; return { price: base.price, sale };
 	}

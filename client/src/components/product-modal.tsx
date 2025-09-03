@@ -35,14 +35,13 @@ export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSu
 	const variants: any[] = Array.isArray((currentProduct as any)?.variants) ? (currentProduct as any).variants : [];
 	// If selected variant disappears (e.g. switching product) clear it
 	React.useEffect(()=>{ if(selectedVariantLabel && !variants.find(v=> v.label === selectedVariantLabel)) setSelectedVariantLabel(null); }, [variants, selectedVariantLabel]);
-	// Default selection: prefer 30g else first variant when product changes
-	React.useEffect(()=>{
-		if(!currentProduct) return;
-		if(!variants.length) { setSelectedVariantLabel(null); return; }
-		if(selectedVariantLabel && variants.find(v=> v.label === selectedVariantLabel)) return;
+	// Immediate default (no flicker): prefer 30g else first.
+	const defaultVariantLabel = React.useMemo(()=>{
+		if(!variants.length) return null;
 		const pref = variants.find(v=> (v.label||'').toLowerCase()==='30g') || variants[0];
-		setSelectedVariantLabel(pref?.label || null);
-	}, [currentProduct, variants]);
+		return pref?.label || null;
+	}, [variants]);
+	const effectiveVariantLabel = selectedVariantLabel || defaultVariantLabel;
 	const recompute = React.useCallback(()=>{
 		try {
 			const globalList: any = (window as any).__ALL_PRODUCTS;
@@ -108,8 +107,8 @@ export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSu
 						h('div',{className:'flex items-center flex-wrap gap-4'},(()=>{
 							let effPrice = currentProduct.price;
 							let effSale: number | undefined = (currentProduct as any).salePrice;
-							if(selectedVariantLabel){
-								const v = variants.find(v=> v.label === selectedVariantLabel);
+							if(effectiveVariantLabel){
+								const v = variants.find(v=> v.label === effectiveVariantLabel);
 								if(v){
 									effPrice = v.price;
 									effSale = (v.salePrice!=null && v.salePrice < v.price) ? v.salePrice : undefined;
@@ -125,7 +124,7 @@ export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSu
 								])
 								: h('span',{className:'text-2xl font-bold text-secondary'}, formatPrice(effPrice));
 							const variantButtons = variants.length ? h('div',{className:'flex flex-wrap gap-2 ml-auto'}, variants.map(v=>{
-								const active = selectedVariantLabel === v.label;
+								const active = effectiveVariantLabel === v.label;
 								const disabled = v.inStock === 0;
 								return h('button',{
 									key:v.label,
@@ -157,11 +156,11 @@ export function ProductModal({ product, trigger, onAddToCart, productsAll, maxSu
 					h('div',{className:'sticky bottom-0 bg-white/95 backdrop-blur border-t px-4 md:px-8 py-4 mt-auto'},
 								h(Button,{ onClick:()=> {
 									let enriched:any = currentProduct;
-									if(selectedVariantLabel){
-										const v = variants.find(v=> v.label === selectedVariantLabel);
+									if(effectiveVariantLabel){
+										const v = variants.find(v=> v.label === effectiveVariantLabel);
 										if(v){
 											const effPrice = (v.salePrice!=null && v.salePrice < v.price) ? v.salePrice : v.price;
-											enriched = { ...currentProduct, tempSelectedVariant: v, variantLabel: v.label, selectedVariantLabel, effectiveVariantPrice: effPrice, variants };
+											enriched = { ...currentProduct, tempSelectedVariant: v, variantLabel: v.label, selectedVariantLabel: v.label, effectiveVariantPrice: effPrice, variants };
 										}
 									}else if(variants.length){
 										const preferred = variants.find(v=> (v.label||'').toLowerCase()==='30g') || variants[0];

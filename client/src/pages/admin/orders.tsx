@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
-// Product name/price resolution cache (populated on-demand via /api/products)
-let productMap: Record<string,{name:string; price?:number}>|null = null;
+// Product name/price/variants resolution cache (populated on-demand via /api/products)
+let productMap: Record<string,{name:string; price?:number; variants?: { label:string; price:number; salePrice?:number }[]}>|null = null;
 async function ensureProductMap(){
   if(productMap) return productMap;
   productMap = {};
@@ -9,23 +9,65 @@ async function ensureProductMap(){
     if(res.ok){
       const list:any[] = await res.json();
       for(const p of list){
-        const entry = { name: p.name, price: p.price };
+        const entry = { name: p.name, price: p.price, variants: Array.isArray(p.variants)? p.variants.map((v:any)=>({ label:v.label, price:v.price, salePrice:v.salePrice })) : undefined };
         if(p?._id) productMap[p._id] = entry;
         if(p?.id!==undefined) productMap[String(p.id)] = entry;
         if(p?.slug) productMap[p.slug] = entry;
+        // Also index variant-specific keys id::label for direct hits
+        if(entry.variants){
+          const baseKeys = [p._id, p.id!==undefined? String(p.id):null, p.slug].filter(Boolean) as string[];
+          for(const bk of baseKeys){
+            for(const v of entry.variants){
+              productMap[`${bk}::${v.label}`] = { name: `${p.name} (${v.label})`, price: (v.salePrice!=null && v.salePrice < v.price) ? v.salePrice : v.price } as any;
+            }
+          }
+        }
       }
     }
   } catch{}
   return productMap;
 }
 async function resolveProduct(it:any){
-  if(it.name && it.price!==undefined) return it; // already enriched
+  // If already has name & price, return early
+  if (it.name && it.price !== undefined) return it;
   const map = await ensureProductMap();
-  const found = map[String(it.productId)] || map[String(it.id)] || null;
-  if(found){
-    if(!it.name) it.name = found.name;
-    if(it.price===undefined) it.price = found.price;
+  const keysToTry: string[] = [];
+  if (it.productId) keysToTry.push(String(it.productId));
+  if (it.id) keysToTry.push(String(it.id));
+  // If productId looks like a Mongo ObjectId, keep as is but also push lowercase
+  if (it.productId && /^[a-fA-F0-9]{24}$/.test(String(it.productId))) {
+    keysToTry.push(String(it.productId).toLowerCase());
   }
+  // Some orders may have stored baseProductId; include variant-trimmed component
+  if (it.baseProductId) keysToTry.push(String(it.baseProductId));
+  // Try stripping any variant suffix pattern id::variant
+  if (it.productId && String(it.productId).includes('::')) {
+    keysToTry.push(String(it.productId).split('::')[0]);
+  }
+  let found: any = null;
+  for (const k of keysToTry) {
+    if (map[k]) { found = map[k]; break; }
+  }
+  if (found) {
+    if (!it.name) it.name = found.name;
+    if (it.price === undefined || it.price === 0) {
+      // Try variant-specific price if variant label present
+      if (it.variantLabel && found.variants) {
+        const v = found.variants.find((v: any)=> (v.label||'').toLowerCase() === String(it.variantLabel).toLowerCase());
+        if (v) it.price = (v.salePrice!=null && v.salePrice < v.price) ? v.salePrice : v.price;
+      }
+      if (it.price === undefined || it.price === 0) it.price = found.price;
+    }
+  } else if (it.variantLabel) {
+    // Direct attempt with composite key if not previously included
+    const composite = map[`${it.productId}::${it.variantLabel}`];
+    if (composite) {
+      if (!it.name) it.name = composite.name;
+      if (!it.price) it.price = composite.price;
+    }
+  }
+  // Ultimate fallback: keep placeholder but avoid 'Unknown'
+  if (!it.name) it.name = 'Product';
   return it;
 }
 import { AdminLayout } from '@/components/admin-nav';
@@ -161,19 +203,29 @@ export default function AdminOrders(){
     // Items header
     const left = pagePadding;
     doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.text('Items', left, y); y+=6; doc.setLineWidth(0.4); doc.line(left, y, left+contentWidth, y); y+=8; doc.setFont('helvetica','bold'); doc.setFontSize(10);
-    const col = { idx:left+2, name:left+28, qty:left + (isA6? 150:300), price:left + (isA6?190:360), total:left + (isA6?230:430) };
+  const col = { idx:left+2, name:left+28, qty:left + (isA6? 160:340), price:left + (isA6?210:420) };
     doc.text('#', col.idx, y);
     doc.text('Product', col.name, y);
     doc.text('Qty', col.qty, y,{align:'right'});
     doc.text('Price', col.price, y,{align:'right'});
-    doc.text('Line', col.total, y,{align:'right'});
     y+=6; doc.line(left, y, left+contentWidth, y); y+=4; doc.setFont('helvetica','normal');
     let alt=false;
+  // Precompute total quantity for fallback price allocation
+  const totalQty = (o.items||[]).reduce((s:number,it:any)=> s + (it.quantity||0),0) || 1;
+  const effectiveSubtotal = (o.subtotal!=null? o.subtotal: o.total) || 0;
     for(let i=0;i<(o.items||[]).length;i++){
       let it = o.items[i]; it = await resolveProduct(it);
-      let baseName = it.name || `Unknown (${it.productId})`;
-      // Derive/infer variant label if missing
-      let vLabel = it.variantLabel;
+      // Extract variant from productId pattern id::variant if present
+      let derivedFromId: string | undefined;
+      if (!it.variantLabel && it.productId && String(it.productId).includes('::')) {
+        const parts = String(it.productId).split('::');
+        if (parts[1]) derivedFromId = parts[1];
+      }
+      let baseName = it.name || it.originalName || it.productName || `Item ${i+1}`;
+      if (/^Product$/.test(baseName) && it.productId) {
+        baseName = `Product ${String(it.productId).split('::')[0].slice(0,6)}`;
+      }
+      let vLabel = it.variantLabel || derivedFromId;
       if (!vLabel) {
         // Try to parse from existing name suffix
         const m = baseName.match(/\(([^)]+)\)$/);
@@ -196,7 +248,12 @@ export default function AdminOrders(){
         if (!alreadyHas) baseName += ` (${vLabel})`;
       }
       const name = baseName;
-      const price = (it.price!==undefined? it.price:0)||0; const lineTotal = price*(it.quantity||0);
+      let price = (it.price!==undefined? it.price:0)||0;
+      if (!price) {
+        // Fallback: approximate from subtotal proportionally (uniform distribution)
+        price = Math.round(effectiveSubtotal / totalQty);
+      }
+      const lineTotal = price*(it.quantity||0);
         const nameWrap = doc.splitTextToSize(name, (col.qty - col.name) - 8);
         const rowBaseIncrement = isA6?13:16;
         const rowHeight = Math.max(rowBaseIncrement, nameWrap.length*(isA6?10:12)) + 2;
@@ -206,17 +263,26 @@ export default function AdminOrders(){
         doc.text(nameWrap, col.name, y+textYOffset);
         doc.text(String(it.quantity||0), col.qty, y+textYOffset,{align:'right'});
         doc.text(price?`₹${price}`:'—', col.price, y+textYOffset,{align:'right'});
-        doc.text(lineTotal?`₹${lineTotal}`:'—', col.total, y+textYOffset,{align:'right'});
       y += rowHeight; alt=!alt;
       if (y > (isA6? 340: 740)) { doc.addPage(); y = pagePadding; }
     }
     // Totals / Status section
       y+= (isA6?4:10); doc.line(left, y, left+contentWidth, y); y+= (isA6?8:14); // extra gap before totals
   const put = (label:string,val:any,bold=false,color?:[number,number,number])=>{ if(color){ doc.setTextColor(...color);} else { doc.setTextColor(0);} doc.setFont('helvetica', bold?'bold':'normal'); doc.text(label, left+contentWidth-140, y); doc.text(String(val), left+contentWidth-10, y,{align:'right'}); y+=14; };
-  put('Subtotal', `₹${o.subtotal}`);
-  if (o.discount && o.discount>0) put('Discount', `-₹${o.discount}`, false, [0,120,0]);
-  put('Delivery', `₹${o.deliveryCharges}`);
-    put('Total', `₹${o.total}`, true);
+  // Totals rows (ensure discount always visible; reconstruct if absent)
+  const rawSubtotal = o.subtotal ?? 0;
+  const rawDelivery = o.deliveryCharges ?? 0;
+  const rawTotal = o.total ?? 0;
+  let discountVal: number = (o.discount!=null? o.discount: 0) || 0;
+  const inferred = (rawSubtotal + rawDelivery) - rawTotal; // if positive, indicates discount
+  if (inferred > 0 && (discountVal === 0 || Math.abs(inferred - discountVal) > 1)) {
+    discountVal = inferred;
+  }
+  put('Subtotal', `₹${rawSubtotal}`);
+  put('Delivery', `₹${rawDelivery}`);
+  // Always show discount row (even if 0). Use green color only when >0.
+  put('Discount', discountVal>0 ? `-₹${discountVal}` : '₹0');
+    put('Total', `₹${rawTotal}`, true);
     doc.setFont('helvetica','normal');
     const statusLines = [`Status: ${o.status} (${o.paymentStatus})`];
     if (o.razorpayPaymentId) statusLines.push('Payment Ref: '+o.razorpayPaymentId);
