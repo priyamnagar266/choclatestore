@@ -667,7 +667,7 @@ export default function Home() {
                   <div>
                     <h4 className="font-semibold text-primary">Address</h4>
                     <p className="text-gray-600 text-sm leading-relaxed">
-                      Rajasic Foods Pvt Ltd<br />
+                      Rajasic Foods   <br />
                       Nimbahera, Rajasthan<br />
                     </p>
                   </div>

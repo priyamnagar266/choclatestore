@@ -9,7 +9,7 @@ const Footer: React.FC = () => (
 							<Link href="/policies" className="hover:underline">Policies</Link>
 		</div>
 		<div>
-			&copy; {new Date().getFullYear()} Rajasic Foods Pvt Ltd. All rights reserved.
+			&copy; {new Date().getFullYear()} Rajasic Foods   . All rights reserved.
 		</div>
 	</footer>
 );
