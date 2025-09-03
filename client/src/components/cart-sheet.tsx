@@ -2,7 +2,7 @@
 import { SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Trash2 } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import { KNOWN_PROMOS } from '@/lib/promos';
 import { useAuth } from "@/components/auth-context";
@@ -16,6 +16,19 @@ const CartSheet: React.FC = () => {
   const [selectedPromo, setSelectedPromo] = useState<string>(promoCode || '');
   // Keep dropdown in sync with applied promo
   useEffect(() => { setSelectedPromo(promoCode || ''); }, [promoCode]);
+  // Control whether we show native select text (when open/focused) so options remain visible.
+  // Custom dropdown instead of native select for nicer UI
+  const [promoOpen, setPromoOpen] = useState(false);
+  const promoRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (promoRef.current && !promoRef.current.contains(e.target as Node)) {
+        setPromoOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -29,11 +42,13 @@ const CartSheet: React.FC = () => {
   };
   // clearCart now provided by context removes localStorage key too
 
+  // Removed details toggle per user request; dynamic messages/discount auto-show when present.
+
   return (
     <div className="h-full flex flex-col">
       <div className="border-b pb-2 mb-2">
-        <h2 className="text-primary text-xl font-bold">Shopping Cart ({calculateItemCount(cart)} items)</h2>
-        <p className="text-gray-600">Review your selected items before proceeding to checkout</p>
+        <h2 className="text-primary text-lg sm:text-xl font-bold leading-tight">Shopping Cart ({calculateItemCount(cart)} items)</h2>
+        <p className="text-gray-600 text-xs sm:text-sm">Review your items before checkout</p>
       </div>
       {cart.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center py-16 text-center">
@@ -44,42 +59,42 @@ const CartSheet: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="mt-6 flex-1 overflow-y-auto pr-1 space-y-4">
+          <div className="mt-2 flex-1 overflow-y-auto pr-1 space-y-3 sm:space-y-4 pb-2">
             {cart.map((item) => (
               <div
                 key={item.id}
-                className="p-4 bg-gray-50 rounded-lg flex items-start gap-3"
+                className="p-3 sm:p-4 bg-gray-50 rounded-lg flex items-start gap-3"
               >
                 <img
                   src={item.image}
                   alt={item.name}
-                  className="w-20 h-20 object-cover rounded-md flex-shrink-0"
+                  className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-md flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0 space-y-1">
-                  <h4 className="font-medium text-gray-900 text-sm sm:text-base leading-snug">
+                  <h4 className="font-medium text-gray-900 text-[13px] sm:text-base leading-snug line-clamp-2">
                     {item.name}
                   </h4>
                   <div className="flex items-center gap-3 flex-wrap">
-                    <p className="text-xs sm:text-sm text-gray-600 m-0">
+                    <p className="text-[11px] sm:text-sm text-gray-600 m-0">
                       {formatPrice(item.price)} each
                     </p>
-                    <div className="flex items-center gap-2 bg-white rounded-md px-2 py-1 shadow-sm">
+                    <div className="flex items-center gap-1 sm:gap-2 bg-white rounded-md px-1.5 py-0.5 sm:px-2 sm:py-1 shadow-sm">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 w-7 p-0"
+                        className="h-6 w-6 sm:h-7 sm:w-7 p-0"
                         onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
                         aria-label={`Decrease quantity of ${item.name}`}
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
-                      <span className="w-6 text-center text-sm font-semibold">
+                      <span className="w-5 sm:w-6 text-center text-xs sm:text-sm font-semibold">
                         {item.quantity}
                       </span>
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-7 w-7 p-0"
+                        className="h-6 w-6 sm:h-7 sm:w-7 p-0"
                         onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
                         aria-label={`Increase quantity of ${item.name}`}
                       >
@@ -88,7 +103,7 @@ const CartSheet: React.FC = () => {
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 w-7 p-0 text-red-500"
+                        className="h-6 w-6 sm:h-7 sm:w-7 p-0 text-red-500"
                         onClick={() => removeFromCart(item.id)}
                         aria-label={`Remove ${item.name} from cart`}
                       >
@@ -100,60 +115,120 @@ const CartSheet: React.FC = () => {
               </div>
             ))}
           </div>
-          <div className="border-t pt-4 mt-4 space-y-4">
-            {/* Promo Code Dropdown */}
-            <div className="bg-white rounded-md p-3 border">
+          <div className="border-t pt-3 mt-2 space-y-3 sm:space-y-4">
+            {/* Always visible promo row */}
+            {cart.length > 0 && (
               <form
-                className="flex flex-col gap-2 sm:flex-row sm:items-center"
                 onSubmit={e => { e.preventDefault(); if (selectedPromo) applyPromo(selectedPromo); }}
+                className="flex items-stretch gap-2"
               >
-                <select
-                  className="border rounded px-3 py-2 text-sm w-full sm:w-auto"
-                  aria-label="Select promo code"
-                  value={promoCode || selectedPromo || ''}
-                  onChange={e => setSelectedPromo(e.target.value)}
-                  disabled={Object.keys(KNOWN_PROMOS).length === 0}
-                >
-                  <option value="">Select promo code</option>
-                  {Object.entries(KNOWN_PROMOS).map(([code, desc]) => (
-                    <option key={code} value={code}>{code} — {desc}</option>
-                  ))}
-                </select>
-                <div className="flex gap-2 w-full sm:w-auto">
+                <div ref={promoRef} className="relative flex-1">
+                  {(() => { /* compute full application status */ return null; })()}
+                  { /* Applied fully if discount actually reduces total or free shipping granted */ }
+                  { /* discount from context already reflects promo revalidation */ }
+                  { /* We'll derive a boolean */ }
+                  { /* (keeping inline to avoid extra re-render complexity) */ }
+                  { /* variable via IIFE */ }
+                  { /* no-op comments for clarity */ }
+                  { /* TS will ignore these comments */ }
+                  { /* end meta */ }
+                  { /* apply boolean below */ }
+                  { /* changed styling condition */ }
+                  { /* intentionally verbose for future contributors */ }
+                  {/* eslint-disable-next-line */}
+                  {null}
+                  <button
+                    type="button"
+                    aria-haspopup="listbox"
+                    aria-expanded={promoOpen}
+                    onClick={() => setPromoOpen(o => !o)}
+                    className={`w-full border rounded px-3 py-2 text-left text-xs sm:text-sm flex items-center justify-between transition focus:outline-none focus:ring-2 focus:ring-green-500/50 ${(discount > 0 || freeShipping) ? 'border-green-500 bg-green-50' : 'border-gray-300 bg-white'}`}
+                  >
+                    <span className="truncate font-medium">
+                      {promoCode || selectedPromo || 'Select promo code'}
+                    </span>
+                    <span className="ml-2 text-[10px] text-gray-500">{promoOpen ? '▲' : '▼'}</span>
+                  </button>
+                  {promoOpen && (
+                    <ul
+                      role="listbox"
+                      className="absolute z-20 mt-1 w-full max-h-52 overflow-auto rounded-md border border-gray-200 bg-white shadow-md text-xs sm:text-sm"
+                    >
+                      {Object.entries(KNOWN_PROMOS).length === 0 && (
+                        <li className="px-3 py-2 text-gray-500">No promos</li>
+                      )}
+                      {Object.entries(KNOWN_PROMOS).map(([code, desc]) => {
+                        const active = (selectedPromo || promoCode) === code;
+                        return (
+                          <li
+                            key={code}
+                            role="option"
+                            aria-selected={active}
+                            onClick={() => { setSelectedPromo(code); setPromoOpen(false); }}
+                            className={`px-3 py-2 cursor-pointer hover:bg-green-50 ${active ? 'bg-green-100 font-semibold' : ''}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="truncate">{code}</span>
+                              {active && <span className="ml-2 text-[10px] text-green-700">Selected</span>}
+                            </div>
+                            <p className="mt-0.5 text-[10px] leading-snug text-gray-500 line-clamp-2">{desc}</p>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  )}
+                  {(promoCode && (discount > 0 || freeShipping)) && (
+                    <div className="absolute -top-2 left-2 bg-green-600 text-white text-[9px] px-2 py-0.5 rounded-full shadow-sm">APPLIED</div>
+                  )}
+                </div>
+                <div className="flex gap-1">
                   <Button
                     size="sm"
                     variant="outline"
                     type="submit"
-                    className="flex-1 sm:flex-none"
+                    className="px-3 text-xs sm:text-sm flex-shrink-0"
                     disabled={!selectedPromo || promoCode === selectedPromo}
                   >Apply</Button>
                   {promoCode && (
-                    <Button size="sm" variant="ghost" onClick={clearPromo} type="button" className="flex-1 sm:flex-none">✕</Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      type="button"
+                      onClick={() => { clearPromo(); setSelectedPromo(''); }}
+                      className="px-2 text-xs sm:text-sm flex-shrink-0"
+                      aria-label="Clear promo code"
+                    >✕</Button>
                   )}
                 </div>
               </form>
-              {/* Promo feedback toast */}
-              {promoToast && (
-                <div className={`mt-1 text-xs ${promoToast.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>{promoToast.message}</div>
-              )}
-              {/* Promo message from product or context */}
-              {promoMessage && !promoToast && (
-                <p className="mt-1 text-xs text-blue-600">{promoMessage}</p>
-              )}
-            </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-gray-700 font-medium">Subtotal</span>
-              <span className="font-semibold">{formatPrice(calculateCartTotal(cart))}</span>
-            </div>
-            {discount > 0 && (
-              <div className="flex justify-between items-center mb-2 text-sm text-green-700">
-                <span className="font-medium">Discount</span>
-                <span>-{formatPrice(discount)}</span>
+            )}
+            {/* Auto details (shows only if there is feedback/message/discount) */}
+            {(promoToast || promoMessage) && (
+              <div className="rounded-md">
+                {promoToast && (
+                  <div className={`mt-1 text-xs ${promoToast.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>{promoToast.message}</div>
+                )}
+                {promoMessage && !promoToast && (
+                  <p className="mt-1 text-xs text-blue-600">{promoMessage}</p>
+                )}
               </div>
             )}
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-gray-700 font-medium">Delivery Charges</span>
-              <span className="font-semibold">{freeShipping ? 'FREE' : formatPrice(50)}</span>
+            {/* Always-visible mini summary */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700 text-xs sm:text-sm font-medium">Subtotal</span>
+                <span className="font-semibold text-xs sm:text-sm">{formatPrice(calculateCartTotal(cart))}</span>
+              </div>
+              {discount > 0 && (
+                <div className="flex justify-between items-center text-green-700">
+                  <span className="text-xs sm:text-sm font-medium">Discount</span>
+                  <span className="text-xs sm:text-sm font-semibold">-{formatPrice(discount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center">
+                <span className="text-gray-700 text-xs sm:text-sm font-medium">Delivery</span>
+                <span className="font-semibold text-xs sm:text-sm">{freeShipping ? 'FREE' : formatPrice(50)}</span>
+              </div>
             </div>
             <div className="flex justify-between items-center text-lg font-bold">
               <span>Total</span>
