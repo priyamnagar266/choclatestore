@@ -534,6 +534,172 @@ export default function Home() {
         ])
       ])
     ]),
+    // Video Section
+    React.createElement('section', { key: 'video', className: 'py-20 bg-primary text-white anim-fade-up', 'data-anim': true }, [
+      React.createElement('div', { key: 'vwrap', className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8' }, [
+        React.createElement('div', { key: 'vhead', className: 'text-center mb-12' }, [
+          React.createElement('h2', { key: 'vh2', className: 'text-4xl font-bold mb-4' }, 'See How We Craft Excellence'),
+          React.createElement('p', { key: 'vp', className: 'text-xl opacity-90 max-w-3xl mx-auto' }, 'Watch our artisans carefully blend ancient Indian superfoods with rich cocoa to create energy bars that nourish your mind and body.')
+        ]),
+        React.createElement('div', { key: 'vctr', className: 'max-w-4xl mx-auto' }, [
+          React.createElement('div', { key: 'vbox', className: 'relative bg-black rounded-xl overflow-hidden shadow-2xl' }, [
+            React.createElement('div', { key: 'vaspect', className: 'aspect-video bg-gray-900 flex items-center justify-center relative' }, [
+              React.createElement('video', { key: 'vvid', src: heroVideo, autoPlay: true, muted: true, playsInline: true, loop: true, preload: 'auto', poster: 'https://i.postimg.cc/cLZtLg16/Gemini-Generated-Image-wv9jaswv9jaswv9j.png', className: 'w-full h-full object-cover' }),
+              React.createElement('div', { key: 'vbadge', className: 'absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded' })
+            ])
+          ])
+        ])
+      ])
+    ]),
+    // Testimonials Section
+    React.createElement('section', { key: 'testimonials', className: 'py-20 bg-white anim-fade-up', 'data-anim': true }, [
+      React.createElement('div', { key: 'twrap', className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8' }, [
+        React.createElement('div', { key: 'thead', className: 'text-center mb-16' }, [
+          React.createElement('h2', { key: 'th2', className: 'text-4xl font-bold text-primary mb-4' }, 'What Our Customers Say'),
+          React.createElement('p', { key: 'tp', className: 'text-xl text-gray-600' }, 'Real experiences from people who\'ve transformed their energy and focus')
+        ]),
+        React.createElement('div', { key: 'tgrid', className: 'grid md:grid-cols-3 gap-8' },
+          (testimonials || fallbackTestimonials).map((t, i) => React.createElement(Card, { key: 't' + i, className: 'bg-neutral p-8' }, [
+            React.createElement(CardContent, { key: 'tc', className: 'p-0' }, [
+              React.createElement('div', { key: 'stars', className: 'flex items-center mb-4' }, Array.from({ length: 5 }).map((_, si) => React.createElement(Star, { key: 's' + si, className: 'h-4 w-4 fill-yellow-400 text-yellow-400' }))),
+              React.createElement('p', { key: 'text', className: 'text-gray-600 mb-6 italic' }, `"${t.text}"`),
+              React.createElement('div', { key: 'person', className: 'flex items-center' }, [
+                React.createElement('div', { key: 'avatar', className: 'w-12 h-12 rounded-full bg-white border border-neutral-300 flex items-center justify-center font-semibold mr-4 text-lg text-amber-500 shadow-sm select-none' }, t.name.charAt(0)),
+                React.createElement('div', { key: 'meta' }, [
+                  React.createElement('div', { key: 'nm', className: 'font-semibold text-primary' }, t.name),
+                  React.createElement('div', { key: 'rl', className: 'text-gray-500 text-sm' }, t.role)
+                ])
+              ])
+            ])
+          ]))
+        )
+      ])
+    ]),
+    // About Us Section
+    React.createElement('section', { key: 'about', id: 'aboutus', className: 'py-20 bg-neutral anim-fade-up', 'data-anim': true }, [
+      React.createElement('div', { key: 'abwrap', className: 'max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center gap-12' }, [
+        React.createElement('div', { key: 'abtext', className: 'flex-1 text-left md:text-justify' }, [
+          React.createElement('h2', { key: 'abh2', className: 'text-4xl font-bold text-primary mb-4' }, 'About Us'),
+            React.createElement('p', { key: 'abp', className: 'text-xl text-gray-600 mb-6' }, 'Cokha Energy Foods is dedicated to crafting premium energy bars using ancient Indian superfoods and rich cocoa. Our mission is to fuel your mind, elevate your mood, and energize your life naturally. We believe in honest nutrition, authentic flavors, and wellness for everyone.'),
+          React.createElement('div', { key: 'abbtn', className: 'mt-8' }, [
+            React.createElement(Button, { key: 'learn', variant: 'cta', className: 'px-8 py-4 text-lg font-semibold rounded-xl shadow-md hover:bg-[#e58800] transition-colors', onClick: () => setLocation('/about#top') }, 'Learn More About Us...')
+          ])
+        ]),
+        React.createElement('div', { key: 'abimg', className: 'flex-1 flex justify-center' }, [
+          React.createElement('img', { key: 'img', src: 'https://i.postimg.cc/nLv7Jfq6/image.png' })
+        ])
+      ])
+    ]),
+    // Contact Section
+    React.createElement('section', { key: 'contact', id: 'contact', className: 'py-20 bg-white anim-fade-up', 'data-anim': true }, [
+      React.createElement('div', { key: 'cwrap', className: 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8' }, [
+        React.createElement('div', { key: 'chead', className: 'text-center mb-16' }, [
+          React.createElement('h2', { key: 'ch2', className: 'text-4xl font-bold text-primary mb-4' }, 'Get in Touch')
+        ]),
+        React.createElement('div', { key: 'cgrid', className: 'grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch' }, [
+          React.createElement(Card, { key: 'cinfo', className: 'bg-white h-full flex flex-col' }, [
+            React.createElement(CardHeader, { key: 'cih', className: 'pb-4' }, [
+              React.createElement(CardTitle, { key: 'cit', className: 'text-2xl text-primary' }, 'Contact Information')
+            ]),
+            React.createElement(CardContent, { key: 'cicont', className: 'space-y-6' }, [
+              React.createElement('div', { key: 'addr', className: 'flex items-start space-x-4' }, [
+                React.createElement('div', { key: 'addrb', className: 'bg-primary text-white p-3 rounded-md' }, React.createElement(MapPin, { className: 'h-5 w-5' })),
+                React.createElement('div', { key: 'addrtext' }, [
+                  React.createElement('h4', { key: 'addrh', className: 'font-semibold text-primary' }, 'Address'),
+                  React.createElement('p', { key: 'addrp', className: 'text-gray-600 text-sm leading-relaxed' }, 'Rajasic Foods   \nNimbahera, Rajasthan')
+                ])
+              ]),
+              React.createElement('div', { key: 'phone', className: 'flex items-start space-x-4' }, [
+                React.createElement('div', { key: 'phoneb', className: 'bg-primary text-white p-3 rounded-md' }, React.createElement(Phone, { className: 'h-5 w-5' })),
+                React.createElement('div', { key: 'phonet' }, [
+                  React.createElement('h4', { key: 'phoneh', className: 'font-semibold text-primary' }, 'Phone'),
+                  React.createElement('p', { key: 'phonep', className: 'text-gray-600 text-sm leading-relaxed' }, '+91 78019 01855')
+                ])
+              ]),
+              React.createElement('div', { key: 'email', className: 'flex items-start space-x-4' }, [
+                React.createElement('div', { key: 'emailb', className: 'bg-primary text-white p-3 rounded-md' }, React.createElement(Mail, { className: 'h-5 w-5' })),
+                React.createElement('div', { key: 'emailt' }, [
+                  React.createElement('h4', { key: 'emailh', className: 'font-semibold text-primary' }, 'Email'),
+                  React.createElement('p', { key: 'emailp', className: 'text-gray-600 text-sm leading-relaxed' }, 'info@rajasicfoods.com\norders@rajasicfoods.com')
+                ])
+              ]),
+              React.createElement('div', { key: 'whatsapp', className: 'p-4 whatsapp-gradient rounded-lg shadow-sm' }, [
+                React.createElement('div', { key: 'whhead', className: 'flex items-center mb-3' }, [
+                  React.createElement(MessageCircle, { key: 'whicon', className: 'h-6 w-6 mr-3 text-whatsapp-foreground' }),
+                  React.createElement('div', { key: 'whtxt' }, [
+                    React.createElement('h4', { key: 'whh', className: 'font-semibold' }, 'WhatsApp Support'),
+                    React.createElement('p', { key: 'whp', className: 'text-whatsapp-foreground/85 text-xs' }, 'Get instant answers to your questions')
+                  ])
+                ]),
+                React.createElement(Button, { key: 'whbtn', onClick: () => window.open('https://wa.me/917801901855', '_blank'), className: 'w-full whatsapp-gradient-inset-btn text-whatsapp-foreground h-9 text-sm border border-whatsapp-foreground/30 hover:border-whatsapp-foreground/50 transition-colors font-medium' }, [
+                  React.createElement(MessageCircle, { key: 'whbicon', className: 'mr-2 h-4 w-4' }), ' Chat with Us on WhatsApp'
+                ])
+              ]),
+              React.createElement('div', { key: 'insta', className: 'p-4 brand-gradient rounded-lg shadow-sm' }, [
+                React.createElement('div', { key: 'ihead', className: 'flex items-center mb-3' }, [
+                  React.createElement(Instagram, { key: 'iicon', className: 'h-6 w-6 mr-3 text-cta' }),
+                  React.createElement('div', { key: 'itxt' }, [
+                    React.createElement('h4', { key: 'ih', className: 'font-semibold' }, 'Instagram'),
+                    React.createElement('p', { key: 'ip', className: 'text-primary-foreground/90 text-xs' }, 'Follow & DM us for updates')
+                  ])
+                ]),
+                React.createElement(Button, { key: 'ibtn', onClick: () => window.open('https://www.instagram.com/foodsrajasic/?hl=en', '_blank'), className: 'w-full brand-gradient-inset-btn text-primary-foreground h-9 text-sm border border-primary/25 hover:border-primary/40 transition-colors' }, [
+                  React.createElement(Instagram, { key: 'ibicon', className: 'mr-2 h-4 w-4' }), ' Visit @foodsrajasic'
+                ])
+              ])
+            ])
+          ]),
+          // Contact form
+          React.createElement('div', { key: 'cformwrap', className: 'lg:col-span-2 flex flex-col' }, [
+            React.createElement('button', { key: 'cformbtn', type: 'button', onClick: () => setMobileFormOpen(o => !o), className: 'md:hidden w-full bg-primary text-primary-foreground tracking-[0.35em] text-xs py-4 rounded-t-md flex items-center justify-center gap-2 shadow-sm', 'aria-expanded': mobileFormOpen, 'aria-controls': 'contact-form-mobile' }, [
+              'SEND US A MESSAGE', React.createElement('span', { key: 'arrow', className: `transition-transform duration-300 ${mobileFormOpen ? 'rotate-180' : ''}` }, '▾')
+            ]),
+            React.createElement('div', { key: 'cformcard', id: 'contact-form-mobile', className: `${mobileFormOpen ? 'block' : 'hidden'} md:block` }, [
+              React.createElement(Card, { key: 'cform', className: 'bg-white rounded-t-none md:rounded-md border-t-0 md:border-t h-full flex flex-col' }, [
+                React.createElement(CardHeader, { key: 'cfhead' }, [
+                  React.createElement(CardTitle, { key: 'cftitle', className: 'text-2xl text-primary md:text-left text-center' }, 'Send us a Message')
+                ]),
+                React.createElement(CardContent, { key: 'cfcontent' }, [
+                  React.createElement('form', { key: 'formel', onSubmit: contactForm.handleSubmit((data:any) => createContactMutation.mutate(data)), className: 'space-y-6' }, [
+                    React.createElement('div', { key: 'gridnames', className: 'grid md:grid-cols-2 gap-6' }, [
+                      React.createElement('div', { key: 'firstName', className: 'space-y-2' }, [
+                        React.createElement('label', { key: 'l1', className: 'block text-sm font-medium' }, 'First Name *'),
+                        React.createElement(Input, { key: 'i1', ...contactForm.register('firstName') })
+                      ]),
+                      React.createElement('div', { key: 'lastName', className: 'space-y-2' }, [
+                        React.createElement('label', { key: 'l2', className: 'block text-sm font-medium' }, 'Last Name *'),
+                        React.createElement(Input, { key: 'i2', ...contactForm.register('lastName') })
+                      ])
+                    ]),
+                    React.createElement('div', { key: 'emailField', className: 'space-y-2' }, [
+                      React.createElement('label', { key: 'l3', className: 'block text-sm font-medium' }, 'Email Address *'),
+                      React.createElement(Input, { key: 'i3', type: 'email', ...contactForm.register('email') })
+                    ]),
+                    React.createElement('div', { key: 'subjectField', className: 'space-y-2' }, [
+                      React.createElement('label', { key: 'l4', className: 'block text-sm font-medium' }, 'Subject *'),
+                      React.createElement('select', { key: 'sel', className: 'w-full border rounded-md h-10 px-3', ...contactForm.register('subject') }, [
+                        React.createElement('option', { key: 'op0', value: '' }, 'Select a subject'),
+                        React.createElement('option', { key: 'op1', value: 'product-inquiry' }, 'Product Inquiry'),
+                        React.createElement('option', { key: 'op2', value: 'order-support' }, 'Order Support'),
+                        React.createElement('option', { key: 'op3', value: 'nutritional-advice' }, 'Nutritional Advice'),
+                        React.createElement('option', { key: 'op4', value: 'wholesale' }, 'Wholesale/Bulk Orders'),
+                        React.createElement('option', { key: 'op5', value: 'partnership' }, 'Partnership Opportunities'),
+                        React.createElement('option', { key: 'op6', value: 'other' }, 'Other')
+                      ])
+                    ]),
+                    React.createElement('div', { key: 'messageField', className: 'space-y-2' }, [
+                      React.createElement('label', { key: 'l5', className: 'block text-sm font-medium' }, 'Message *'),
+                      React.createElement(Textarea, { key: 'ta', placeholder: 'Tell us how we can help you...', className: 'min-h-[120px]', ...contactForm.register('message') })
+                    ]),
+                    React.createElement(Button, { key: 'submit', type: 'submit', disabled: createContactMutation.isPending, className: 'w-full bg-primary text-white hover:bg-green-800' }, createContactMutation.isPending ? 'Sending...' : 'Send Message')
+                  ])
+                ])
+              ])
+            ])
+          ])
+        ])
+      ])
+    ]),
     React.createElement(Sheet, { key: 'sheet', open: showCart, onOpenChange: (open: boolean) => { if (!open) closeCart(); } }, [
       React.createElement(SheetContent, { key: 'sheetc', side: 'right', className: 'w-full sm:max-w-lg' }, [
         React.createElement(CartSheet, { key: 'cart' })
