@@ -26,8 +26,16 @@ export async function setupVite(app: Express, server: Server) {
     allowedHosts: true as const,
   };
 
+  // Support vite.config exporting a function (defineConfig(() => ({...})))
+  // If it's a function, execute it to retrieve the actual config object.
+  const resolvedConfig: any = typeof viteConfig === 'function' ? (viteConfig as any)() : viteConfig;
+
+  // Merge our middleware server options with any existing server config.
+  const mergedServer = { ...(resolvedConfig.server || {}), ...serverOptions };
+
   const vite = await createViteServer({
-    ...viteConfig,
+    ...(resolvedConfig || {}),
+    server: mergedServer,
     configFile: false,
     customLogger: {
       ...viteLogger,
@@ -36,7 +44,6 @@ export async function setupVite(app: Express, server: Server) {
         process.exit(1);
       },
     },
-    server: serverOptions,
     appType: "custom",
   });
 

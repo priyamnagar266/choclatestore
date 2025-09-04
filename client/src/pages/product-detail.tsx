@@ -111,6 +111,13 @@ const ProductDetailPage: React.FC<Props> = ({ slug }) => {
 		}, [product, variants]);
 		const effectiveVariantLabel = selectedVariantLabel || defaultVariantLabel;
 
+		// Ensure default (prefer 30g) is actually selected so styling and cart enrichment work.
+		React.useEffect(()=>{
+			if(!selectedVariantLabel && defaultVariantLabel){
+				setSelectedVariantLabel(defaultVariantLabel);
+			}
+		}, [defaultVariantLabel, selectedVariantLabel]);
+
 		// Carousel state
 		const [imgIdx, setImgIdx] = React.useState(0);
 		const images: string[] = product && Array.isArray(product.images) && product.images.length > 0 ? product.images : (product ? [product.image] : []);
@@ -223,7 +230,7 @@ const ProductDetailPage: React.FC<Props> = ({ slug }) => {
 			]) : h('div',{className:'text-3xl font-extrabold text-secondary'}, formatPrice(effectivePrice)),
 			// Variant buttons aligned to right side of row
 			variants.length ? h('div',{className:'flex flex-wrap gap-2 ml-auto'}, variants.map(v=>{
-				const active = selectedVariantLabel === v.label;
+				const active = (selectedVariantLabel || defaultVariantLabel) === v.label;
 				const disabled = v.inStock === 0;
 				return h('button',{
 					key:v.label,
@@ -323,7 +330,7 @@ const ProductDetailPage: React.FC<Props> = ({ slug }) => {
 			]) : h('div',{className:'text-2xl font-extrabold text-secondary'}, formatPrice(effectivePrice)),
 			// Variants to the right
 			variants.length ? h('div',{className:'flex flex-wrap gap-2 ml-auto'}, variants.map(v=>{
-				const active = selectedVariantLabel === v.label;
+				const active = (selectedVariantLabel || defaultVariantLabel) === v.label;
 				const disabled = v.inStock === 0;
 				return h('button',{
 					key:v.label,

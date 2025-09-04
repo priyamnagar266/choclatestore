@@ -1,4 +1,5 @@
 import React from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ProductShare from "./ProductShare";
@@ -18,6 +19,8 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onAddToCart, onBuyNow, withModal = true, productsAll }: ProductCardProps) {
+  // SPA navigation hook
+  const [, setLocation] = useLocation();
   // Carousel state
   const images: string[] = Array.isArray(product.images) && product.images.length > 0 ? product.images : [product.image];
   // Determine effective base price / sale considering variants (show min variant price for card teaser)
@@ -131,12 +134,15 @@ export default function ProductCard({ product, onAddToCart, onBuyNow, withModal 
     )
   );
 
-  if (!withModal) return card;
-
-  // Prefer explicit productsAll prop, fallback to window.__ALL_PRODUCTS
-  const all = productsAll && productsAll.length > 0
-    ? productsAll
-    : (typeof window !== 'undefined' ? (window as any).__ALL_PRODUCTS : undefined);
-  const passAll = Array.isArray(all) && all.length > 0 ? all : undefined;
-  return React.createElement(ProductModal, { product, onAddToCart, trigger: card, productsAll: passAll });
+  // Always navigate to product detail page on card click
+  const slugOrId = (product as any).slug || product.id || (product as any)._id;
+  return React.createElement('a', {
+    href: `/products/${slugOrId}`,
+    style: { textDecoration: 'none', color: 'inherit' },
+    onClick: (e: React.MouseEvent) => {
+      e.preventDefault();
+      // Use client-side navigation (wouter) to avoid full page reload
+      setLocation(`/products/${slugOrId}`);
+    }
+  }, card);
 }
