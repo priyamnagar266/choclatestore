@@ -11,6 +11,8 @@
     "generate:products": "tsx scripts/generate-products-json.ts",
     "generate:productsByCategory": "tsx scripts/generate-productsByCategory-json.ts",
   "add:variants": "tsx scripts/add-variants-default.ts",
+  "tag:combos": "tsx scripts/tag-combos.ts",
+  "generate:all": "npm run tag:combos && npm run generate:products && npm run generate:productsByCategory",
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "start:server": "cross-env NODE_ENV=production node dist/index.js",
     "migrate:atlas": "tsx scripts/migrate-local-to-atlas.ts",

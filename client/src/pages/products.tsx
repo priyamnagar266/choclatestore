@@ -77,9 +77,23 @@ const ProductsPage = () => {
     'Dark Chocolates': '🍫',
     'Milk Chocolates': '🥛',
     'Indian Super Food Fusion': '✨',
+  'Combo': '🎁',
   };
 
-  const sections = Object.entries(productsByCategory).map(([category, products], idx) => {
+  // Enforce allowed category ordering & suppress unknown categories from user view (they can still exist in data)
+  const CATEGORY_ORDER = [
+    'Seed based Energy Bar',
+    'Nuts based Energy Bar',
+    'Dark Chocolates',
+    'Milk Chocolates',
+    'Indian Super Food Fusion',
+    'Combo'
+  ];
+  const orderedEntries = Object.entries(productsByCategory)
+    .filter(([cat]) => CATEGORY_ORDER.includes(cat))
+    .sort((a,b)=> CATEGORY_ORDER.indexOf(a[0]) - CATEGORY_ORDER.indexOf(b[0]));
+
+  const sections = orderedEntries.map(([category, products], idx) => {
     const header = React.createElement('div', { className: 'w-full flex items-center gap-3 mb-6' },
       React.createElement('h2', {
         className: 'text-2xl md:text-3xl font-bold w-full text-center',

@@ -72,7 +72,7 @@
       "id": 2,
       "slug": "cocoa-crunch-chocolate",
       "bestseller": false,
-      "updatedAt": "2025-09-02T10:28:40.866Z",
+      "updatedAt": "2025-09-02T17:18:38.297Z",
       "salePrice": 61,
       "variants": [
         {
@@ -819,6 +819,40 @@
           "price": 145
         }
       ]
+    }
+  ],
+  "Combo": [
+    {
+      "_id": "68b9c21fd94ba4ce4bce9524",
+      "id": 21,
+      "benefits": [
+        "Sustained Energy",
+        "Pre-Workout",
+        "Digestive Health",
+        "Gut Friendly"
+      ],
+      "inStock": 100,
+      "bestseller": true,
+      "name": "Bundle of 5 Premium Chocolates",
+      "description": "Indulge in the ultimate chocolate experience with our specially curated Bundle of 5 Chocolates. Crafted with the finest ingredients, this collection brings together a perfect mix of flavors—from rich nutty blends to smooth velvety textures and bold cocoa delights.\r\n\r\nWhat’s Inside:\r\n\r\nKhas Badam – A traditional fusion of almonds and poppy seeds, wrapped in dark chocolate richness.\r\n\r\nCocoa & Crunch – The perfect bite of creamy cocoa layered with delightful crunchy goodness.\r\n\r\nVelvet Walnut – Smooth chocolate infused with the earthy richness of walnuts for a velvety finish.\r\n\r\nVelvet Wine – A luxurious blend of chocolate with a subtle wine-inspired twist for indulgent evenings.\r\n\r\nPlain 55% – A balanced dark chocolate bar with a smooth, semi-sweet profile.\r\n\r\nPlain 70% – Bold and intense, crafted for true dark chocolate lovers.",
+      "price": 320,
+      "image": "https://i.postimg.cc/8591zShK/1755841768406.jpg",
+      "category": "Combo",
+      "variants": [
+        {
+          "label": "30g",
+          "price": 320,
+          "salePrice": 280
+        },
+        {
+          "label": "60g",
+          "price": 640,
+          "salePrice": 560
+        }
+      ],
+      "createdAt": "2025-09-04T16:45:19.289Z",
+      "updatedAt": "2025-09-04T16:46:44.385Z",
+      "salePrice": 280
     }
   ]
 }

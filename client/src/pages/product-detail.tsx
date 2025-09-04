@@ -69,14 +69,15 @@ async function fetchAllStaticFirst(): Promise<Product[]> {
 	return [];
 }
 
-async function fetchProductBySlugStaticFirst(slug: string): Promise<Product | null> {
+async function fetchProductBySlugOrIdStaticFirst(slugOrId: string): Promise<Product | null> {
 	const list = await fetchAllStaticFirst();
-	const found = list.find(p => p.slug === slug);
+	const found = list.find(p => p.slug === slugOrId || String((p as any).id) === slugOrId || String((p as any)._id) === slugOrId);
 	if (found) {
-		// If static product missing variants, try live API to enrich
+		// Enrich variants if missing via slug endpoint (prefer slug if exists)
+		const enrichKey = (found as any).slug || slugOrId;
 		if (!('variants' in found) || !Array.isArray((found as any).variants) || (found as any).variants.length === 0) {
 			try {
-				const r = await fetch(`/api/products/slug/${slug}`, { cache: 'no-cache' });
+				const r = await fetch(`/api/products/slug/${enrichKey}`, { cache: 'no-cache' });
 				if (r.ok) {
 					const fresh = await r.json();
 					if (fresh && Array.isArray(fresh.variants) && fresh.variants.length) return fresh;
@@ -85,11 +86,18 @@ async function fetchProductBySlugStaticFirst(slug: string): Promise<Product | nu
 		}
 		return found;
 	}
-	// slug-specific API fallback only if not present in static
+	// Try slug endpoint first
 	try {
-		const r = await fetch(`/api/products/slug/${slug}`);
+		const r = await fetch(`/api/products/slug/${slugOrId}`);
 		if (r.ok) return r.json();
 	} catch {}
+	// If numeric, try id endpoint
+	if (/^\d+$/.test(slugOrId)) {
+		try {
+			const r2 = await fetch(`/api/products/${slugOrId}`);
+			if (r2.ok) return r2.json();
+		} catch {}
+	}
 	return null;
 }
 
@@ -99,7 +107,7 @@ const ProductDetailPage: React.FC<Props> = ({ slug }) => {
 		const { addToCart, openCart } = useCart();
 		const [selectedVariantLabel, setSelectedVariantLabel] = React.useState<string | null>(null);
 		const { toast } = useToast();
-		const { data: productRaw, isLoading, error } = useQuery<Product | null>({ queryKey:["product", slug], queryFn:()=>fetchProductBySlugStaticFirst(slug) });
+		const { data: productRaw, isLoading, error } = useQuery<Product | null>({ queryKey:["product", slug], queryFn:()=>fetchProductBySlugOrIdStaticFirst(slug) });
 		const { data: all } = useQuery<Product[]>({ queryKey:["products-all"], queryFn:fetchAllStaticFirst, staleTime:120000 });
 		const product = productRaw as ProductWithImages | null;
 		// Variant selection (must be before early returns so hook order is stable)

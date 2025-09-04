@@ -40,6 +40,7 @@ interface ProductFormData {
   salePrice?: number;
   image: string; // URL fallback
   imageFile: File | null; // optional file upload
+  images?: string[]; // optional additional images (max 3 total including main)
   benefits: string[];
   category: string;
   inStock: number;
@@ -49,6 +50,17 @@ interface ProductFormData {
 }
 
 interface ProductsResponse { products: Product[]; total: number; page: number; pageSize: number; }
+
+// Allowed categories (locked list requested by user)
+// Any legacy category on existing products will still appear (tagged as legacy) so it can be migrated.
+const ALLOWED_CATEGORIES = [
+  'Seed based Energy Bar',
+  'Nuts based Energy Bar',
+  'Dark Chocolates',
+  'Milk Chocolates',
+  'Indian Super Food Fusion',
+  'Combo'
+];
 
 export default function AdminProducts() {
   const { user } = useAuth();
@@ -126,7 +138,13 @@ export default function AdminProducts() {
   enabled: !!token
   });
 
-  const products = data?.products || [];
+  // Normalize products (especially bestseller which may arrive as a string "false" / "true")
+  const products = (data?.products || []).map(p => ({
+    ...p,
+    bestseller: typeof (p as any).bestseller === 'string'
+      ? ((p as any).bestseller.toLowerCase() === 'true')
+      : !!p.bestseller
+  }));
   // Debounce search input -> searchTerm
   useEffect(()=>{
     const t = setTimeout(()=>{ setPage(1); setSearchTerm(searchInput.trim()); }, 300);
@@ -145,6 +163,10 @@ export default function AdminProducts() {
   fd.append('inStock', String(payload.inStock));
   if (typeof payload.bestseller === 'boolean') fd.append('bestseller', String(payload.bestseller));
     fd.append('benefits', payload.benefits.join(','));
+    if (payload.images && payload.images.length) {
+      // store as JSON string (server currently ignores but future-ready)
+      fd.append('images', JSON.stringify(payload.images.slice(0,3)));
+    }
     // Build variants array from fixed weight fields (overrides free-form variants if provided)
     const fixedVariants: any[] = [];
     const p30 = parseFloat(v30Price);
@@ -251,7 +273,7 @@ export default function AdminProducts() {
   });
 
   const resetForm = () => {
-  setFormData({ name: '', slug: '', description: '', price: 0, salePrice: undefined, image: '', imageFile: null, benefits: [], category: '', inStock: 0, bestseller:false, variants: [] });
+  setFormData({ name: '', slug: '', description: '', price: 0, salePrice: undefined, image: '', imageFile: null, images: [], benefits: [], category: '', inStock: 0, bestseller:false, variants: [] });
     setBenefitsRaw('');
     setV30Price(''); setV30Sale(''); setV60Price(''); setV60Sale('');
     setSlugManuallyEdited(false);
@@ -270,7 +292,7 @@ export default function AdminProducts() {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
-  setFormData({ name: product.name, slug: (product as any).slug || '', description: product.description, price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, salePrice: (product as any).salePrice != null ? Number((product as any).salePrice) : undefined, image: product.image, imageFile: null, benefits: product.benefits, category: product.category, inStock: product.inStock, bestseller: product.bestseller || false, variants: product.variants || [], energyKcal: product.energyKcal, proteinG: product.proteinG, carbohydratesG: product.carbohydratesG, totalSugarG: product.totalSugarG, addedSugarG: product.addedSugarG, totalFatG: product.totalFatG, saturatedFatG: product.saturatedFatG, transFatG: product.transFatG });
+  setFormData({ name: product.name, slug: (product as any).slug || '', description: product.description, price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, salePrice: (product as any).salePrice != null ? Number((product as any).salePrice) : undefined, image: product.image, imageFile: null, images: (product as any).images || [], benefits: product.benefits, category: product.category, inStock: product.inStock, bestseller: ((): boolean => { const v:any = (product as any).bestseller; return typeof v === 'string' ? v.toLowerCase()==='true' : !!v; })(), variants: product.variants || [], energyKcal: product.energyKcal, proteinG: product.proteinG, carbohydratesG: product.carbohydratesG, totalSugarG: product.totalSugarG, addedSugarG: product.addedSugarG, totalFatG: product.totalFatG, saturatedFatG: product.saturatedFatG, transFatG: product.transFatG });
   setBenefitsRaw(product.benefits?.join(', ') || '');
     // Prefill fixed weight fields if variants exist
     const v30 = (product.variants || []).find(v=> v.label.toLowerCase() === '30g');
@@ -340,11 +362,12 @@ export default function AdminProducts() {
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from(new Set(products.map(p => p.category))).map(cat => (
+                      {ALLOWED_CATEGORIES.map(cat => (
                         <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                       ))}
-                      {formData.category && !products.some(p=>p.category===formData.category) && (
-                        <SelectItem value={formData.category}>{formData.category} (new)</SelectItem>
+                      {/* Legacy category fallback */}
+                      {formData.category && !ALLOWED_CATEGORIES.includes(formData.category) && (
+                        <SelectItem value={formData.category}>{formData.category} (legacy)</SelectItem>
                       )}
                     </SelectContent>
                   </Select>
@@ -390,23 +413,46 @@ export default function AdminProducts() {
                   </div>
                   <p className="col-span-2 text-[10px] text-muted-foreground">Leave price blank to omit that weight. Sale price must be less than its price.</p>
                 </div>
-                <div className="flex flex-col justify-end">
-                  <Label htmlFor="bestseller" className="mb-1">Bestseller</Label>
-                  <button type="button" onClick={()=> setFormData(f=>({...f,bestseller:!f.bestseller}))} className={`h-10 px-3 rounded border text-sm font-medium ${formData.bestseller ? 'bg-green-600 text-white border-green-600' : 'bg-gray-100 text-gray-700 border-gray-300'}`}>{formData.bestseller ? 'Yes' : 'No'}</button>
-                </div>
-                <div>
-                  <Label>Image</Label>
-                  <div className="flex flex-col gap-2">
-                    <Input id="imageUrl" placeholder="Paste image URL (optional if uploading)" value={formData.image} onChange={e=>setFormData({...formData,image:e.target.value})} />
-                    <input type="file" accept="image/*" onChange={e=>{ const file=e.target.files?.[0]||null; setFormData({...formData,imageFile:file}); if(file){ setFormData(f=>({...f,image:''})); } }} />
-                    <div className="mt-2 flex gap-2 items-center">
-                      {formData.image && (
-                        <img src={formData.image} alt="Preview" className="w-16 h-16 object-cover rounded border" />
-                      )}
-                      {formData.imageFile && (
-                        <img src={URL.createObjectURL(formData.imageFile)} alt="Preview" className="w-16 h-16 object-cover rounded border" />
-                      )}
+                {/* Image & Bestseller Row */}
+                <div className="col-span-3 grid grid-cols-3 gap-4">
+                  <div className="col-span-2">
+                    <Label>Images</Label>
+                    <div className="flex flex-col gap-2">
+                      <Input id="imageUrl" placeholder="Main image URL" value={formData.image} onChange={e=>setFormData({...formData,image:e.target.value})} />
+                      <input type="file" accept="image/*" onChange={e=>{ const file=e.target.files?.[0]||null; setFormData({...formData,imageFile:file}); if(file){ setFormData(f=>({...f,image:''})); } }} />
+                      <div className="mt-2 flex gap-2 items-center flex-wrap">
+                        {(formData.imageFile || formData.image) && (
+                          <img src={formData.imageFile ? URL.createObjectURL(formData.imageFile) : formData.image} alt="Main" className="w-16 h-16 object-cover rounded border" />
+                        )}
+                        {formData.images && formData.images.slice(0,2).map((u,i)=>(
+                          <img key={i} src={u} alt={`Extra ${i+2}`} className="w-16 h-16 object-cover rounded border" />
+                        ))}
+                      </div>
+                      <div className="mt-3 space-y-2">
+                        <div className="text-xs font-semibold tracking-wide text-muted-foreground">Additional Images</div>
+                        {[0,1].map(idx => {
+                          const val = formData.images?.[idx] || '';
+                          return (
+                            <div key={idx} className="flex items-center gap-2">
+                              <Input placeholder={`Image ${idx+2} URL`} value={val} onChange={e=>{
+                                const arr = [...(formData.images||[])];
+                                arr[idx] = e.target.value;
+                                setFormData({...formData, images: arr.map(s=>s).filter(s=>s && s.trim()).slice(0,3)});
+                              }} />
+                              {val && <button type="button" onClick={()=>{
+                                const arr = [...(formData.images||[])];
+                                arr.splice(idx,1);
+                                setFormData({...formData, images: arr});
+                              }} className="text-xs text-red-600 hover:underline">Remove</button>}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
+                  </div>
+                  <div className="flex flex-col justify-end">
+                    <Label htmlFor="bestseller" className="mb-1">Bestseller</Label>
+                    <button type="button" onClick={()=> setFormData(f=>({...f,bestseller:!f.bestseller}))} className={`h-10 px-3 rounded border text-sm font-medium ${formData.bestseller ? 'bg-green-600 text-white border-green-600' : 'bg-gray-100 text-gray-700 border-gray-300'}`}>{formData.bestseller ? 'Yes' : 'No'}</button>
                   </div>
                 </div>
               </div>
@@ -481,7 +527,12 @@ export default function AdminProducts() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value='all'>All Categories</SelectItem>
-                  {Array.from(new Set(products.map(p=>p.category))).map(cat=> <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                  {ALLOWED_CATEGORIES.map(cat=> <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                  {products.some(p=> !ALLOWED_CATEGORIES.includes(p.category)) && (
+                    Array.from(new Set(products.filter(p=> !ALLOWED_CATEGORIES.includes(p.category)).map(p=>p.category))).map(legacy => (
+                      <SelectItem key={legacy} value={legacy}>{legacy} (legacy)</SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
