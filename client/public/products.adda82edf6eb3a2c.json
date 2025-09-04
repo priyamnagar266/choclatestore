@@ -69,7 +69,7 @@
     "saturatedFatG": 1,
     "transFatG": 0,
     "id": 2,
-    "slug": "cocoa-crunch-chocolate-2",
+    "slug": "cocoa-crunch-chocolate",
     "bestseller": false,
     "updatedAt": "2025-09-02T17:18:38.297Z",
     "salePrice": 61,
@@ -285,7 +285,7 @@
     "saturatedFatG": 2,
     "transFatG": 0,
     "id": 7,
-    "slug": "velvet-walnut-dark-chocolate-2",
+    "slug": "velvet-walnut-dark-chocolate",
     "bestseller": false,
     "updatedAt": "2025-09-02T10:02:07.815Z",
     "salePrice": 70,
@@ -449,7 +449,7 @@
     "saturatedFatG": 2,
     "transFatG": 0,
     "id": 11,
-    "slug": "mint-fusion-dark-chocolate-2",
+    "slug": "mint-fusion-dark-chocolate",
     "bestseller": false,
     "updatedAt": "2025-09-01T16:19:54.853Z",
     "variants": [
@@ -530,7 +530,7 @@
     "transFatG": 0,
     "id": 13,
     "promoMessage": "Festival Deal: Flat ₹25 OFF",
-    "slug": "rose-pistachio-chocolate-2",
+    "slug": "rose-pistachio-chocolate",
     "variants": [
       {
         "label": "30g",
@@ -645,7 +645,7 @@
     "transFatG": 0,
     "id": 17,
     "promoMessage": "Combo Offer: Any 3 Fusion Bars @ ₹350",
-    "slug": "velvet-hazelnut-dark-chocolate-2",
+    "slug": "velvet-hazelnut-dark-chocolate",
     "variants": [
       {
         "label": "30g",
@@ -683,7 +683,7 @@
     "saturatedFatG": 1,
     "transFatG": 0,
     "id": 17,
-    "slug": "khas-badam-dark-chocolate-2",
+    "slug": "khas-badam-dark-chocolate",
     "variants": [
       {
         "label": "30g",
@@ -761,7 +761,7 @@
     "saturatedFatG": 3,
     "transFatG": 0,
     "id": 19,
-    "slug": "orange-zest-dark-chocolate-2",
+    "slug": "orange-zest-dark-chocolate",
     "variants": [
       {
         "label": "30g",

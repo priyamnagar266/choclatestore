@@ -544,6 +544,7 @@ export default function AdminProducts() {
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
+                  <TableHead>Slug</TableHead>
                 <TableHead>Image</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Category</TableHead>
@@ -564,6 +565,7 @@ export default function AdminProducts() {
                 filteredProducts.map(product => (
                   <TableRow key={product.id}>
                     <TableCell className='font-mono text-xs'>{product.id}</TableCell>
+                    <TableCell className='font-mono text-[10px] max-w-[140px] truncate'>{(product as any).slug || <span className='text-muted-foreground'>—</span>}</TableCell>
                     <TableCell><img src={product.image} alt={product.name} className='w-12 h-12 object-cover rounded' /></TableCell>
                     <TableCell>{product.name}</TableCell>
                     <TableCell><Badge variant='outline'>{product.category}</Badge></TableCell>

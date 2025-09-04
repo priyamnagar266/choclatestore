@@ -84,7 +84,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Zod schemas for product create/update validation (server-side enforcement)
+  // Helper to slugify name
+  function slugify(raw: string){
+    return raw.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80);
+  }
+  async function ensureUniqueSlug(base: string){
+    const productsCol = (await import('./db')).db.collection('products');
+    let candidate = base;
+    let i = 2;
+    // eslint-disable-next-line no-constant-condition
+    while(true){
+      const exists = await productsCol.findOne({ slug: candidate } as any, { projection: { _id: 1 } as any });
+      if(!exists) return candidate;
+      candidate = `${base}-${i++}`;
+      if(i>50) return candidate; // safety break
+    }
+  }
+
   const productCreateSchema = z.object({
+    slug: z.string().min(1).max(80).regex(/^[a-z0-9-]+$/).optional(),
     name: z.string().min(1),
     description: z.string().min(1),
     price: z.coerce.number().nonnegative(),
@@ -703,7 +721,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         }
-        const payload: any = { ...parsed, createdAt: new Date(), updatedAt: new Date() };
+  // Slug generation / normalization
+  let slug = parsed.slug && parsed.slug.trim() !== '' ? slugify(parsed.slug) : slugify(parsed.name);
+  slug = await ensureUniqueSlug(slug);
+  const payload: any = { ...parsed, slug, createdAt: new Date(), updatedAt: new Date() };
         const product = await storage.createProduct(payload);
   // Invalidate cache
   const globalAny: any = global as any; if (globalAny.__productCache) globalAny.__productCache.ts = 0;
@@ -735,6 +756,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           delete updateRaw.salePrice;
         }
         const parsedUpdate = productUpdateSchema.parse(updateRaw);
+        // Handle slug if provided (normalize + uniqueness)
+        if(parsedUpdate.slug){
+          parsedUpdate.slug = await ensureUniqueSlug(slugify(parsedUpdate.slug));
+        }
         if (parsedUpdate.salePrice != null && parsedUpdate.price != null && parsedUpdate.salePrice >= parsedUpdate.price) {
           return res.status(400).json({ message: 'Sale price must be less than price' });
         }

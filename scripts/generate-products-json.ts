@@ -7,6 +7,11 @@ import crypto from 'crypto';
 // Load .env (explicit path for reliability when run via npm scripts)
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
+// Helper to slugify product names
+function slugify(raw: string){
+  return raw.toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80);
+}
+
 async function main() {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
@@ -19,6 +24,17 @@ async function main() {
     const dbName = process.env.MONGODB_DBNAME || new URL(uri).pathname.replace('/', '') || undefined;
     const db = dbName ? client.db(dbName) : client.db();
     const products = await db.collection('products').find().sort({ id: 1 }).toArray();
+    // Ensure each product has a slug (non-persistent here; for persistence use backfill script)
+    const slugSet = new Set<string>();
+    for (const p of products){
+      if (p.slug && typeof p.slug === 'string' && p.slug.trim() !== '') { slugSet.add(p.slug); continue; }
+      if (!p.name) continue; // skip if no name
+      let base = slugify(p.name);
+      if(!base) base = String(p.id || p._id || 'item');
+      let candidate = base; let i = 2;
+      while(slugSet.has(candidate)) { candidate = `${base}-${i++}`; if(i>50) break; }
+      (p as any).slug = candidate; slugSet.add(candidate);
+    }
     const outDir = path.join(process.cwd(), 'client', 'public');
     if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
     const json = JSON.stringify(products, null, 2);
