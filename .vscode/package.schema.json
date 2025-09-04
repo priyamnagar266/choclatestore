@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Local Package.json Schema Placeholder",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "version": { "type": "string" },
+    "scripts": { "type": "object", "additionalProperties": { "type": "string" } },
+    "dependencies": { "type": "object", "additionalProperties": { "type": "string" } },
+    "devDependencies": { "type": "object", "additionalProperties": { "type": "string" } }
+  },
+  "additionalProperties": true
+}

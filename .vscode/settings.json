@@ -1,0 +1,11 @@
+{
+	// Use local fallback schema to avoid network resolution errors to schemastore
+	"json.schemas": [
+		{
+			"fileMatch": ["/package.json"],
+			"url": "./.vscode/package.schema.json"
+		}
+	],
+	// Optionally reduce validation severity if offline
+	"json.validate.enable": true
+}
