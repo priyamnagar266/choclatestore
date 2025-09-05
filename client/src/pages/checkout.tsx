@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { loadRazorpayScript } from "../lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
+import { useCart } from "@/context/CartContext"; // to clear cart after successful order
 
 declare global {
   interface Window {
@@ -27,6 +28,7 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [isProcessing, setIsProcessing] = useState(false);
+  const { clearCart } = useCart();
 
   // Use the imported loadRazorpayScript from utils
 
@@ -241,6 +243,8 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
                   localStorage.removeItem('razorpayPaymentId');
                   localStorage.removeItem('razorpay_order_id');
                   localStorage.removeItem('razorpay_signature');
+                  // Clear in-memory cart state
+                  clearCart();
                   setTimeout(() => {
                     setLocation('/');
                   }, 1500);
@@ -260,6 +264,7 @@ const CheckoutForm = ({ orderId, amount }: { orderId: number; amount: number }) 
                     }
                     localStorage.removeItem('cart_guest');
                   } catch {}
+                  clearCart();
                 }
               } else {
                 toast({
@@ -402,6 +407,7 @@ export default function Checkout() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { clearCart } = useCart();
 
   useEffect(() => {
     // Always read full order (with delivery info) from localStorage
@@ -590,6 +596,8 @@ export default function Checkout() {
                 title: "Payment Successful!",
                 description: "Thank you for your purchase! Your order has been confirmed.",
               });
+              // Clear cart (context + storage) after successful payment
+              clearCart();
               setTimeout(() => {
                 setLocation('/');
               }, 1500);
