@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, Trash2, Search, ImagePlus } from "lucide-react";
+import { Plus, Edit, Trash2, Search } from "lucide-react";
 import { formatPrice } from "@/lib/products";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 
@@ -70,6 +70,7 @@ export default function AdminProducts() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   // Collect product IDs that have been edited but not yet applied (batched deploy)
   const [pendingChanges, setPendingChanges] = useState<Set<number>>(new Set());
   const [formData, setFormData] = useState<ProductFormData>({
@@ -312,39 +313,79 @@ export default function AdminProducts() {
 
   const filteredProducts = categoryFilter === 'all' ? products : products.filter(p => p.category === categoryFilter);
   const bestsellerCount = products.filter(p=>p.bestseller).length;
+  const allVisibleSelected = filteredProducts.length>0 && filteredProducts.every(p=> selectedIds.has(p.id));
+  const toggleSelectAllVisible = () => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (allVisibleSelected) {
+        // unselect all visible
+        filteredProducts.forEach(p=> next.delete(p.id));
+      } else {
+        filteredProducts.forEach(p=> next.add(p.id));
+      }
+      return next;
+    });
+  };
+  const toggleSelectOne = (id:number) => {
+    setSelectedIds(prev => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+  };
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Delete ${selectedIds.size} selected product(s)? This cannot be undone.`)) return;
+    try {
+      const body = JSON.stringify({ ids: Array.from(selectedIds) });
+      const res = await apiFetch('/api/admin/products/bulk-delete', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` }, body });
+      const json = await res.json();
+      if (!res.ok) {
+        toast({ title:'Bulk delete failed', description: json?.message || 'Server error', variant:'destructive' });
+        return;
+      }
+      toast({ title:'Products deleted', description:`Removed ${json.removed || selectedIds.size} product(s). Rebuild triggered.` });
+      setSelectedIds(new Set());
+      queryClient.invalidateQueries({ queryKey:['admin-products'] });
+    } catch(e:any){
+      toast({ title:'Bulk delete failed', description: e?.message || 'Network error', variant:'destructive' });
+    }
+  };
 
   return (
     <AdminLayout>
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Product Management</h1>
-  <div className="flex gap-2 items-center">
-          {pendingChanges.size > 0 && (
-            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded border border-amber-300">{pendingChanges.size} pending</span>
-          )}
-          <Button variant="secondary" disabled={pendingChanges.size===0 || createProductMutation.isPending || updateProductMutation.isPending}
-            onClick={async ()=>{
-              // Trigger static products regeneration & Netlify build via backend manual endpoint
-              try {
-                await apiFetch('/api/admin/trigger-rebuild', { method:'POST', headers:{ Authorization: `Bearer ${token}` }});
-                toast({ title: 'Deploy triggered', description: 'Rebuild started with your pending changes.' });
-                setPendingChanges(new Set());
-              } catch {
-                toast({ title:'Failed to trigger rebuild', variant:'destructive' });
-              }
-            }}>Apply Changes</Button>
-        </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
-            </DialogHeader>
+      <div className="p-6 space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Product Management</h1>
+          <div className="flex gap-2 items-center">
+            {pendingChanges.size > 0 && (
+              <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded border border-amber-300">{pendingChanges.size} pending</span>
+            )}
+            {selectedIds.size > 0 && (
+              <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded border border-red-300">{selectedIds.size} selected</span>
+            )}
+            <Button variant="destructive" disabled={selectedIds.size === 0} onClick={handleBulkDelete}>Delete Selected</Button>
+            <Button
+              variant="secondary"
+              disabled={pendingChanges.size === 0 || createProductMutation.isPending || updateProductMutation.isPending}
+              onClick={async () => {
+                try {
+                  await apiFetch('/api/admin/trigger-rebuild', { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+                  toast({ title: 'Deploy triggered', description: 'Rebuild started with your pending changes.' });
+                  setPendingChanges(new Set());
+                } catch {
+                  toast({ title: 'Failed to trigger rebuild', variant: 'destructive' });
+                }
+              }}
+            >Apply Changes</Button>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Product
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+              </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 pb-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -509,8 +550,8 @@ export default function AdminProducts() {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
+        </div>
 
       <Card>
         <CardHeader>
@@ -543,6 +584,9 @@ export default function AdminProducts() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>
+                  <input type="checkbox" aria-label="Select all" checked={allVisibleSelected} onChange={toggleSelectAllVisible} />
+                </TableHead>
                 <TableHead>ID</TableHead>
                   <TableHead>Slug</TableHead>
                 <TableHead>Image</TableHead>
@@ -558,12 +602,15 @@ export default function AdminProducts() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={8} className='text-center'>Loading...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={13} className='text-center'>Loading...</TableCell></TableRow>
               ) : filteredProducts.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className='text-center'>No products found</TableCell></TableRow>
+                <TableRow><TableCell colSpan={13} className='text-center'>No products found</TableCell></TableRow>
               ) : (
                 filteredProducts.map(product => (
                   <TableRow key={product.id}>
+                    <TableCell>
+                      <input type="checkbox" aria-label={`Select product ${product.id}`} checked={selectedIds.has(product.id)} onChange={()=>toggleSelectOne(product.id)} />
+                    </TableCell>
                     <TableCell className='font-mono text-xs'>{product.id}</TableCell>
                     <TableCell className='font-mono text-[10px] max-w-[140px] truncate'>{(product as any).slug || <span className='text-muted-foreground'>—</span>}</TableCell>
                     <TableCell><img src={product.image} alt={product.name} className='w-12 h-12 object-cover rounded' /></TableCell>

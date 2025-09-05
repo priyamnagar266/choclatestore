@@ -807,6 +807,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ADMIN: Bulk delete products
+  app.post('/api/admin/products/bulk-delete', authenticateJWT, async (req, res) => {
+    // @ts-ignore
+    if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
+    try {
+      const { ids } = req.body || {};
+      if (!Array.isArray(ids) || !ids.every((n:any)=> Number.isInteger(n))) {
+        return res.status(400).json({ message: 'ids must be an array of integers' });
+      }
+      const removed = await storage.deleteProducts(ids.map(Number));
+      const globalAny: any = global as any; if (globalAny.__productCache) globalAny.__productCache.ts = 0;
+      if (removed > 0) triggerNetlifyBuild('product-bulk-delete');
+      res.json({ success: true, removed });
+    } catch (e:any) {
+      console.error('[ADMIN BULK DELETE /api/admin/products/bulk-delete] error', e);
+      res.status(500).json({ message: 'Failed bulk delete' });
+    }
+  });
+
   // ADMIN: Toggle bestseller flag
   app.patch('/api/admin/products/:id/bestseller', authenticateJWT, async (req, res) => {
     // @ts-ignore

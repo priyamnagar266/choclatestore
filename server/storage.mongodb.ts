@@ -40,6 +40,11 @@ export const storage = {
     const res = await productsCollection.deleteOne({ id } as any);
     return res.deletedCount === 1;
   },
+  async deleteProducts(ids: number[]): Promise<number> {
+    if (!Array.isArray(ids) || ids.length === 0) return 0;
+    const res = await productsCollection.deleteMany({ id: { $in: ids } } as any);
+    return res.deletedCount || 0;
+  },
   async listProductsPaginated(page: number, pageSize: number, search?: string): Promise<{ products: Product[]; total: number; page: number; pageSize: number; }> {
     const query: any = {};
     if (search) {
