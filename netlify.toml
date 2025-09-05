@@ -1,7 +1,7 @@
 ## Netlify configuration for deploying the Vite React client
 [build]
-  # Generate static products.json then build client
-  command = "npm run generate:products && npm run build:client"
+  # Generate all product JSON artifacts (hashed products + productsByCategory) then build client
+  command = "npm run generate:all && npm run build:client"
   publish = "dist/public"
   functions = "netlify/functions"
 
