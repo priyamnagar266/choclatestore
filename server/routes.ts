@@ -114,7 +114,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return [];
     }, z.array(z.string()).default([])),
     category: z.string().min(1),
-    inStock: z.coerce.number().int().nonnegative().default(0),
+  inStock: z.coerce.number().int().nonnegative().default(0),
+  netWeight: z.string().max(40).optional(),
     // Variants: accept JSON string, array of objects, or empty
     variants: z.preprocess(val => {
       if (val == null || val === '' ) return [];
@@ -681,7 +682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (req.user.role !== 'admin') return res.status(403).json({ message: 'Forbidden' });
     try {
       const id = parseInt(req.params.id, 10);
-      const allowed = ['name','description','price','category','image','benefits','inStock'];
+  const allowed = ['name','description','price','category','image','benefits','inStock','netWeight'];
       const update: any = {};
       for (const k of allowed) if (req.body[k] !== undefined) update[k] = req.body[k];
       if (Object.keys(update).length === 0) return res.status(400).json({ message: 'No repair fields provided' });
@@ -749,6 +750,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const body = req.body || {};
       const updateRaw: any = { ...body };
       if (req.file) updateRaw.image = '/uploads/' + req.file.filename;
+      // Debug log to confirm netWeight is present
+      console.log('[ADMIN PUT] updateRaw:', updateRaw);
       try {
         const unset: any = {};
         if (updateRaw.salePrice === '' || updateRaw.salePrice === null) { // allow clearing sale price
@@ -756,6 +759,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           delete updateRaw.salePrice;
         }
         const parsedUpdate = productUpdateSchema.parse(updateRaw);
+        // Always update netWeight if present
+        if (typeof updateRaw.netWeight === 'string') {
+          parsedUpdate.netWeight = updateRaw.netWeight;
+        }
         // Handle slug if provided (normalize + uniqueness)
         if(parsedUpdate.slug){
           parsedUpdate.slug = await ensureUniqueSlug(slugify(parsedUpdate.slug));

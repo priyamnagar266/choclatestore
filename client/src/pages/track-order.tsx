@@ -5,7 +5,7 @@ import { formatPrice } from '@/lib/products';
 import { useAuth } from '@/components/auth-context';
 import { useToast } from '@/hooks/use-toast';
 
-interface TrackedOrderItem { productId: string; quantity: number; name?: string; image?: string; }
+interface TrackedOrderItem { productId: string; quantity: number; name?: string; image?: string; netWeight?: string; }
 interface TrackedOrder { orderId: string; status: string; createdAt: string | null; total: number; items: TrackedOrderItem[]; eta?: string | null; }
 
 const STATUS_LABEL: Record<string,string> = { placed:'Order Placed', shipped:'Shipped', out_for_delivery:'Out for Delivery', delivered:'Delivered', cancelled:'Cancelled' };
@@ -63,7 +63,7 @@ export default function TrackOrderPage(){
             o.items.map(it => h('div',{key:it.productId+String(it.quantity),className:'flex items-center gap-3'},
               it.image ? h('img',{src:it.image, alt:it.name||'Product', className:'w-12 h-12 rounded object-cover border'}) : null,
               h('div',{className:'flex-1'},
-                h('div',{className:'text-sm font-medium line-clamp-1'}, it.name || 'Product'),
+                h('div',{className:'text-sm font-medium line-clamp-1'}, `${it.name || 'Product'}${it.netWeight ? `(${it.netWeight})` : ''}`),
                 h('div',{className:'text-xs text-gray-500'}, 'Qty: '+it.quantity)
               )
             ))

@@ -28,7 +28,7 @@ interface Product {
   category: string;
   inStock: number;
   bestseller?: boolean;
-  variants?: { label: string; price: number; salePrice?: number; inStock?: number; }[];
+  netWeight?: string;
   energyKcal?: number; proteinG?: number; carbohydratesG?: number; totalSugarG?: number; addedSugarG?: number; totalFatG?: number; saturatedFatG?: number; transFatG?: number;
 }
 
@@ -45,7 +45,7 @@ interface ProductFormData {
   category: string;
   inStock: number;
   bestseller?: boolean;
-  variants?: { label: string; price: number; salePrice?: number; inStock?: number; }[];
+  netWeight: string;
   energyKcal?: number; proteinG?: number; carbohydratesG?: number; totalSugarG?: number; addedSugarG?: number; totalFatG?: number; saturatedFatG?: number; transFatG?: number;
 }
 
@@ -78,14 +78,14 @@ export default function AdminProducts() {
     slug: "",
     description: "",
     price: 0,
-  salePrice: undefined,
+    salePrice: undefined,
     image: "",
     imageFile: null,
     benefits: [],
     category: "",
     inStock: 0,
-  bestseller: false,
-  variants: [],
+    bestseller: false,
+    netWeight: "",
     energyKcal: undefined,
     proteinG: undefined,
     carbohydratesG: undefined,
@@ -168,25 +168,8 @@ export default function AdminProducts() {
       // store as JSON string (server currently ignores but future-ready)
       fd.append('images', JSON.stringify(payload.images.slice(0,3)));
     }
-    // Build variants array from fixed weight fields (overrides free-form variants if provided)
-    const fixedVariants: any[] = [];
-    const p30 = parseFloat(v30Price);
-    if (!Number.isNaN(p30) && p30 > 0) {
-      const s30 = parseFloat(v30Sale);
-      fixedVariants.push({ label: '30g', price: p30, ...( !Number.isNaN(s30) && s30>0 ? { salePrice: s30 }: {} ) });
-    }
-    const p60 = parseFloat(v60Price);
-    if (!Number.isNaN(p60) && p60 > 0) {
-      const s60 = parseFloat(v60Sale);
-      fixedVariants.push({ label: '60g', price: p60, ...( !Number.isNaN(s60) && s60>0 ? { salePrice: s60 }: {} ) });
-    }
-    if (fixedVariants.length) {
-      fd.append('variants', JSON.stringify(fixedVariants));
-    } else if (payload.variants && payload.variants.length) {
-      fd.append('variants', JSON.stringify(payload.variants));
-    } else {
-      fd.append('variants', '');
-    }
+  // Add netWeight field
+  fd.append('netWeight', payload.netWeight || "");
     if (payload.imageFile) {
       fd.append('image', payload.imageFile);
     } else if (payload.image) {
@@ -274,7 +257,7 @@ export default function AdminProducts() {
   });
 
   const resetForm = () => {
-  setFormData({ name: '', slug: '', description: '', price: 0, salePrice: undefined, image: '', imageFile: null, images: [], benefits: [], category: '', inStock: 0, bestseller:false, variants: [] });
+  setFormData({ name: '', slug: '', description: '', price: 0, salePrice: undefined, image: '', imageFile: null, images: [], benefits: [], category: '', inStock: 0, bestseller:false, netWeight: '' });
     setBenefitsRaw('');
     setV30Price(''); setV30Sale(''); setV60Price(''); setV60Sale('');
     setSlugManuallyEdited(false);
@@ -293,15 +276,8 @@ export default function AdminProducts() {
 
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
-  setFormData({ name: product.name, slug: (product as any).slug || '', description: product.description, price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, salePrice: (product as any).salePrice != null ? Number((product as any).salePrice) : undefined, image: product.image, imageFile: null, images: (product as any).images || [], benefits: product.benefits, category: product.category, inStock: product.inStock, bestseller: ((): boolean => { const v:any = (product as any).bestseller; return typeof v === 'string' ? v.toLowerCase()==='true' : !!v; })(), variants: product.variants || [], energyKcal: product.energyKcal, proteinG: product.proteinG, carbohydratesG: product.carbohydratesG, totalSugarG: product.totalSugarG, addedSugarG: product.addedSugarG, totalFatG: product.totalFatG, saturatedFatG: product.saturatedFatG, transFatG: product.transFatG });
+  setFormData({ name: product.name, slug: (product as any).slug || '', description: product.description, price: typeof product.price === 'number' ? product.price : parseFloat(product.price) || 0, salePrice: (product as any).salePrice != null ? Number((product as any).salePrice) : undefined, image: product.image, imageFile: null, images: (product as any).images || [], benefits: product.benefits, category: product.category, inStock: product.inStock, bestseller: ((): boolean => { const v:any = (product as any).bestseller; return typeof v === 'string' ? v.toLowerCase()==='true' : !!v; })(), netWeight: (product as any).netWeight || '', energyKcal: product.energyKcal, proteinG: product.proteinG, carbohydratesG: product.carbohydratesG, totalSugarG: product.totalSugarG, addedSugarG: product.addedSugarG, totalFatG: product.totalFatG, saturatedFatG: product.saturatedFatG, transFatG: product.transFatG });
   setBenefitsRaw(product.benefits?.join(', ') || '');
-    // Prefill fixed weight fields if variants exist
-    const v30 = (product.variants || []).find(v=> v.label.toLowerCase() === '30g');
-    const v60 = (product.variants || []).find(v=> v.label.toLowerCase() === '60g');
-    setV30Price(v30 ? String(v30.price) : '');
-    setV30Sale(v30 && v30.salePrice != null ? String(v30.salePrice) : '');
-    setV60Price(v60 ? String(v60.price) : '');
-    setV60Sale(v60 && v60.salePrice != null ? String(v60.salePrice) : '');
     setIsDialogOpen(true);
   };
   // Auto slug generation
@@ -423,6 +399,14 @@ export default function AdminProducts() {
                   <Label htmlFor="inStock">Stock</Label>
                   <Input id="inStock" type="number" value={formData.inStock} onChange={(e)=>setFormData({...formData,inStock:parseInt(e.target.value)||0})} required />
                 </div>
+                <div>
+                  <Label htmlFor="price">Base Price</Label>
+                  <Input id="price" type="number" value={formData.price} onChange={e=>setFormData({...formData, price: parseFloat(e.target.value) || 0})} required />
+                </div>
+                <div>
+                  <Label htmlFor="salePrice">Sale Price</Label>
+                  <Input id="salePrice" type="number" value={formData.salePrice ?? ''} onChange={e=>setFormData({...formData, salePrice: e.target.value ? parseFloat(e.target.value) : undefined})} />
+                </div>
                 <div className="col-span-2 flex flex-col justify-end text-[11px] text-muted-foreground">
                   <div>Base Price & Sale Price auto-set from lowest variant values.</div>
                   {formData.price>0 && (
@@ -435,24 +419,11 @@ export default function AdminProducts() {
                   )}
                 </div>
                 <div className="col-span-3 grid grid-cols-2 gap-4 border rounded-md p-3">
-                  <div className="col-span-2 font-semibold text-xs text-muted-foreground tracking-wide">Weight Variants (30g & 60g)</div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">30g Price</Label>
-                    <Input type="number" step="0.01" value={v30Price} onChange={e=> setV30Price(e.target.value)} placeholder="e.g. 50" />
+                  <div className="col-span-2 font-semibold text-xs text-muted-foreground tracking-wide">Net Weight</div>
+                  <div className="space-y-1 col-span-2">
+                    <Label className="text-xs">Net Weight (e.g. 30g, 60g)</Label>
+                    <Input type="text" value={formData.netWeight} onChange={e=> setFormData({...formData, netWeight: e.target.value})} placeholder="e.g. 30g" required />
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">30g Sale Price</Label>
-                    <Input type="number" step="0.01" value={v30Sale} onChange={e=> setV30Sale(e.target.value)} placeholder="Optional" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">60g Price</Label>
-                    <Input type="number" step="0.01" value={v60Price} onChange={e=> setV60Price(e.target.value)} placeholder="e.g. 90" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">60g Sale Price</Label>
-                    <Input type="number" step="0.01" value={v60Sale} onChange={e=> setV60Sale(e.target.value)} placeholder="Optional" />
-                  </div>
-                  <p className="col-span-2 text-[10px] text-muted-foreground">Leave price blank to omit that weight. Sale price must be less than its price.</p>
                 </div>
                 {/* Image & Bestseller Row */}
                 <div className="col-span-3 grid grid-cols-3 gap-4">
@@ -594,7 +565,7 @@ export default function AdminProducts() {
                 <TableHead>Category</TableHead>
                 <TableHead>Price</TableHead>
                 <TableHead>Sale</TableHead>
-                <TableHead>Variants</TableHead>
+                  <TableHead>Net Weight</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead>Bestseller</TableHead>
                 <TableHead>Actions</TableHead>
@@ -629,16 +600,9 @@ export default function AdminProducts() {
                       </div>
                     ) : <span className='text-muted-foreground text-xs'>—</span>}</TableCell>
                     <TableCell className='text-xs'>
-                      {product.variants && product.variants.length ? (
-                        <div className='flex flex-col gap-0.5 max-w-[140px]'>
-                          {product.variants.slice(0,3).map(v => (
-                            <span key={v.label} className='truncate'>
-                              {v.label}: {formatPrice(v.salePrice!=null && v.salePrice < v.price ? v.salePrice : v.price)}
-                            </span>
-                          ))}
-                          {product.variants.length > 3 && <span className='text-[10px] text-muted-foreground'>+{product.variants.length-3} more</span>}
-                        </div>
-                      ) : <span className='text-muted-foreground'>—</span>}
+                        {product.netWeight ? (
+                          <span className='truncate'>{product.netWeight}</span>
+                        ) : <span className='text-muted-foreground'>—</span>}
                     </TableCell>
                     <TableCell>{product.inStock}</TableCell>
                     <TableCell>

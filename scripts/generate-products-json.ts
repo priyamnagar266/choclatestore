@@ -24,6 +24,10 @@ async function main() {
     const dbName = process.env.MONGODB_DBNAME || new URL(uri).pathname.replace('/', '') || undefined;
     const db = dbName ? client.db(dbName) : client.db();
     const products = await db.collection('products').find().sort({ id: 1 }).toArray();
+    // Remove variants field from each product
+    for (const p of products) {
+      if ('variants' in p) delete p.variants;
+    }
     // Ensure each product has a slug (non-persistent here; for persistence use backfill script)
     const slugSet = new Set<string>();
     for (const p of products){

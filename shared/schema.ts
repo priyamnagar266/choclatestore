@@ -13,13 +13,8 @@ export interface Product extends Document {
   category: string;
   inStock: number;
   bestseller?: boolean; // admin-curated bestseller flag
-  // Optional variants (e.g. different weights or sizes) each with their own pricing
-  variants?: {
-    label: string;      // e.g. "30g" or "60g" or "Small"
-    price: number;      // base price for this variant
-    salePrice?: number; // optional sale/discount price (< price)
-    inStock?: number;   // optional per-variant stock (falls back to product inStock if omitted)
-  }[];
+  // Net weight of the product (e.g. 30g, 60g)
+  netWeight: string;
   // Optional nutritional information per serving
   energyKcal?: number;
   proteinG?: number;
@@ -92,7 +87,7 @@ export const ProductModel = mongoose.model<Product>("Product", new mongoose.Sche
   category: { type: String, required: true },
   inStock: { type: Number, required: true, default: 100 },
   bestseller: { type: Boolean, default: false },
-  variants: { type: [ { label: String, price: Number, salePrice: Number, inStock: Number } ], required: false, default: [] },
+  netWeight: { type: String, required: true },
 }));
 
 export const OrderModel = mongoose.model<Order>("Order", new mongoose.Schema({

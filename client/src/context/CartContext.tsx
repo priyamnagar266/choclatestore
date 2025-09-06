@@ -143,10 +143,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return [...prev, {
         id: itemKey,
         baseProductId: productKey,
-        name: product.name + (variantLabel ? ` (${variantLabel})` : ''),
+  name: product.name,
         price,
         quantity: 1,
         image: product.image,
+        netWeight: product.netWeight || '',
         variantLabel: variantLabel || undefined,
       } as any];
     });

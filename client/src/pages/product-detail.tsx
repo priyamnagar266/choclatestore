@@ -104,27 +104,13 @@ async function fetchProductBySlugOrIdStaticFirst(slugOrId: string): Promise<Prod
 function nutritionRow(label: string, value: any){ if(value==null || isNaN(Number(value))) return null; return h('tr',{className:'even:bg-neutral/40'}, h('td',{className:'py-1.5 px-3 font-medium text-primary whitespace-nowrap'}, label), h('td',{className:'py-1.5 px-3 text-right tabular-nums'}, Number(value))); }
 
 const ProductDetailPage: React.FC<Props> = ({ slug }) => {
-		const { addToCart, openCart } = useCart();
-		const [selectedVariantLabel, setSelectedVariantLabel] = React.useState<string | null>(null);
-		const { toast } = useToast();
-		const { data: productRaw, isLoading, error } = useQuery<Product | null>({ queryKey:["product", slug], queryFn:()=>fetchProductBySlugOrIdStaticFirst(slug) });
-		const { data: all } = useQuery<Product[]>({ queryKey:["products-all"], queryFn:fetchAllStaticFirst, staleTime:120000 });
-		const product = productRaw as ProductWithImages | null;
-		// Variant selection (must be before early returns so hook order is stable)
-		const variants: any[] = Array.isArray((product as any)?.variants) ? (product as any)?.variants : [];
-		React.useEffect(()=>{ if(selectedVariantLabel && !variants.find(v=> v.label === selectedVariantLabel)) setSelectedVariantLabel(null); }, [variants, selectedVariantLabel]);
-		// Immediate default variant (no flicker) prefer 30g else first
-		const defaultVariantLabel = React.useMemo(()=>{
-			if(!product) return null; const list: any[] = Array.isArray((product as any).variants)? (product as any).variants : []; if(!list.length) return null; const pref = list.find(v=> (v.label||'').toLowerCase()==='30g') || list[0]; return pref?.label || null;
-		}, [product, variants]);
-		const effectiveVariantLabel = selectedVariantLabel || defaultVariantLabel;
-
-		// Ensure default (prefer 30g) is actually selected so styling and cart enrichment work.
-		React.useEffect(()=>{
-			if(!selectedVariantLabel && defaultVariantLabel){
-				setSelectedVariantLabel(defaultVariantLabel);
-			}
-		}, [defaultVariantLabel, selectedVariantLabel]);
+	const { addToCart, openCart } = useCart();
+	const { toast } = useToast();
+	const { data: productRaw, isLoading, error } = useQuery<Product | null>({ queryKey:["product", slug], queryFn:()=>fetchProductBySlugOrIdStaticFirst(slug) });
+	const { data: all } = useQuery<Product[]>({ queryKey:["products-all"], queryFn:fetchAllStaticFirst, staleTime:120000 });
+	const product = productRaw as ProductWithImages | null;
+	// Remove all variant logic
+	const netWeight = product?.netWeight;
 
 		// Carousel state
 		const [imgIdx, setImgIdx] = React.useState(0);
@@ -215,13 +201,9 @@ const ProductDetailPage: React.FC<Props> = ({ slug }) => {
 		)
 	);
 
-	// Resolve effective price based on selected variant or base
-	function resolvePrice(base: Product){
-		if(effectiveVariantLabel){ const v = variants.find(v=> v.label===effectiveVariantLabel); if(v){ const effSale = (v.salePrice!=null && v.salePrice < v.price) ? v.salePrice : undefined; return { price: v.price, sale: effSale }; } }
-		// If no selection & variants exist, keep base product prices (already lowest from admin auto logic)
-		const sale = (base.salePrice!=null && base.salePrice < base.price) ? base.salePrice : undefined; return { price: base.price, sale };
-	}
-	const { price: effectivePrice, sale: effectiveSale } = resolvePrice(product);
+	// Use product price and salePrice directly
+	const effectivePrice = product?.price;
+	const effectiveSale = (product?.salePrice != null && product.salePrice < product.price) ? product.salePrice : undefined;
 
 	const rightColumn = h('div',{className:'space-y-6'},
 		h('div',{className:'flex items-center gap-2'},
@@ -229,24 +211,16 @@ const ProductDetailPage: React.FC<Props> = ({ slug }) => {
 			h(ProductShare,{ url: typeof window!=='undefined'? window.location.href : '', inline:true })
 		),
 		h('p',{className:'text-muted-foreground leading-relaxed text-base'}, product.description),
-		// Variant buttons + price inline (requested)
+		// Desktop price and net weight
 		h('div',{className:'flex items-center flex-wrap gap-4'},[
-			// Price first
 			effectiveSale ? h('div',{className:'flex items-baseline gap-3'},[
 				h('span',{className:'text-2xl md:text-3xl font-extrabold text-secondary'}, formatPrice(effectiveSale)),
 				h('span',{className:'text-lg md:text-xl line-through text-gray-400'}, formatPrice(effectivePrice))
 			]) : h('div',{className:'text-3xl font-extrabold text-secondary'}, formatPrice(effectivePrice)),
-			// Variant buttons aligned to right side of row
-			variants.length ? h('div',{className:'flex flex-wrap gap-2 ml-auto'}, variants.map(v=>{
-				const active = (selectedVariantLabel || defaultVariantLabel) === v.label;
-				const disabled = v.inStock === 0;
-				return h('button',{
-					key:v.label,
-					type:'button',
-					onClick:()=> !disabled && setSelectedVariantLabel(v.label),
-					className:`px-3 py-1 rounded border text-sm transition ${active ? 'bg-primary text-white border-primary' : 'bg-white hover:bg-primary/5 border-gray-300'} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`
-				}, v.label);
-			})) : null
+			netWeight ? h('span',{
+				className:'inline-block bg-green-100 text-green-700 font-bold text-xs rounded-full px-4 py-1 ml-2 border border-green-200',
+				style:{letterSpacing:'0.5px'}
+			}, `NET WEIGHT: ${netWeight}`) : null
 		]),
 		// Promo / discount message (desktop)
 		computedPromo ? h('div',{className:'flex items-start gap-2 text-sm text-primary font-semibold bg-white/70 border border-primary/20 rounded-xl px-4 py-3'},
@@ -282,7 +256,7 @@ const ProductDetailPage: React.FC<Props> = ({ slug }) => {
 		) : null,
 		h('div',{className:'pt-2 sticky bottom-0 bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/70 border-t border-gray-200 pb-4'},
 			h('button',{
-				onClick:()=>{ const temp = selectedVariantLabel ? { ...product, tempSelectedVariant: variants.find(v=>v.label===selectedVariantLabel) } : product; addToCart(temp); toast({ title: 'Added to cart!', description: product.name + ' has been added to your cart.' }); },
+				onClick:()=>{ addToCart(product); toast({ title: 'Added to cart!', description: product.name + ' has been added to your cart.' }); },
 				disabled:product.inStock===0,
 				className:'w-full bg-primary hover:bg-green-800 text-white font-semibold py-4 rounded-xl text-lg transition disabled:opacity-60 disabled:cursor-not-allowed'
 			}, product.inStock===0? 'Out of Stock':'Add to Cart')
@@ -329,23 +303,13 @@ const ProductDetailPage: React.FC<Props> = ({ slug }) => {
 			h('h1',{className:'text-2xl font-bold tracking-tight text-primary flex-1'}, product.name),
 			h(ProductShare,{ url: typeof window!=='undefined'? window.location.href : '', inline:false })
 		),
-		// Mobile variant buttons + price inline
+		// Mobile price and net weight
 		h('div',{className:'px-1 flex items-center flex-wrap gap-4'},[
-			// Price first
 			effectiveSale ? h('div',{className:'flex items-baseline gap-2'},[
 				h('span',{className:'text-2xl font-extrabold text-secondary'}, formatPrice(effectiveSale)),
 				h('span',{className:'text-lg line-through text-gray-400'}, formatPrice(effectivePrice))
 			]) : h('div',{className:'text-2xl font-extrabold text-secondary'}, formatPrice(effectivePrice)),
-			// Variants to the right
-			variants.length ? h('div',{className:'flex flex-wrap gap-2 ml-auto'}, variants.map(v=>{
-				const active = (selectedVariantLabel || defaultVariantLabel) === v.label;
-				const disabled = v.inStock === 0;
-				return h('button',{
-					key:v.label,
-					onClick:()=> !disabled && setSelectedVariantLabel(v.label),
-					className:`px-3 py-1 rounded border text-xs ${active ? 'bg-primary text-white border-primary' : 'bg-white hover:bg-primary/5 border-gray-300'} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`
-				}, v.label);
-			})) : null
+			h('span',{className:'text-base font-semibold text-gray-700 ml-4'}, `Net Weight: ${netWeight}`)
 		]),
 		computedPromo ? h('div',{className:'px-1'},
 			h('div',{className:'flex items-start gap-2 text-sm text-primary font-semibold bg-white/70 border border-primary/20 rounded-lg px-3 py-2'},
@@ -390,10 +354,10 @@ const ProductDetailPage: React.FC<Props> = ({ slug }) => {
 			)
 		) : null,
 		h('div',{className:'h-24'}), // spacer for fixed bar
-		// fixed add to cart (no variant buttons here)
+		// fixed add to cart (no variant logic)
 		h('div',{className:'fixed bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur border-t border-gray-200 px-4 pt-3 pb-5'},
 			h('button',{
-				onClick:()=>{ const temp = selectedVariantLabel ? { ...product, tempSelectedVariant: variants.find(v=>v.label===selectedVariantLabel) } : product; addToCart(temp); toast({ title: 'Added to cart!', description: product.name + ' has been added to your cart.' }); },
+				onClick:()=>{ addToCart(product); toast({ title: 'Added to cart!', description: product.name + ' has been added to your cart.' }); },
 				disabled:product.inStock===0,
 				className:'w-full bg-primary hover:bg-green-800 text-white font-semibold py-4 rounded-xl text-lg transition disabled:opacity-60 disabled:cursor-not-allowed'
 			}, product.inStock===0? 'Out of Stock':'Add to Cart')

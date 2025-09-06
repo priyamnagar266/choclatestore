@@ -5,7 +5,7 @@ export interface CartItem {
   price: number;
   quantity: number;
   image: string;
-  variantLabel?: string; // optional variant reference
+  netWeight?: string; // net weight of the product
 }
 
 export interface CartState {

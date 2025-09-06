@@ -30,6 +30,18 @@
     "updatedAt": "2025-09-06T15:39:26.662Z",
     "bestseller": true,
     "salePrice": 89,
+    "variants": [
+      {
+        "label": "30g",
+        "price": 100,
+        "salePrice": 89
+      },
+      {
+        "label": "60g",
+        "price": 200,
+        "salePrice": 175
+      }
+    ],
     "netWeight": "130g"
   },
   {
@@ -58,11 +70,23 @@
     "saturatedFatG": 1,
     "transFatG": 0,
     "id": 2,
-    "slug": "cocoa-crunch-chocolate-2",
-    "bestseller": true,
-    "updatedAt": "2025-09-06T16:56:12.383Z",
+    "slug": "cocoa-crunch-chocolate",
+    "bestseller": false,
+    "updatedAt": "2025-09-05T17:22:27.998Z",
     "salePrice": 95,
-    "netWeight": "300g"
+    "variants": [
+      {
+        "label": "30g",
+        "price": 110,
+        "salePrice": 95
+      },
+      {
+        "label": "60g",
+        "price": 220,
+        "salePrice": 190
+      }
+    ],
+    "netWeight": "30g"
   },
   {
     "_id": "68a7146295b00b76495603c6",
@@ -94,6 +118,18 @@
     "bestseller": false,
     "updatedAt": "2025-09-05T17:22:36.179Z",
     "salePrice": 75,
+    "variants": [
+      {
+        "label": "30g",
+        "price": 90,
+        "salePrice": 75
+      },
+      {
+        "label": "60g",
+        "price": 180,
+        "salePrice": 150
+      }
+    ],
     "netWeight": "30g"
   },
   {
@@ -126,6 +162,18 @@
     "bestseller": false,
     "updatedAt": "2025-09-05T17:22:42.483Z",
     "salePrice": 90,
+    "variants": [
+      {
+        "label": "30g",
+        "price": 110,
+        "salePrice": 90
+      },
+      {
+        "label": "60g",
+        "price": 220,
+        "salePrice": 180
+      }
+    ],
     "netWeight": "30g"
   },
   {
@@ -159,6 +207,18 @@
     "bestseller": false,
     "updatedAt": "2025-09-05T17:22:47.886Z",
     "salePrice": 80,
+    "variants": [
+      {
+        "label": "30g",
+        "price": 90,
+        "salePrice": 80
+      },
+      {
+        "label": "60g",
+        "price": 180,
+        "salePrice": 160
+      }
+    ],
     "netWeight": "30g"
   },
   {
@@ -191,6 +251,18 @@
     "bestseller": false,
     "updatedAt": "2025-09-05T17:22:52.705Z",
     "salePrice": 90,
+    "variants": [
+      {
+        "label": "30g",
+        "price": 110,
+        "salePrice": 90
+      },
+      {
+        "label": "60g",
+        "price": 220,
+        "salePrice": 180
+      }
+    ],
     "netWeight": "30g"
   },
   {
@@ -223,6 +295,18 @@
     "bestseller": false,
     "updatedAt": "2025-09-05T17:22:55.932Z",
     "salePrice": 109,
+    "variants": [
+      {
+        "label": "30g",
+        "price": 130,
+        "salePrice": 109
+      },
+      {
+        "label": "60g",
+        "price": 260,
+        "salePrice": 218
+      }
+    ],
     "netWeight": "30g"
   },
   {
@@ -253,6 +337,18 @@
     "id": 9,
     "promoMessage": "Limited Time: Free Shipping",
     "slug": "orange-zest-dark-chocolate",
+    "variants": [
+      {
+        "label": "30g",
+        "price": 90,
+        "salePrice": 80
+      },
+      {
+        "label": "60g",
+        "price": 180,
+        "salePrice": 160
+      }
+    ],
     "bestseller": false,
     "salePrice": 80,
     "updatedAt": "2025-09-05T17:23:00.462Z",
@@ -285,6 +381,18 @@
     "transFatG": 0,
     "id": 10,
     "slug": "velvet-vine-dark-chocolate",
+    "variants": [
+      {
+        "label": "30g",
+        "price": 120,
+        "salePrice": 109
+      },
+      {
+        "label": "60g",
+        "price": 240,
+        "salePrice": 218
+      }
+    ],
     "bestseller": false,
     "salePrice": 109,
     "updatedAt": "2025-09-05T17:23:04.231Z",
@@ -319,6 +427,16 @@
     "slug": "70-intense-dark-chocolate-2",
     "bestseller": true,
     "updatedAt": "2025-09-05T17:21:49.538Z",
+    "variants": [
+      {
+        "label": "30g",
+        "price": 110
+      },
+      {
+        "label": "60g",
+        "price": 198
+      }
+    ],
     "netWeight": "30g"
   },
   {
@@ -349,6 +467,16 @@
     "id": 13,
     "promoMessage": "Festival Deal: Flat ₹25 OFF",
     "slug": "55-dark-chocolate-plain",
+    "variants": [
+      {
+        "label": "30g",
+        "price": 90
+      },
+      {
+        "label": "60g",
+        "price": 155
+      }
+    ],
     "bestseller": true,
     "updatedAt": "2025-09-05T17:21:59.024Z",
     "netWeight": "30g"
@@ -380,6 +508,16 @@
     "transFatG": 0,
     "id": 16,
     "slug": "classic-creamy-milk-chocolate-2",
+    "variants": [
+      {
+        "label": "30g",
+        "price": 80
+      },
+      {
+        "label": "60g",
+        "price": 155
+      }
+    ],
     "bestseller": true,
     "updatedAt": "2025-09-06T09:11:36.465Z",
     "netWeight": "30g"
@@ -400,6 +538,18 @@
     "price": 320,
     "image": "https://i.postimg.cc/8591zShK/1755841768406.jpg",
     "category": "Combo",
+    "variants": [
+      {
+        "label": "30g",
+        "price": 320,
+        "salePrice": 280
+      },
+      {
+        "label": "60g",
+        "price": 640,
+        "salePrice": 560
+      }
+    ],
     "createdAt": "2025-09-04T16:45:19.289Z",
     "updatedAt": "2025-09-06T09:15:48.297Z",
     "salePrice": 280,

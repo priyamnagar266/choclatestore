@@ -71,9 +71,9 @@ const CartSheet: React.FC = () => {
                   className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-md flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0 space-y-1">
-                  <h4 className="font-medium text-gray-900 text-[13px] sm:text-base leading-snug line-clamp-2">
-                    {item.name}
-                  </h4>
+                    <h4 className="font-medium text-gray-900 text-[13px] sm:text-base leading-snug line-clamp-2">
+                      {item.name}{item.netWeight ? `(${item.netWeight})` : ''}
+                    </h4>
                   <div className="flex items-center gap-3 flex-wrap">
                     <p className="text-[11px] sm:text-sm text-gray-600 m-0">
                       {formatPrice(item.price)} each

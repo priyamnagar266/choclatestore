@@ -28,8 +28,8 @@
       "id": 1,
       "promoMessage": "BUY 2 GET 1 FREE | Auto-applied at checkout",
       "slug": "khas-badam-dark-chocolate-2",
-      "updatedAt": "2025-09-05T17:22:24.481Z",
-      "bestseller": false,
+      "updatedAt": "2025-09-06T15:39:26.662Z",
+      "bestseller": true,
       "salePrice": 89,
       "variants": [
         {
@@ -42,7 +42,8 @@
           "price": 200,
           "salePrice": 175
         }
-      ]
+      ],
+      "netWeight": "130g"
     },
     {
       "_id": "68a7146295b00b76495603c8",
@@ -70,9 +71,9 @@
       "saturatedFatG": 1,
       "transFatG": 0,
       "id": 2,
-      "slug": "cocoa-crunch-chocolate",
-      "bestseller": false,
-      "updatedAt": "2025-09-05T17:22:27.998Z",
+      "slug": "cocoa-crunch-chocolate-2",
+      "bestseller": true,
+      "updatedAt": "2025-09-06T16:56:12.383Z",
       "salePrice": 95,
       "variants": [
         {
@@ -85,7 +86,8 @@
           "price": 220,
           "salePrice": 190
         }
-      ]
+      ],
+      "netWeight": "300g"
     },
     {
       "_id": "68a7146295b00b76495603c6",
@@ -128,7 +130,8 @@
           "price": 180,
           "salePrice": 150
         }
-      ]
+      ],
+      "netWeight": "30g"
     },
     {
       "_id": "seedbar-mock-1",
@@ -171,7 +174,8 @@
           "price": 220,
           "salePrice": 180
         }
-      ]
+      ],
+      "netWeight": "30g"
     }
   ],
   "Nuts based Energy Bar": [
@@ -217,7 +221,8 @@
           "price": 180,
           "salePrice": 160
         }
-      ]
+      ],
+      "netWeight": "30g"
     },
     {
       "_id": "68a7146295b00b76495603c3",
@@ -260,7 +265,8 @@
           "price": 220,
           "salePrice": 180
         }
-      ]
+      ],
+      "netWeight": "30g"
     },
     {
       "_id": "68a7146295b00b76495603c5",
@@ -303,7 +309,8 @@
           "price": 260,
           "salePrice": 218
         }
-      ]
+      ],
+      "netWeight": "30g"
     }
   ],
   "Dark Chocolates": [
@@ -349,7 +356,8 @@
       ],
       "bestseller": false,
       "salePrice": 80,
-      "updatedAt": "2025-09-05T17:23:00.462Z"
+      "updatedAt": "2025-09-05T17:23:00.462Z",
+      "netWeight": "30g"
     },
     {
       "_id": "darkchoco-4",
@@ -392,7 +400,8 @@
       ],
       "bestseller": false,
       "salePrice": 109,
-      "updatedAt": "2025-09-05T17:23:04.231Z"
+      "updatedAt": "2025-09-05T17:23:04.231Z",
+      "netWeight": "30g"
     },
     {
       "_id": "darkchoco-mock-1",
@@ -432,7 +441,8 @@
           "label": "60g",
           "price": 198
         }
-      ]
+      ],
+      "netWeight": "30g"
     }
   ],
   "Milk Chocolates": [
@@ -475,7 +485,8 @@
         }
       ],
       "bestseller": true,
-      "updatedAt": "2025-09-05T17:21:59.024Z"
+      "updatedAt": "2025-09-05T17:21:59.024Z",
+      "netWeight": "30g"
     },
     {
       "_id": "milkchoco-mock-1",
@@ -503,7 +514,7 @@
       "saturatedFatG": 3,
       "transFatG": 0,
       "id": 16,
-      "slug": "classic-creamy-milk-chocolate",
+      "slug": "classic-creamy-milk-chocolate-2",
       "variants": [
         {
           "label": "30g",
@@ -515,7 +526,8 @@
         }
       ],
       "bestseller": true,
-      "updatedAt": "2025-09-05T17:22:08.489Z"
+      "updatedAt": "2025-09-06T09:11:36.465Z",
+      "netWeight": "30g"
     }
   ],
   "Combo": [
@@ -548,9 +560,10 @@
         }
       ],
       "createdAt": "2025-09-04T16:45:19.289Z",
-      "updatedAt": "2025-09-05T17:22:17.243Z",
+      "updatedAt": "2025-09-06T09:15:48.297Z",
       "salePrice": 280,
-      "slug": "bundle-of-5-premium-chocolates-nut-based-2"
+      "slug": "bundle-of-5-premium-chocolates-nut-based-2",
+      "netWeight": "30g"
     }
   ]
 }

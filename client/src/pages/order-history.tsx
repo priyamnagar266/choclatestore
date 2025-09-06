@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { RefreshCw, Search, Package, Truck, CheckCircle2, Clock3, XCircle } from 'lucide-react';
 
-interface OrderItem { productId: string; quantity: number; name?: string; price?: number; image?: string; }
+interface OrderItem { productId: string; quantity: number; name?: string; price?: number; image?: string; netWeight?: string; }
 interface OrderRecord { id: string; orderId: string; total: number; subtotal: number; deliveryCharges: number; status: string; razorpayPaymentId?: string | null; items: OrderItem[]; customerName: string; customerEmail: string; customerPhone: string; createdAt: string | null; }
 
 async function fetchOrderHistory(token: string): Promise<OrderRecord[]> {
@@ -41,7 +41,7 @@ export default function OrderHistory() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all'|'placed'|'shipped'|'out_for_delivery'|'delivered'|'cancelled'>('all');
-  const [productMap, setProductMap] = useState<Record<string,{name:string; image?:string}>>({});
+  const [productMap, setProductMap] = useState<Record<string,{name:string; image?:string; netWeight?:string}>>({});
 
   // load product catalog for mapping
   useEffect(()=>{
@@ -50,8 +50,8 @@ export default function OrderHistory() {
       try {
         const res = await fetch('/products.json');
         if(!res.ok) return; const products = await res.json(); if(cancelled) return;
-        const map: Record<string,{name:string; image?:string}> = {};
-        (products||[]).forEach((p:any)=>{ map[String(p.id)] = { name:p.name, image:p.image }; });
+  const map: Record<string,{name:string; image?:string; netWeight?:string}> = {};
+  (products||[]).forEach((p:any)=>{ map[String(p.id)] = { name:p.name, image:p.image, netWeight:p.netWeight }; });
         setProductMap(map);
       } catch {/* ignore */}
     })();
@@ -142,7 +142,9 @@ export default function OrderHistory() {
           React.createElement('ul',{className:'mt-1 space-y-1'},
             order.items.map((it,idx)=>{
               const meta = productMap[String(it.productId)] || {};
-              const displayName = it.name || meta.name || ('PID '+it.productId);
+              // Try to get netWeight from item or meta
+              const netWeight = it.netWeight || meta.netWeight;
+              const displayName = (it.name || meta.name || ('PID '+it.productId)) + (netWeight ? `(${netWeight})` : '');
               return React.createElement('li',{key:idx,className:'flex justify-between gap-2 items-center'},
                 React.createElement('div',{className:'flex items-center gap-2 min-w-0'},
                   meta.image && React.createElement('img',{src:meta.image,alt:displayName,className:'h-8 w-8 rounded object-cover flex-shrink-0'}),

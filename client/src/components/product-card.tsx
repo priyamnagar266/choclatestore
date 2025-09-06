@@ -23,24 +23,9 @@ export default function ProductCard({ product, onAddToCart, onBuyNow, withModal 
   const [, setLocation] = useLocation();
   // Carousel state
   const images: string[] = Array.isArray(product.images) && product.images.length > 0 ? product.images : [product.image];
-  // Determine effective base price / sale considering variants (show min variant price for card teaser)
-  const variants: any[] = Array.isArray((product as any).variants) ? (product as any).variants : [];
-  let basePrice = product.price as number;
-  let salePrice: number | undefined = (product as any).salePrice;
-  if (variants.length) {
-    // pick cheapest variant (by salePrice if available else price)
-    const priced = variants.map(v => ({
-      price: v.price,
-      sale: (v.salePrice != null && v.salePrice < v.price) ? v.salePrice : undefined
-    }));
-    const cheapest = priced.reduce((min, cur) => {
-      const curEff = cur.sale ?? cur.price;
-      const minEff = min.sale ?? min.price;
-      return curEff < minEff ? cur : min;
-    }, priced[0]);
-    basePrice = cheapest.price;
-    salePrice = cheapest.sale;
-  }
+  // Use product price and salePrice directly
+  const basePrice = product.price as number;
+  const salePrice: number | undefined = (product as any).salePrice;
   const discountPct = typeof salePrice === 'number' && salePrice < basePrice && basePrice > 0
     ? Math.round((1 - (salePrice / basePrice)) * 100)
     : null;
@@ -114,16 +99,7 @@ export default function ProductCard({ product, onAddToCart, onBuyNow, withModal 
             onClick: (e: React.MouseEvent) => {
               e.preventDefault();
               e.stopPropagation();
-              const variantsArr: any[] = Array.isArray((product as any).variants)? (product as any).variants : [];
-              let enriched: any = product;
-              if (variantsArr.length) {
-                const pref = variantsArr.find(v=> (v.label||'').toLowerCase()==='30g') || variantsArr[0];
-                if (pref) {
-                  const eff = (pref.salePrice!=null && pref.salePrice < pref.price) ? pref.salePrice : pref.price;
-                  enriched = { ...product, tempSelectedVariant: pref, selectedVariantLabel: pref.label, variantLabel: pref.label, effectiveVariantPrice: eff, variants: variantsArr };
-                }
-              }
-              onAddToCart(enriched);
+              onAddToCart(product);
             },
             className: "bg-primary text-white hover:bg-green-800 transition-colors h-8 w-full xs:w-auto px-2 sm:px-3 text-xs sm:text-sm",
             disabled: product.inStock === 0
