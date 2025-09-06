@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 // Product name/price/variants resolution cache (populated on-demand via /api/products)
-let productMap: Record<string,{name:string; price?:number; variants?: { label:string; price:number; salePrice?:number }[]}>|null = null;
+let productMap: Record<string,{name:string; price?:number; netWeight?:string; variants?: { label:string; price:number; salePrice?:number }[]}>|null = null;
 async function ensureProductMap(){
   if(productMap) return productMap;
   productMap = {};
@@ -9,7 +9,7 @@ async function ensureProductMap(){
     if(res.ok){
       const list:any[] = await res.json();
       for(const p of list){
-        const entry = { name: p.name, price: p.price, variants: Array.isArray(p.variants)? p.variants.map((v:any)=>({ label:v.label, price:v.price, salePrice:v.salePrice })) : undefined };
+  const entry = { name: p.name, price: p.price, netWeight: p.netWeight, variants: Array.isArray(p.variants)? p.variants.map((v:any)=>({ label:v.label, price:v.price, salePrice:v.salePrice })) : undefined };
         if(p?._id) productMap[p._id] = entry;
         if(p?.id!==undefined) productMap[String(p.id)] = entry;
         if(p?.slug) productMap[p.slug] = entry;
@@ -243,18 +243,28 @@ export default function AdminOrders(){
           }
         }
       }
-      if (vLabel) {
-        const alreadyHas = /\([^()]*\)$/.test(baseName) && baseName.toLowerCase().includes(vLabel.toLowerCase());
-        if (!alreadyHas) baseName += ` (${vLabel})`;
+      // Always use name(netWeight) if netWeight is available, fallback to productMap's netWeight
+      let name = baseName;
+      let netWeight = it.netWeight;
+      // Try to get latest netWeight from productMap
+      const map = await ensureProductMap();
+      const prodEntry = map[it.productId] || map[it.id];
+      if (!netWeight && prodEntry && prodEntry.netWeight) {
+        netWeight = prodEntry.netWeight;
       }
-      const name = baseName;
+      if (netWeight) {
+        name = `${baseName}(${netWeight})`;
+      } else if (vLabel) {
+        const alreadyHas = /\([^()]*\)$/.test(baseName) && baseName.toLowerCase().includes(vLabel.toLowerCase());
+        if (!alreadyHas) name = `${baseName} (${vLabel})`;
+      }
       let price = (it.price!==undefined? it.price:0)||0;
       if (!price) {
         // Fallback: approximate from subtotal proportionally (uniform distribution)
         price = Math.round(effectiveSubtotal / totalQty);
       }
       const lineTotal = price*(it.quantity||0);
-        const nameWrap = doc.splitTextToSize(name, (col.qty - col.name) - 8);
+      const nameWrap = doc.splitTextToSize(name, (col.qty - col.name) - 8);
         const rowBaseIncrement = isA6?13:16;
         const rowHeight = Math.max(rowBaseIncrement, nameWrap.length*(isA6?10:12)) + 2;
       if(alt){ doc.setFillColor(246); doc.rect(left, y-2, contentWidth, rowHeight,'F'); }
